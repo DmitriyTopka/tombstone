@@ -274,3 +274,274 @@ def median_similar(
         "actual" if all(basis == "actual" for basis in bases) else "est."
     )
     return Similar(value=round(median(costs), 4), count=len(costs), basis=overall_basis)
+
+
+# --- gate decision (R3.3, R3.4, R3.6) --------------------------------------
+
+
+@dataclass(frozen=True)
+class Decision:
+    """The outcome of the task-start gate.
+
+    ``allow`` is True when the tool call may run. ``new_task`` is True when
+    the task differs from ``state.current_task``; the caller then stores it as
+    the current task on an allow. On a block, ``message`` is the one stderr
+    line and ``outcome`` is ``cap``.
+    """
+    allow: bool
+    new_task: bool = False
+    message: str = ""
+    outcome: Optional[str] = None
+
+
+def _task_field(task: object, name: str) -> Optional[str]:
+    value = getattr(task, name, None)
+    return str(value) if value is not None else None
+
+
+def _is_current(state: dict, task: object) -> bool:
+    """True when ``task`` is already the task stored as current in state."""
+    current = state.get("current_task") if isinstance(state, dict) else None
+    if not isinstance(current, dict):
+        return False
+    return (
+        str(current.get("task_id")) == _task_field(task, "task_id")
+        and (current.get("spec") or None) == (getattr(task, "spec", None) or None)
+    )
+
+
+def spec_spent(records: list[dict], spec: Optional[str],
+               open_estimate: float = 0.0) -> tuple[float, str]:
+    """Credits spent on a spec and the basis of that figure (R3.3).
+
+    Sums the cost of every record of the spec (``actual``, else ``estimate``)
+    and adds the open-turn estimate. ``cap`` records cost nothing and are
+    skipped. The basis is ``actual`` only when every counted figure is actual
+    and there is no open-turn estimate, otherwise ``est.``.
+    """
+    total = 0.0
+    basis = "actual"
+    for record in records or []:
+        if not isinstance(record, dict) or record.get("spec") != spec:
+            continue
+        if record.get("outcome") == "cap":
+            continue
+        value, record_basis = _record_cost(record)
+        if value is None:
+            continue
+        total += value
+        if record_basis != "actual":
+            basis = "est."
+    if open_estimate > 0:
+        total += open_estimate
+        basis = "est."
+    return total, basis
+
+
+def _gate_message(task: object, spec: Optional[str], sim: Similar,
+                  config: Config, remaining: float, spent_basis: str,
+                  headline: str, advice: str) -> str:
+    """Build the one-line stderr message, every number labeled (R4.4)."""
+    task_id = _task_field(task, "task_id") or "unknown"
+    name = _task_field(task, "name")
+    label = f'task {task_id} "{name}"' if name else f"task {task_id}"
+    if sim.value is not None:
+        similar_part = (f"Similar tasks cost {sim.value:.3f} "
+                        f"({sim.basis}, median of {sim.count}).")
+    else:
+        similar_part = (f"No similar task, using task cap "
+                        f"{config.task_cap:.3f} (est. reference).")
+    spec_part = (f'Spec "{spec}" has {max(remaining, 0.0):.3f} of '
+                 f"{config.spec_cap:.3f} left ({spent_basis}).")
+    return f"TOMBSTONE: {label} blocked. {headline} {similar_part} {spec_part} {advice}"
+
+
+def check_task_start(
+    config: Config,
+    records: list[dict],
+    state: dict,
+    task: object,
+    balance: Optional[float] = None,
+) -> Decision:
+    """Decide whether a task may start (R3.3, R3.4, R3.6).
+
+    ``task`` is any object with ``task_id``, ``name`` and ``spec`` (a
+    ``TaskRef``). A task is new when it differs from ``state.current_task``;
+    a task that is already current is always allowed. For a new task:
+
+    1. spent = the spec's record costs plus the open-turn estimate, and
+       remaining = spec cap minus spent;
+    2. spent at or over the spec cap blocks (R3.4);
+    3. remaining below the reference blocks (R3.3). The reference is the
+       median of similar tasks, or the task cap when none exist (R3.6);
+    4. a known plan balance below ``min_plan_balance`` blocks.
+
+    Pure: it reads its arguments only. ``balance`` is the cached plan balance
+    or None when unknown.
+    """
+    if _is_current(state, task):
+        return Decision(allow=True, new_task=False)
+
+    spec = getattr(task, "spec", None)
+    turn = state.get("turn") if isinstance(state, dict) else None
+    open_estimate = 0.0
+    if isinstance(turn, dict) and isinstance(turn.get("estimate"), (int, float)):
+        open_estimate = float(turn["estimate"])
+
+    spent, spent_basis = spec_spent(records, spec, open_estimate)
+    remaining = config.spec_cap - spent
+    name = _task_field(task, "name") or ""
+    sim = median_similar(records, name, spec=None)
+    reference = sim.value if sim.value is not None else config.task_cap
+
+    if spent >= config.spec_cap:
+        message = _gate_message(
+            task, spec, sim, config, remaining, spent_basis,
+            f"Spec cap reached ({spent:.3f} {spent_basis} spent).",
+            "Raise caps.spec in tombstone.toml to continue.",
+        )
+        return Decision(False, True, message, "cap")
+
+    if remaining < reference:
+        message = _gate_message(
+            task, spec, sim, config, remaining, spent_basis,
+            f"Remaining budget is below the reference {reference:.3f}.",
+            "Raise caps.spec in tombstone.toml to continue.",
+        )
+        return Decision(False, True, message, "cap")
+
+    if (config.min_plan_balance > 0 and balance is not None
+            and balance < config.min_plan_balance):
+        message = _gate_message(
+            task, spec, sim, config, remaining, spent_basis,
+            f"Plan balance {balance:.3f} (actual) is below "
+            f"budget.min_plan_balance {config.min_plan_balance:.3f}.",
+            "Lower budget.min_plan_balance in tombstone.toml to continue.",
+        )
+        return Decision(False, True, message, "cap")
+
+    return Decision(allow=True, new_task=True)
+
+
+# --- pre-tool hook, cap path (R3.3, R3.4, R11.5) ---------------------------
+
+
+def gate_task(project: Path, stdin: dict, state: dict):
+    """The task a tool call is about to work on, or None.
+
+    The STDIN task id wins. Otherwise it is the first unchecked task of the
+    active spec in file order. Returns a ``TaskRef`` or None when there is
+    no active spec or nothing left to do.
+    """
+    from . import tombstones
+
+    spec = tombstones.active_spec(project, state)
+    if spec is None:
+        return None
+    tasks = tombstones.parse_tasks(tombstones._tasks_file(project, spec))
+
+    stdin_id = tombstones._stdin_task_id(stdin)
+    if stdin_id is not None:
+        name = next((t.name for t in tasks if t.task_id == stdin_id), None)
+        return tombstones.TaskRef(spec=spec, task_id=stdin_id, name=name,
+                                  source="stdin")
+    for task in tasks:
+        if not task.checked:
+            return tombstones.TaskRef(spec=spec, task_id=task.task_id,
+                                      name=task.name, source="first-unchecked")
+    return None
+
+
+def cached_balance(project: Path) -> Optional[float]:
+    """The plan balance from ``usage.json``, or None. Reads only, never probes."""
+    import json
+
+    try:
+        data = json.loads((Path(project) / ".kiro" / "tombstone" / "usage.json")
+                          .read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None
+    value = data.get("balance") if isinstance(data, dict) else None
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    return float(value)
+
+
+def _cap_record(task: object, today: str) -> dict:
+    """A ``cap`` record: no turns, zero cost (design: Records)."""
+    name = _task_field(task, "name")
+    spec = getattr(task, "spec", None)
+    task_id = _task_field(task, "task_id") or "unknown"
+    return {
+        "id": f"{spec or 'unknown'}/{task_id}",
+        "task_id": task_id,
+        "name": name,
+        "spec": spec,
+        "task_type": task_type(name or ""),
+        "engine": None,
+        "model": None,
+        "requests": 0,
+        "estimate": 0.0,
+        "actual": 0.0,
+        "minutes": 0.0,
+        "outcome": "cap",
+        "false_positive": None,
+        "date": today,
+        "turns": [],
+    }
+
+
+def run_gate(project: Path, stdin: dict) -> Optional[str]:
+    """Run the cap gate for one tool call. Returns the stderr line or None.
+
+    Fast path: when the task is already current this reads state and
+    tasks.md and returns without loading the config or touching any file.
+    On an allowed new task it stores ``state.current_task``. On a block it
+    writes one ``cap`` record per task id and returns the message.
+    """
+    import json
+    from datetime import date
+
+    from . import tombstones
+
+    project = Path(project)
+    state_path = project / tombstones.TOMBSTONE_DIR / "state.json"
+    state, valid = tombstones._read_json(state_path)
+    state = state if valid and state is not None else {}
+
+    task = gate_task(project, stdin, state)
+    if task is None or _is_current(state, task):
+        return None
+
+    config = load_config(project)
+    store_path = project / "tombstones.json"
+    records = tombstones.load_tombstones(store_path).get("tombstones") or []
+    decision = check_task_start(config, records, state, task,
+                                balance=cached_balance(project))
+
+    if decision.allow:
+        def mark(value: dict) -> dict:
+            value["current_task"] = {"spec": task.spec, "task_id": task.task_id}
+            if config.warnings:
+                value["warnings"] = list(config.warnings)
+            return value
+
+        tombstones.update_json(state_path, mark, default={"version": 1})
+        return None
+
+    record = _cap_record(task, date.today().isoformat())
+
+    def add_once(store: dict) -> dict:
+        existing = store.get("tombstones")
+        if isinstance(existing, list) and any(
+            isinstance(item, dict) and item.get("id") == record["id"]
+            for item in existing
+        ):
+            return store
+        return tombstones.upsert_record(store, json.loads(json.dumps(record)))
+
+    tombstones.update_json(
+        store_path, add_once, default=tombstones._empty_store(),
+        pending_apply=tombstones.apply_pending_record,
+    )
+    return decision.message

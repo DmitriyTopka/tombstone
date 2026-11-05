@@ -201,6 +201,8 @@ def cmd_cost(args: argparse.Namespace) -> int:
     kiro_home = Path(args.kiro_home).expanduser() if args.kiro_home \
         else Path.home() / ".kiro"
 
+    _reconcile_pending_quietly(project, kiro_home if args.kiro_home else None)
+
     path, error = _resolve_session(args.session, project, kiro_home)
     if error is not None:
         print(error, file=sys.stderr)
@@ -289,6 +291,28 @@ def _hook_stop(stdin: dict) -> int:
     return 0
 
 
+def _hook_prompt(stdin: dict) -> int:
+    """``tombstone hook prompt``: name the turn and reset its checked list.
+
+    Stores the first 8 words of the prompt (home paths stripped) and clears
+    ``state.turn.checked`` so a turn with no checkbox edit is recorded as
+    ``unknown`` with a readable name (R2.3, R2.4). Fails open.
+    """
+    from . import tombstones
+
+    project = _hook_project_root(stdin)
+    if project is None:
+        return 0
+
+    state_path = project / tombstones.TOMBSTONE_DIR / "state.json"
+    tombstones.update_json(
+        state_path,
+        lambda state: tombstones.record_prompt(state, stdin),
+        default={"version": 1},
+    )
+    return 0
+
+
 def _hook_reconcile(args: argparse.Namespace) -> int:
     """``tombstone hook reconcile``: fill actual for a stored turn (Bug 1).
 
@@ -310,16 +334,76 @@ def _hook_reconcile(args: argparse.Namespace) -> int:
     session_id = getattr(args, "session", None) or None
     turn_id = getattr(args, "turn", None) or "latest"
 
+    # The child outlives the hook runner: ignore a hangup from a dying
+    # terminal or process group and work from the project root.
+    import os
+    import signal
+
+    try:
+        signal.signal(signal.SIGHUP, signal.SIG_IGN)
+    except (ValueError, OSError, AttributeError):
+        pass
+    try:
+        os.chdir(project)
+    except OSError:
+        pass
+
     tombstones.reconcile_turn(
         project, session_id, turn_id, kiro_home=kiro_home
     )
     return 0
 
 
+def _hook_session_start(stdin: dict) -> int:
+    """``tombstone hook session-start``: only runs the safety net (cmd_hook)."""
+    return 0
+
+
+def _hook_pre_tool(stdin: dict) -> int:
+    """``tombstone hook pre-tool``, cap path (R3.3, R3.4, R11.5).
+
+    Exits 2 with a one-line reason on stderr when a new task would break the
+    spec budget, else 0. Fails open: any internal error is logged by
+    ``cmd_hook`` and the tool call proceeds. The STOP file check is added in
+    task 7.1. Imports stay lazy so the common path is fast.
+    """
+    project = _hook_project_root(stdin)
+    if project is None:
+        return 0
+
+    from . import caps
+
+    message = caps.run_gate(project, stdin)
+    if message:
+        print(message, file=sys.stderr)
+        return 2
+    return 0
+
+
 _HOOK_EVENTS = {
+    "pre-tool": _hook_pre_tool,
     "post-tool": _hook_post_tool,
+    "prompt": _hook_prompt,
     "stop": _hook_stop,
+    "session-start": _hook_session_start,
 }
+
+# Hook entries that first fill records left at actual null. pre-tool is left
+# out on purpose: it is the latency-critical gate.
+_SAFETY_NET_EVENTS = frozenset({"post-tool", "prompt", "stop", "session-start"})
+
+
+def _reconcile_pending_quietly(project: Optional[Path],
+                               kiro_home: Optional[Path] = None) -> None:
+    """Run the safety net for ``project``. Never raises, never prints."""
+    if project is None:
+        return
+    try:
+        from . import tombstones
+
+        tombstones.reconcile_pending(project, kiro_home=kiro_home)
+    except Exception:  # noqa: BLE001 - the net must never break a command
+        pass
 
 
 def cmd_hook(args: argparse.Namespace) -> int:
@@ -341,6 +425,8 @@ def cmd_hook(args: argparse.Namespace) -> int:
         return 0
 
     stdin = _read_stdin_json()
+    if event in _SAFETY_NET_EVENTS:
+        _reconcile_pending_quietly(_hook_project_root(stdin))
     try:
         return handler(stdin)
     except Exception as error:  # noqa: BLE001 - hooks must never crash the agent
@@ -377,6 +463,31 @@ def _not_ready(name: str):
     return runner
 
 
+def cmd_graveyard(args: argparse.Namespace) -> int:
+    """``tombstone graveyard [--out FILE]``: render the static page (R2.6).
+
+    Fills records still at ``actual`` null first, then writes the HTML to
+    ``.kiro/tombstone/graveyard.html`` or to ``--out``. Reads
+    ``tombstones.json`` without modifying it.
+    """
+    project = Path(args.project).expanduser() if getattr(args, "project", None) \
+        else find_project_root()
+    if project is None:
+        print("no project found (no .kiro directory or tombstone.toml above here)",
+              file=sys.stderr)
+        return 1
+
+    _reconcile_pending_quietly(project)
+
+    from . import tombstones
+
+    out = Path(args.out) if args.out else None
+    target = tombstones.write_graveyard(project, out)
+    count = len(tombstones.load_tombstones(project / "tombstones.json")["tombstones"])
+    print(f"graveyard written: {target} ({count} tombstones)")
+    return 0
+
+
 # --- argument parser --------------------------------------------------------
 
 
@@ -402,6 +513,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=[
             "pre-tool",
             "post-tool",
+            "prompt",
             "stop",
             "reconcile",
             "session-start",
@@ -422,7 +534,14 @@ def build_parser() -> argparse.ArgumentParser:
                       help="override the Kiro home used to resolve the session")
     hook.set_defaults(func=cmd_hook)
 
-    for name in ("watch", "mcp", "graveyard", "resume", "init"):
+    graveyard = sub.add_parser("graveyard", help="render the static graveyard page")
+    graveyard.add_argument("--out", default=None,
+                           help="output file (default .kiro/tombstone/graveyard.html)")
+    graveyard.add_argument("--project", default=None,
+                           help="project root (default: found from the working directory)")
+    graveyard.set_defaults(func=cmd_graveyard)
+
+    for name in ("watch", "mcp", "resume", "init"):
         placeholder = sub.add_parser(name, help=f"{name} (not implemented yet)")
         placeholder.set_defaults(func=_not_ready(name))
 

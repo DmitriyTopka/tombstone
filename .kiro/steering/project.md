@@ -31,3 +31,8 @@ inclusion: always
 
 - English in code, comments, commit messages, README, docs and CLI output.
 - No em dash or en dash characters anywhere. Use a plain hyphen or a full stop.
+
+## Dogfood rules (this repo runs its own Tombstone hooks)
+
+- Never run `tombstone hook ...` by hand against this repo's real `.kiro/tombstone/` or `tombstones.json`. Manual checks go through pytest with `tmp_path`, or with `--project` pointing to a temp directory.
+- Never edit `tombstones.json` or `.kiro/tombstone/` by hand. They are evidence for the build log.

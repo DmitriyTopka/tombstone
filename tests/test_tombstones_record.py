@@ -344,7 +344,7 @@ def test_on_turn_end_no_session_returns_none(tmp_path):
     assert on_turn_end(project, {}, kiro_home=kiro_home) is None
 
 
-def test_on_turn_end_resolves_task_from_spec(tmp_path):
+def test_on_turn_end_resolves_task_from_stdin_id(tmp_path):
     project = _project(tmp_path)
     kiro_home = tmp_path / "kiro_home"
     specs = project / ".kiro" / "specs" / "tombstone"
@@ -357,7 +357,8 @@ def test_on_turn_end_resolves_task_from_spec(tmp_path):
          "start": "2026-11-05T09:12:03Z", "end": "2026-11-05T09:18:27Z"},
     ])
 
-    record = on_turn_end(project, {"session_id": sid}, kiro_home=kiro_home)
+    record = on_turn_end(project, {"session_id": sid, "task_id": "3.3"},
+                         kiro_home=kiro_home)
     assert record["id"] == "tombstone/3.3"
     assert record["task_id"] == "3.3"
     assert record["name"] == "Record building and the Stop hook"
@@ -404,3 +405,94 @@ def test_stop_hook_exits_zero_when_on_turn_end_raises(tmp_path, monkeypatch):
     assert cli.main(["hook", "stop"]) == 0
     log = (project / TOMBSTONE_DIR / "errors.log").read_text()
     assert "kaboom" in log
+
+
+# --- prompt hook and unknown work turns (R2.3, R2.4) -------------------------
+
+PROMPT = "Bug fix in the tombstone writer (tasks 3.2 and 3.3 are already done)"
+TASKS_TWO = "# Tasks\n\n- [ ] 4.1 First thing\n- [ ] 4.2 Second thing\n"
+
+
+def _run_hook(argv, payload, monkeypatch):
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    return cli.main(argv)
+
+
+def _spec_project(tmp_path: Path) -> Path:
+    project = _project(tmp_path)
+    spec = project / ".kiro" / "specs" / "demo"
+    spec.mkdir(parents=True)
+    (spec / "tasks.md").write_text(TASKS_TWO, encoding="utf-8")
+    return project
+
+
+def test_prompt_name_takes_first_eight_words_and_strips_home():
+    from tombstone.tombstones import prompt_name
+    assert prompt_name(PROMPT) == "Bug fix in the tombstone writer (tasks 3.2"
+    home = Path("/Users/alice")
+    assert prompt_name("look at /Users/alice/proj/a.py now", home) == "look at ~/proj/a.py now"
+
+
+def test_turn_without_checkbox_edit_is_one_unknown_record(tmp_path, monkeypatch):
+    project = _spec_project(tmp_path)
+    kiro_home = tmp_path / "kiro_home"
+    sid = _write_v3_session(kiro_home, project, turns=[
+        {"turn_id": "t1", "requests": 4, "cost": 0.3,
+         "start": "2026-11-05T09:00:00Z", "end": "2026-11-05T09:05:00Z"},
+    ])
+    rc = _run_hook(["hook", "prompt"], {
+        "session_id": sid, "hook_event_name": "UserPromptSubmit",
+        "cwd": str(project), "prompt": PROMPT}, monkeypatch)
+    assert rc == 0
+
+    on_turn_end(project, {"session_id": sid}, kiro_home=kiro_home)
+    store = load_tombstones(project / "tombstones.json")
+    assert len(store["tombstones"]) == 1
+    record = store["tombstones"][0]
+    assert record["task_id"] == "unknown"
+    assert record["name"] == "Bug fix in the tombstone writer (tasks 3.2"
+    assert record["id"] == "unknown/t1"
+    # The first unchecked task (4.1) did not get the cost.
+    assert record["actual"] == 0.3
+
+
+def test_turn_that_checks_a_box_ends_as_that_task(tmp_path, monkeypatch):
+    project = _spec_project(tmp_path)
+    kiro_home = tmp_path / "kiro_home"
+    sid = _write_v3_session(kiro_home, project, turns=[
+        {"turn_id": "t1", "requests": 4, "cost": 0.3,
+         "start": "2026-11-05T09:00:00Z", "end": "2026-11-05T09:05:00Z"},
+    ])
+    _run_hook(["hook", "prompt"], {"session_id": sid, "cwd": str(project),
+                                    "prompt": "Do task 4.2"}, monkeypatch)
+    tasks_md = project / ".kiro" / "specs" / "demo" / "tasks.md"
+    tasks_md.write_text(TASKS_TWO.replace("- [ ] 4.2", "- [x] 4.2"), encoding="utf-8")
+    _run_hook(["hook", "post-tool"], {
+        "session_id": sid, "cwd": str(project), "tool_name": "str_replace",
+        "tool_input": {"path": str(tasks_md), "oldStr": "- [ ] 4.2 Second thing",
+                       "newStr": "- [x] 4.2 Second thing"}}, monkeypatch)
+
+    on_turn_end(project, {"session_id": sid}, kiro_home=kiro_home)
+    store = load_tombstones(project / "tombstones.json")
+    assert len(store["tombstones"]) == 1
+    assert store["tombstones"][0]["task_id"] == "4.2"
+    assert store["tombstones"][0]["name"] == "Second thing"
+
+
+def test_two_boxes_in_one_turn_split_equally(tmp_path, monkeypatch):
+    project = _spec_project(tmp_path)
+    kiro_home = tmp_path / "kiro_home"
+    sid = _write_v3_session(kiro_home, project, turns=[
+        {"turn_id": "t1", "requests": 4, "cost": 0.4,
+         "start": "2026-11-05T09:00:00Z", "end": "2026-11-05T09:05:00Z"},
+    ])
+    _run_hook(["hook", "prompt"], {"cwd": str(project), "prompt": "both"}, monkeypatch)
+    from tombstone.tombstones import update_json
+    update_json(project / ".kiro" / "tombstone" / "state.json",
+                lambda s: s["turn"].update(checked=["4.1", "4.2"]) or s,
+                default={"version": 1})
+    on_turn_end(project, {"session_id": sid}, kiro_home=kiro_home)
+    store = load_tombstones(project / "tombstones.json")
+    assert sorted(r["task_id"] for r in store["tombstones"]) == ["4.1", "4.2"]
+    assert all(r["turns"][0]["share"] == 0.5 for r in store["tombstones"])
+    assert sum(r["actual"] for r in store["tombstones"]) == 0.4

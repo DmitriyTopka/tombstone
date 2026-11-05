@@ -30,6 +30,186 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/ecb41faf-7b0a-43dd-998c-3745a4b08f2c",
+      "task_id": "unknown",
+      "name": "hi there",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 12,
+      "estimate": 6.1183,
+      "actual": 3.8626,
+      "minutes": 1.6079,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_b2bf8b22-d700-4e46-a262-bca24cf5e657",
+          "turn_id": "ecb41faf-7b0a-43dd-998c-3745a4b08f2c",
+          "requests": 12,
+          "estimate": 6.1183,
+          "actual": 3.8626,
+          "minutes": 1.6079,
+          "start": "2026-11-05T19:08:32.166000Z",
+          "end": "2026-11-05T19:10:08.642000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/4d0780dc-53ac-487d-a9f7-9fcf2619004e",
+      "task_id": "unknown",
+      "name": "Bug fix: the detached reconcile child does not",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 12,
+      "estimate": 6.8327,
+      "actual": 4.3359,
+      "minutes": 2.2876,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_2865ed24-9c88-4257-9623-825ba1fe6648",
+          "turn_id": "4d0780dc-53ac-487d-a9f7-9fcf2619004e",
+          "requests": 12,
+          "estimate": 6.8327,
+          "actual": 4.3359,
+          "minutes": 2.2876,
+          "start": "2026-11-05T19:12:01.104000Z",
+          "end": "2026-11-05T19:14:18.358000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/3.4",
+      "task_id": "3.4",
+      "name": "Prompt hook and unknown work turns",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 14,
+      "estimate": 3.533,
+      "actual": 2.4287,
+      "minutes": 1.0433,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_aeb4a5fb-f517-47bf-b44e-0d0d057a0ec9",
+          "turn_id": "1538a851-02bc-4f1c-800f-0deea5c01b61",
+          "requests": 14,
+          "estimate": 7.0661,
+          "actual": 4.8574,
+          "minutes": 2.0866,
+          "start": "2026-11-05T19:14:35.066000Z",
+          "end": "2026-11-05T19:16:40.262000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/4.2",
+      "task_id": "4.2",
+      "name": "Gate decision and the pre-tool hook",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 14,
+      "estimate": 3.533,
+      "actual": 2.4287,
+      "minutes": 1.0433,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_aeb4a5fb-f517-47bf-b44e-0d0d057a0ec9",
+          "turn_id": "1538a851-02bc-4f1c-800f-0deea5c01b61",
+          "requests": 14,
+          "estimate": 7.0661,
+          "actual": 4.8574,
+          "minutes": 2.0866,
+          "start": "2026-11-05T19:14:35.066000Z",
+          "end": "2026-11-05T19:16:40.262000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/47a06c00-0d86-4420-9788-6db642829ec1",
+      "task_id": "unknown",
+      "name": "Bug fix, two more bugs from the live",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 12,
+      "estimate": 6.9391,
+      "actual": 2.7109,
+      "minutes": 1.1557,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_2a842104-d251-4dd9-a6a7-cfdd7f40c340",
+          "turn_id": "47a06c00-0d86-4420-9788-6db642829ec1",
+          "requests": 12,
+          "estimate": 6.9391,
+          "actual": 2.7109,
+          "minutes": 1.1557,
+          "start": "2026-11-05T19:17:46.189000Z",
+          "end": "2026-11-05T19:18:55.529000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/5",
+      "task_id": "5",
+      "name": "Graveyard",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 7.6814,
+      "actual": 5.0545,
+      "minutes": 1.9049,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_af9c7916-0493-4782-8c0f-78e05dec9956",
+          "turn_id": "c27f2338-ed35-47c7-836b-6cb218154468",
+          "requests": 15,
+          "estimate": 7.6814,
+          "actual": 5.0545,
+          "minutes": 1.9049,
+          "start": "2026-11-05T19:19:07.930000Z",
+          "end": "2026-11-05T19:21:02.227000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

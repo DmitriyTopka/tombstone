@@ -17,6 +17,7 @@ merges the queued pending changes first.
 from __future__ import annotations
 
 import fcntl
+import html
 import json
 import os
 import re
@@ -551,58 +552,118 @@ def _checked_this_turn(state: dict) -> list[str]:
     return []
 
 
-def resolve_task(project: Path, stdin: dict, state: dict) -> TaskRef:
-    """Resolve the task a turn belongs to, first match wins (R2.3, R2.4).
+def _task_sort_key(task_id: str) -> tuple:
+    """Natural order for dotted ids: 2.10 after 2.9, non-numeric last."""
+    parts = []
+    for part in str(task_id).split("."):
+        parts.append((0, int(part), "") if part.isdigit() else (1, 0, part))
+    return tuple(parts)
 
-    1. A task id carried in the hook STDIN.
-    2. The checkbox diff: ids the post-tool hook recorded in
-       ``state.turn.checked`` for this turn. When more than one was checked,
-       the first by id is returned; the share split across them is applied by
-       the record builder in task 3.3.
-    3. The first unchecked task of the active spec.
-    4. ``unknown`` with the current turn id (R2.4).
+
+def _prompt_name(state: dict) -> Optional[str]:
+    """The prompt name stored by the prompt hook for this turn, or None."""
+    turn = state.get("turn") if isinstance(state, dict) else None
+    if isinstance(turn, dict):
+        name = turn.get("prompt_name")
+        if isinstance(name, str) and name.strip():
+            return name.strip()
+    return None
+
+
+def resolve_tasks(project: Path, stdin: dict, state: dict) -> list[TaskRef]:
+    """Resolve every task a turn belongs to, first match wins (R2.3, R2.4).
+
+    1. A task id carried in the hook STDIN: one ref.
+    2. The boxes checked during the turn (``state.turn.checked``): one ref per
+       id, in natural order. The turn cost is split equally between them.
+    3. ``unknown``: one ref named after the prompt (``state.turn.prompt_name``)
+       when known. The turn is a work turn outside the task list. There is no
+       "first unchecked task" guess.
     """
     project = Path(project)
     spec = active_spec(project, state)
 
     stdin_id = _stdin_task_id(stdin)
     if stdin_id is not None:
-        return TaskRef(
+        return [TaskRef(
             spec=spec,
             task_id=stdin_id,
             name=_name_for_task(project, spec, stdin_id),
             source="stdin",
-        )
+        )]
 
-    checked = _checked_this_turn(state)
+    checked = sorted(set(_checked_this_turn(state)), key=_task_sort_key)
     if checked:
-        task_id = sorted(checked)[0]
-        return TaskRef(
-            spec=spec,
-            task_id=task_id,
-            name=_name_for_task(project, spec, task_id),
-            source="checkbox-diff",
-        )
-
-    if spec is not None:
-        for task in parse_tasks(_tasks_file(project, spec)):
-            if not task.checked:
-                return TaskRef(
-                    spec=spec,
-                    task_id=task.task_id,
-                    name=task.name,
-                    source="first-unchecked",
-                )
+        return [
+            TaskRef(
+                spec=spec,
+                task_id=task_id,
+                name=_name_for_task(project, spec, task_id),
+                source="checkbox-diff",
+            )
+            for task_id in checked
+        ]
 
     turn = state.get("turn") if isinstance(state, dict) else None
     turn_id = turn.get("turn_id") if isinstance(turn, dict) else None
-    return TaskRef(
+    return [TaskRef(
         spec=spec,
         task_id="unknown",
-        name=None,
-        source="fallback",
+        name=_prompt_name(state),
+        source="prompt" if _prompt_name(state) else "fallback",
         turn_id=str(turn_id) if turn_id else None,
-    )
+    )]
+
+
+def resolve_task(project: Path, stdin: dict, state: dict) -> TaskRef:
+    """Resolve the first task of a turn: see :func:`resolve_tasks`."""
+    return resolve_tasks(project, stdin, state)[0]
+
+
+# --- prompt hook: name the turn, reset the checked list (R2.3, R2.4) -------
+
+PROMPT_NAME_WORDS = 8
+
+_HOME_PATH = re.compile(r"(?:/Users|/home)/[^/\s]+")
+
+
+def prompt_name(prompt: object, home: Optional[Path] = None) -> Optional[str]:
+    """First 8 words of a prompt with home paths stripped, or None.
+
+    The home directory of the current user and any ``/Users/<name>`` or
+    ``/home/<name>`` prefix become ``~``. Never raises.
+    """
+    if not isinstance(prompt, str):
+        return None
+    text = prompt
+    try:
+        home_text = str(home if home is not None else Path.home())
+    except (RuntimeError, OSError):
+        home_text = ""
+    if len(home_text) > 1:
+        text = text.replace(home_text, "~")
+    text = _HOME_PATH.sub("~", text)
+    words = text.split()[:PROMPT_NAME_WORDS]
+    return " ".join(words) if words else None
+
+
+def record_prompt(state: dict, stdin: dict, home: Optional[Path] = None) -> dict:
+    """Store the prompt name for the new turn and reset ``turn.checked``.
+
+    Called by ``tombstone hook prompt`` through the locked store. Every prompt
+    starts a new turn, so the checked list is always cleared. Returns the
+    mutated state.
+    """
+    turn = state.get("turn")
+    if not isinstance(turn, dict):
+        turn = {}
+        state["turn"] = turn
+    turn["checked"] = []
+    turn["prompt_name"] = prompt_name(stdin.get("prompt"), home)
+    turn_id = stdin_turn_id(stdin)
+    if turn_id is not None:
+        turn["turn_id"] = turn_id
+    return state
 
 
 # --- post-tool hook: refresh the snapshot, record newly checked ids --------
@@ -736,7 +797,9 @@ def _newly_checked_from_edit(stdin: dict) -> list[str]:
         old_map = _checkbox_ids(old)
         new_map = _checkbox_ids(new)
         for task_id, checked in new_map.items():
-            if checked and not old_map.get(task_id, False):
+            # Only a line present as unchecked in oldStr can flip; a line that
+            # is new in the edit is never "checked now".
+            if checked and old_map.get(task_id) is False:
                 if task_id not in found:
                     found.append(task_id)
     return found
@@ -798,11 +861,13 @@ def refresh_snapshot(state: dict, project: Path, spec: str,
     current = _snapshot_for(project, spec)
 
     if have_snapshot:
-        # A snapshot exists: diff the current file against it.
+        # A snapshot exists: diff the current file against it. Only an id that
+        # was present and unchecked counts. An id new in the file (added
+        # already checked) just enters the snapshot.
         newly_checked = [
             task_id
             for task_id, checked in current.items()
-            if checked and not previous.get(task_id, False)
+            if checked and previous.get(task_id) is False
         ]
     else:
         # No snapshot yet: the pre-edit file is gone, so the only reliable
@@ -1172,40 +1237,51 @@ def on_turn_end(project: Path, stdin: dict, *,
     if turn is None:
         return None
 
-    ref = resolve_task(project, stdin if isinstance(stdin, dict) else {}, state)
+    refs = resolve_tasks(project, stdin if isinstance(stdin, dict) else {}, state)
 
-    # Split the turn across every task checked this turn (design: share).
-    checked = _checked_this_turn(state)
-    share = 1.0 / len(checked) if len(checked) > 1 else 1.0
+    # Several boxes checked in one turn: equal split, one record each (R2.3).
+    share = 1.0 / len(refs)
 
     avg_price = _avg_price(state, DEFAULT_AVG_REQUEST_PRICE)
     estimate = None
     if isinstance(turn.requests, int):
         estimate = turn.requests * avg_price
 
-    record_id = _record_id(ref)
-    existing = _existing_record(store, record_id)
-
     outcome = str(stdin.get("outcome")) if isinstance(stdin, dict) \
         and isinstance(stdin.get("outcome"), str) else "finished"
 
-    record = build_record(
-        ref,
-        turn,
-        engine=session.engine,
-        model=turn.model or session.model,
-        estimate=estimate,
-        share=share,
-        outcome=outcome,
-        existing=existing,
-    )
+    records: list[dict] = []
+    for ref in refs:
+        if ref.task_id == "unknown":
+            # The session turn id keeps one record per turn. Without a prompt
+            # name the record is named after the turn time (R2.4).
+            ref = TaskRef(spec=ref.spec, task_id=ref.task_id,
+                          name=ref.name or _iso(turn.start) or _iso(turn.end),
+                          source=ref.source, turn_id=turn.turn_id)
+        existing = _existing_record(store, _record_id(ref))
+        records.append(build_record(
+            ref,
+            turn,
+            engine=session.engine,
+            model=turn.model or session.model,
+            estimate=estimate,
+            share=share,
+            outcome=outcome,
+            existing=existing,
+        ))
+
+    def write_all(store_value: dict) -> dict:
+        for item in records:
+            store_value = upsert_record(store_value, item)
+        return store_value
 
     update_json(
         project / "tombstones.json",
-        lambda store_value: upsert_record(store_value, record),
+        write_all,
         default=_empty_store(),
         pending_apply=apply_pending_record,
     )
+    record = records[0]
 
     if turn.state == "closed" and turn.cost is not None \
             and isinstance(turn.requests, int):
@@ -1239,35 +1315,173 @@ def spawn_reconcile(project: Path, session_id: Optional[str],
     import subprocess
     import sys
 
+    project = Path(project).resolve()
     args = [
-        sys.executable, "-m", "tombstone", "hook", "reconcile",
+        os.path.abspath(sys.executable), "-m", "tombstone", "hook", "reconcile",
         "--session", session_id or "",
         "--turn", turn_id or "latest",
         "--project", str(project),
     ]
     if kiro_home is not None:
-        args += ["--kiro-home", str(kiro_home)]
+        args += ["--kiro-home", str(Path(kiro_home).resolve())]
 
+    # The child's stdout and stderr go to reconcile.log so a crash before it
+    # can log anything (an import error, a bad interpreter) is still visible.
+    # Falls back to devnull when the log cannot be opened.
+    sidecar = project / TOMBSTONE_DIR
+    sink = None
     try:
-        devnull = open(os.devnull, "wb")
+        sidecar.mkdir(parents=True, exist_ok=True)
+        sink = open(sidecar / RECONCILE_LOG, "ab")
     except OSError:
-        devnull = None
+        sink = None
     try:
+        # A new session (setsid) takes the child out of the hook runner's and
+        # kiro-cli's process group. close_fds drops every inherited fd, stdin
+        # is devnull, and the cwd is the project root so the child never holds
+        # a directory the parent may remove. The interpreter path is absolute.
         subprocess.Popen(
             args,
             stdin=subprocess.DEVNULL,
-            stdout=devnull if devnull is not None else subprocess.DEVNULL,
-            stderr=devnull if devnull is not None else subprocess.DEVNULL,
+            stdout=sink if sink is not None else subprocess.DEVNULL,
+            stderr=sink if sink is not None else subprocess.DEVNULL,
+            cwd=str(project) if project.is_dir() else None,
             start_new_session=True,
             close_fds=True,
         )
+    except OSError as error:
+        reconcile_log(project, f"spawn failed for turn {turn_id}: {error}")
     finally:
         # The child holds its own copy of the fd; closing ours is safe.
-        if devnull is not None:
+        if sink is not None:
             try:
-                devnull.close()
+                sink.close()
             except OSError:
                 pass
+
+
+# Child log inside .kiro/tombstone/. One line per start, fill and timeout.
+RECONCILE_LOG = "reconcile.log"
+
+
+def reconcile_log(project: Path, message: str) -> None:
+    """Append one timestamped line to ``reconcile.log``. Never raises."""
+    sidecar = Path(project) / TOMBSTONE_DIR
+    try:
+        sidecar.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).isoformat()
+        with (sidecar / RECONCILE_LOG).open("a", encoding="utf-8") as handle:
+            handle.write(f"{stamp} pid {os.getpid()} {message}\n")
+    except OSError:
+        pass
+
+
+def _fill_turn(project: Path, turn) -> Optional[dict]:
+    """Write a priced turn into its record and fold it into the price window.
+
+    Shared by the reconcile child and the safety net. ``turn`` must be closed
+    with a cost. ``requests`` comes from the turn's ``requestIds`` (the
+    session parser), not from the open-turn estimate stored at Stop.
+    """
+    record = _apply_reconciled_turn(project, turn)
+    if record is not None and isinstance(turn.requests, int):
+        update_json(
+            project / TOMBSTONE_DIR / "state.json",
+            lambda s: update_price_window(s, turn.requests, turn.cost),
+            default={"version": 1},
+        )
+    return record
+
+
+# The safety net looks at no more than this many records per call.
+PENDING_SCAN_LIMIT = 5
+
+
+def _record_recency(item: tuple[int, dict]) -> tuple[str, int]:
+    """Sort key: newest turn time first by string, list order breaks ties."""
+    index, record = item
+    stamps = []
+    for entry in record.get("turns") or []:
+        if isinstance(entry, dict):
+            for key in ("end", "start"):
+                value = entry.get(key)
+                if isinstance(value, str):
+                    stamps.append(value)
+    return (max(stamps) if stamps else "", index)
+
+
+def reconcile_pending(project: Path, *, kiro_home: Optional[Path] = None,
+                      limit: int = PENDING_SCAN_LIMIT) -> int:
+    """Fill records left with ``actual = null`` whose cost is now on disk.
+
+    The safety net for a reconcile child that never ran. It needs no
+    background process: every hook entry and the ``cost`` and ``graveyard``
+    commands call it first. The scan is read-only: ``tombstones.json`` is read
+    without the lock, and the store is written (locked) only when a cost is
+    actually found. At most ``limit`` of the newest null records are looked
+    at, and only turns that are not already marked unpriced. With nothing to
+    do it costs one small JSON read. Returns the number of turns filled.
+    Never raises.
+    """
+    from . import sessions
+
+    project = Path(project)
+    try:
+        store, _valid = _read_json(project / "tombstones.json")
+        if not store:
+            return 0
+        records = store.get("tombstones")
+        if not isinstance(records, list):
+            return 0
+
+        pending = [
+            (index, record) for index, record in enumerate(records)
+            if isinstance(record, dict) and record.get("actual") is None
+            and any(isinstance(e, dict) and e.get("actual") is None
+                    and not e.get("unpriced_reason")
+                    for e in record.get("turns") or [])
+        ]
+        if not pending:
+            return 0
+        pending.sort(key=_record_recency, reverse=True)
+
+        state, _ok = _read_json(project / TOMBSTONE_DIR / "state.json")
+        cached_hash = state.get("v3_project_hash") if isinstance(state, dict) else None
+
+        filled = 0
+        done: set[tuple] = set()
+        for _index, record in pending[:max(0, limit)]:
+            for entry in record.get("turns") or []:
+                if not isinstance(entry, dict) or entry.get("actual") is not None \
+                        or entry.get("unpriced_reason"):
+                    continue
+                turn_id = entry.get("turn_id")
+                session_id = entry.get("session_id")
+                if not isinstance(turn_id, str) or (session_id, turn_id) in done:
+                    continue
+                path = sessions.find_session(
+                    project, session_id if isinstance(session_id, str) else None,
+                    kiro_home=kiro_home, v3_project_hash=cached_hash,
+                )
+                if path is None:
+                    continue
+                for turn in sessions.parse_session(path).turns:
+                    if turn.turn_id == turn_id:
+                        if turn.state == "closed" and turn.cost is not None \
+                                and _fill_turn(project, turn) is not None:
+                            filled += 1
+                            # One fill updates every record of a split turn.
+                            done.add((session_id, turn_id))
+                            reconcile_log(
+                                project,
+                                f"safety net filled turn {turn_id} actual "
+                                f"{_round_credits(turn.cost)} requests {turn.requests}",
+                            )
+                        break
+        return filled
+    except Exception as error:  # noqa: BLE001 - the net must never break a hook
+        reconcile_log(project, f"safety net error: {error}")
+        return 0
 
 
 def reconcile_turn(project: Path, session_id: Optional[str], turn_id: str,
@@ -1298,6 +1512,8 @@ def reconcile_turn(project: Path, session_id: Optional[str], turn_id: str,
         import time as _time
         clock = _time.monotonic
 
+    reconcile_log(project, f"start session {session_id or 'unknown'} "
+                           f"turn {turn_id}")
     deadline = clock() + timeout_s
     first = True
     while True:
@@ -1323,16 +1539,19 @@ def reconcile_turn(project: Path, session_id: Optional[str], turn_id: str,
                     break
 
         if turn is not None and turn.state == "closed" and turn.cost is not None:
-            record = _apply_reconciled_turn(project, turn)
-            if turn.cost is not None and isinstance(turn.requests, int):
-                update_json(
-                    state_path,
-                    lambda s: update_price_window(s, turn.requests, turn.cost),
-                    default={"version": 1},
-                )
+            record = _fill_turn(project, turn)
+            if record is not None:
+                reconcile_log(project, f"filled turn {turn_id} actual "
+                                       f"{_round_credits(turn.cost)} requests "
+                                       f"{turn.requests}")
+            else:
+                reconcile_log(project, f"turn {turn_id} priced but no record "
+                                       "holds it")
             return record
 
         if clock() >= deadline:
+            reconcile_log(project, f"timed out for turn {turn_id}, actual "
+                                   "left null")
             _log_reconcile_timeout(project, session_id, turn_id)
             return None
 
@@ -1350,25 +1569,33 @@ def _apply_reconciled_turn(project: Path, turn) -> Optional[dict]:
     updated: dict = {}
 
     def apply(store: dict) -> dict:
+        updated.clear()
         records = store.get("tombstones")
         if not isinstance(records, list):
             return store
+        # A split turn has one entry per task record, all with the same
+        # session and turn id. Update every one, each keeping its own share.
         for record in records:
             if not isinstance(record, dict):
                 continue
             entries = record.get("turns")
             if not isinstance(entries, list):
                 continue
+            touched = False
             for pos, entry in enumerate(entries):
                 if not isinstance(entry, dict) or entry.get("turn_id") != turn.turn_id:
+                    continue
+                entry_session = entry.get("session_id")
+                if entry_session and turn.session_id and entry_session != turn.session_id:
                     continue
                 estimate = entry.get("estimate")
                 share = entry.get("share", 1.0)
                 entries[pos] = turn_entry(turn, estimate, share)
+                touched = True
+            if touched:
                 _recompute_record_totals(record)
-                updated.clear()
-                updated.update(record)
-                return store
+                if not updated:
+                    updated.update(record)
         return store
 
     update_json(
@@ -1413,3 +1640,284 @@ def _log_reconcile_timeout(project: Path, session_id: Optional[str],
             handle.write(line)
     except OSError:
         pass
+
+
+# --- graveyard (R2.6, R4.4) -------------------------------------------------
+
+# Outcomes the page knows how to badge. Anything else is shown as written.
+_OUTCOME_LABELS = {
+    "finished": "FINISHED",
+    "killed": "KILLED",
+    "cap": "BLOCKED BY CAP",
+}
+
+_GRAVEYARD_CSS = """
+:root{--sky-top:#05060a;--sky-bottom:#141a26;--stone:#3a3f47;--stone-light:#4b515b;--stone-dark:#24282e;
+--ink:#d9dde3;--muted:#8a919c;--moss:#5f7f5a;--red:#ff3b3b;--red-glow:rgba(255,59,59,.55);--amber:#d9a441}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--sky-top);color:var(--ink);font-family:ui-serif,Georgia,"Times New Roman",serif}
+.sky{min-height:100vh;background:linear-gradient(var(--sky-top),var(--sky-bottom));padding:28px 16px 48px;position:relative;overflow:hidden}
+.moon{position:absolute;top:30px;right:8%;width:76px;height:76px;border-radius:50%;
+background:radial-gradient(circle at 35% 35%,#f4f1e6,#c9c4b0 70%);box-shadow:0 0 60px 12px rgba(240,236,220,.16)}
+header,main,footer{position:relative;max-width:1080px;margin:0 auto}
+h1{font-size:clamp(26px,4vw,40px);letter-spacing:.04em;margin:0 0 6px;font-weight:600}
+.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
+.sub{color:var(--muted);font-size:13px}
+.stats{display:flex;flex-wrap:wrap;gap:22px;margin-top:14px;font-size:13px}
+.stats b{display:block;color:var(--ink);font-size:18px}
+.stats span{color:var(--muted)}
+.controls{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+input[type=search]{background:#1b2029;color:var(--ink);border:1px solid #343b47;border-radius:6px;padding:8px 12px;font:13px ui-monospace,Menlo,monospace;min-width:220px}
+button{background:#1b2029;color:var(--ink);border:1px solid #343b47;border-radius:6px;padding:8px 12px;font:13px ui-monospace,Menlo,monospace;cursor:pointer}
+button:hover,button:focus-visible,input:focus-visible{border-color:var(--red);outline:none}
+button[aria-pressed=true]{border-color:var(--moss)}
+.yard{margin-top:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:22px 16px}
+.grave{display:flex;flex-direction:column;align-items:center}
+.grave[hidden]{display:none}
+.stone{width:100%;border-radius:70px 70px 6px 6px;padding:22px 12px 14px;text-align:center;
+background:linear-gradient(160deg,var(--stone-light),var(--stone) 45%,var(--stone-dark));
+box-shadow:inset -6px -8px 14px rgba(0,0,0,.35),0 10px 18px rgba(0,0,0,.6);border-bottom:4px solid var(--moss)}
+.rip{font-size:11px;letter-spacing:.3em;color:var(--muted)}
+.tid{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-all}
+.cost{font-size:clamp(28px,3.4vw,38px);font-weight:700;margin:8px 0 2px;font-variant-numeric:tabular-nums}
+.unit{font-size:11px;color:var(--muted)}
+.name{font-size:13px;line-height:1.3;color:#c3c9d3;margin-top:8px;min-height:34px;word-break:break-word}
+.meta{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
+.badge{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:10px;font:10px ui-monospace,Menlo,monospace;letter-spacing:.12em;border:1px solid var(--moss);color:var(--moss)}
+.grave.killed .stone{border-bottom-color:var(--red)}
+.grave.killed .cost{color:var(--red);text-shadow:0 0 12px var(--red-glow)}
+.grave.killed .badge{border-color:var(--red);color:var(--red)}
+.grave.cap .stone{border-bottom-color:var(--amber)}
+.grave.cap .badge{border-color:var(--amber);color:var(--amber)}
+.mound{width:112%;height:14px;margin-top:-3px;border-radius:50%;background:#1c2a22;opacity:.8}
+.empty{color:var(--muted);text-align:center;padding:60px 0;font-size:15px}
+footer{margin-top:36px;color:var(--muted);font-size:11px}
+""".strip()
+
+_GRAVEYARD_JS = """
+(function(){
+var yard=document.getElementById("yard");
+if(!yard){return;}
+var cards=Array.prototype.slice.call(yard.querySelectorAll(".grave"));
+var box=document.getElementById("filter");
+var buttons=Array.prototype.slice.call(document.querySelectorAll("button[data-sort]"));
+var state={key:"cost",dir:-1};
+function value(card,key){
+  var raw=card.getAttribute("data-"+key)||"";
+  if(key==="name"||key==="date"||key==="outcome"){return raw;}
+  var n=parseFloat(raw);
+  return isNaN(n)?-1:n;
+}
+function sortNow(){
+  cards.sort(function(a,b){
+    var x=value(a,state.key),y=value(b,state.key);
+    if(x<y){return -1*state.dir;}
+    if(x>y){return 1*state.dir;}
+    return 0;
+  });
+  cards.forEach(function(card){yard.appendChild(card);});
+  buttons.forEach(function(btn){
+    var on=btn.getAttribute("data-sort")===state.key;
+    btn.setAttribute("aria-pressed",on?"true":"false");
+    btn.textContent=btn.getAttribute("data-label")+(on?(state.dir<0?" (desc)":" (asc)"):"");
+  });
+}
+function filterNow(){
+  var q=(box&&box.value||"").toLowerCase().trim();
+  cards.forEach(function(card){
+    var hay=card.getAttribute("data-text")||"";
+    card.hidden=q!==""&&hay.indexOf(q)===-1;
+  });
+}
+buttons.forEach(function(btn){
+  btn.addEventListener("click",function(){
+    var key=btn.getAttribute("data-sort");
+    if(state.key===key){state.dir=-state.dir;}else{state.key=key;state.dir=(key==="name")?1:-1;}
+    sortNow();
+  });
+});
+if(box){box.addEventListener("input",filterNow);}
+sortNow();
+})();
+""".strip()
+
+
+def _g_num(value: object) -> Optional[float]:
+    """A finite number from a record field, else None (bool is not a number)."""
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None
+    if value != value or value in (float("inf"), float("-inf")):
+        return None
+    return float(value)
+
+
+def _g_credits(value: Optional[float]) -> str:
+    """Credits with three decimals, so small prices stay visible."""
+    return "n/a" if value is None else f"{value:.3f}"
+
+
+def _g_cost(record: dict) -> tuple[Optional[float], str]:
+    """The price shown big on a card and its label (R4.4).
+
+    ``actual`` when the record has it, else the estimate labeled ``est.``,
+    else no price at all (label ``unpriced``).
+    """
+    actual = _g_num(record.get("actual"))
+    if actual is not None:
+        return actual, "actual"
+    estimate = _g_num(record.get("estimate"))
+    if estimate is not None:
+        return estimate, "est."
+    return None, "unpriced"
+
+
+def _g_median(values: list[float]) -> Optional[float]:
+    if not values:
+        return None
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def _g_card(record: dict) -> str:
+    """One tombstone card as HTML. Every field is escaped."""
+    esc = html.escape
+    cost, label = _g_cost(record)
+    outcome = record.get("outcome") if isinstance(record.get("outcome"), str) else "unknown"
+    badge = _OUTCOME_LABELS.get(outcome, outcome.upper())
+    task_id = str(record.get("task_id") if record.get("task_id") is not None else "unknown")
+    name = record.get("name") if isinstance(record.get("name"), str) and record.get("name") else "(unnamed)"
+    spec = record.get("spec") if isinstance(record.get("spec"), str) else "-"
+    engine = record.get("engine") if isinstance(record.get("engine"), str) else "-"
+    model = record.get("model") if isinstance(record.get("model"), str) else "unknown model"
+    date = record.get("date") if isinstance(record.get("date"), str) else ""
+
+    estimate = _g_num(record.get("estimate"))
+    actual = _g_num(record.get("actual"))
+    requests = record.get("requests") if isinstance(record.get("requests"), int) \
+        and not isinstance(record.get("requests"), bool) else None
+    minutes = _g_num(record.get("minutes"))
+
+    # Requests and minutes are measured once the turn is priced, else est.
+    basis = "actual" if actual is not None else "est."
+    meta = [f"est. {_g_credits(estimate)}"]
+    meta.append(f"actual {_g_credits(actual)}" if actual is not None else "actual pending")
+    meta.append(f"{requests if requests is not None else 'n/a'} req ({basis})")
+    meta.append(f"{minutes:.1f} min ({basis})" if minutes is not None else "n/a min")
+
+    false_positive = record.get("false_positive")
+    extra = ""
+    if false_positive is True:
+        extra = '<div class="meta mono">marked as false positive</div>'
+    elif false_positive is False and outcome == "killed":
+        extra = '<div class="meta mono">confirmed real stop</div>'
+
+    css = {"killed": "killed", "cap": "cap"}.get(outcome, "")
+    text = " ".join([task_id, name, spec, engine, model, outcome, date]).lower()
+    sort_cost = cost if cost is not None else -1
+    return (
+        f'<article class="grave {css}" data-cost="{sort_cost}" '
+        f'data-date="{esc(date, quote=True)}" '
+        f'data-requests="{requests if requests is not None else -1}" '
+        f'data-name="{esc(name.lower(), quote=True)}" '
+        f'data-outcome="{esc(outcome, quote=True)}" '
+        f'data-text="{esc(text, quote=True)}">'
+        f'<div class="stone">'
+        f'<div class="rip">R.I.P.</div>'
+        f'<div class="tid mono">{esc(spec)} / task {esc(task_id)}</div>'
+        f'<div class="cost">{esc(_g_credits(cost))}</div>'
+        f'<div class="unit mono">credits {esc(label)}</div>'
+        f'<div class="name">{esc(name)}</div>'
+        f'<div class="meta mono">{esc(" | ".join(meta))}</div>'
+        f'<div class="meta mono">{esc(engine)} | {esc(model)} | {esc(date or "no date")}</div>'
+        f'{extra}'
+        f'<span class="badge">{esc(badge)}</span>'
+        f'</div><div class="mound"></div></article>'
+    )
+
+
+def render_graveyard(records: list) -> str:
+    """Render tombstone records as one static HTML page (R2.6, R4.4).
+
+    Inline CSS and JS only: no link, no external script, no font, no network
+    address. One card per record, the price as the big number, sorted by cost
+    (highest first) before the page loads, so it reads without JS. The JS adds
+    sorting and a filter box. Every record field is HTML escaped. Bad input
+    (non-dict items, missing fields) is skipped or shown as ``n/a``.
+    """
+    rows = [r for r in (records or []) if isinstance(r, dict)]
+    rows.sort(key=lambda r: (_g_cost(r)[0] is None, -(_g_cost(r)[0] or 0.0)))
+
+    actuals = [v for v in (_g_num(r.get("actual")) for r in rows) if v is not None]
+    est_only = sum(1 for r in rows if _g_num(r.get("actual")) is None
+                   and _g_num(r.get("estimate")) is not None)
+    est_only_total = sum(_g_num(r.get("estimate")) or 0.0 for r in rows
+                         if _g_num(r.get("actual")) is None)
+    killed = sum(1 for r in rows if r.get("outcome") == "killed")
+    capped = sum(1 for r in rows if r.get("outcome") == "cap")
+    median = _g_median(actuals)
+
+    stats = [
+        (str(len(rows)), "tombstones"),
+        (_g_credits(sum(actuals)), f"credits actual ({len(actuals)} priced)"),
+        (_g_credits(median), "median per tombstone (actual)"),
+        (f"{_g_credits(est_only_total)}", f"credits est. ({est_only} not priced yet)"),
+        (str(killed), "killed by the breaker"),
+        (str(capped), "blocked by a cap"),
+    ]
+    stats_html = "".join(
+        f"<div><b>{html.escape(value)}</b><span>{html.escape(label)}</span></div>"
+        for value, label in stats
+    )
+
+    if rows:
+        body = "\n".join(_g_card(r) for r in rows)
+    else:
+        body = '<p class="empty">No tombstones yet. The graveyard is quiet.</p>'
+
+    buttons = "".join(
+        f'<button type="button" data-sort="{key}" data-label="{label}" '
+        f'aria-pressed="false">{label}</button>'
+        for key, label in (("cost", "Cost"), ("date", "Date"),
+                           ("requests", "Requests"), ("name", "Name"),
+                           ("outcome", "Outcome"))
+    )
+
+    return (
+        "<!doctype html>\n"
+        '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
+        '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
+        "<title>Tombstone Graveyard</title>\n"
+        f"<style>\n{_GRAVEYARD_CSS}\n</style>\n</head>\n<body>\n"
+        '<div class="sky">\n<div class="moon"></div>\n<header>\n'
+        "<h1>The Graveyard</h1>\n"
+        '<div class="sub mono">tombstones.json, every task priced in Kiro credits. '
+        "Numbers say est. or actual.</div>\n"
+        f'<div class="stats mono">{stats_html}</div>\n'
+        '<div class="controls">'
+        '<input id="filter" type="search" placeholder="Filter by name, task, spec, outcome" '
+        'aria-label="Filter tombstones">'
+        f"{buttons}</div>\n</header>\n"
+        f'<main class="yard" id="yard">\n{body}\n</main>\n'
+        '<footer class="mono">Generated from tombstones.json. '
+        "No network, no external files.</footer>\n</div>\n"
+        f"<script>\n{_GRAVEYARD_JS}\n</script>\n</body>\n</html>\n"
+    )
+
+
+def write_graveyard(project: Path, out: Optional[Path] = None) -> Path:
+    """Render ``tombstones.json`` of ``project`` and write the page.
+
+    Default target is ``.kiro/tombstone/graveyard.html``. Reads the store
+    without modifying it. Returns the path written.
+    """
+    project = Path(project)
+    store = load_tombstones(project / "tombstones.json")
+    page = render_graveyard(store.get("tombstones") or [])
+    target = Path(out).expanduser() if out is not None \
+        else project / TOMBSTONE_DIR / "graveyard.html"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(page, encoding="utf-8")
+    return target

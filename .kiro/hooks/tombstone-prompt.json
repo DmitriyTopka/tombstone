@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-prompt","description":"Tombstone dogfood: remember the prompt so a turn without a task gets a readable name","trigger":"UserPromptSubmit","action":{"type":"command","command":".venv/bin/tombstone hook prompt","timeout":10}}]}

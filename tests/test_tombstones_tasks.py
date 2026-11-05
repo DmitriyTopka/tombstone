@@ -156,12 +156,12 @@ def test_resolve_task_step2_multiple_checked_takes_first(tmp_path):
     assert ref.source == "checkbox-diff"
 
 
-def test_resolve_task_step3_first_unchecked(tmp_path):
+def test_resolve_task_never_guesses_first_unchecked(tmp_path):
     _spec(tmp_path, "demo", TASKS_MD)
-    ref = resolve_task(tmp_path, {}, {"last_tasks_spec": "demo"})
-    # Task "1" is the first unchecked line in the file.
-    assert ref.task_id == "1"
-    assert ref.source == "first-unchecked"
+    state = {"last_tasks_spec": "demo", "turn": {"prompt_name": "Fix the writer"}}
+    ref = resolve_task(tmp_path, {}, state)
+    assert ref.task_id == "unknown"
+    assert ref.name == "Fix the writer"
 
 
 def test_resolve_task_step4_unknown_with_turn_id(tmp_path):

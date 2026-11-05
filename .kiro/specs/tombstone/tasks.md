@@ -33,12 +33,16 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - _Requirements: R2.5, R2.2_
 
   - [x] 3.2 tasks.md parsing and task id resolution
-    - Add `parse_tasks`, `active_spec`, and `resolve_task`: STDIN keys first, then the checkbox diff against `tasks_snapshot` in `state.json`, then the first unchecked task, then `unknown`. Add `tombstone hook post-tool`, which runs only when the tool input path matches `.kiro/specs/<spec>/tasks.md`, refreshes the snapshot and records newly checked ids for the turn.
+    - Add `parse_tasks`, `active_spec`, and `resolve_task`: STDIN keys first, then the checkbox diff against `tasks_snapshot` in `state.json`, then `unknown` (no first unchecked guess, see 3.4). Add `tombstone hook post-tool`, which runs only when the tool input path matches `.kiro/specs/<spec>/tasks.md`, refreshes the snapshot and records newly checked ids for the turn.
     - _Requirements: R2.3, R2.4_
 
   - [x] 3.3 Record building and the Stop hook
     - Add the record builder (turn entries with `share`, sums, outcome, date), idempotent upsert by record id and turn id, and `tombstone hook stop`: newest closed turn, estimate and actual, `actual = null` when the cost is not there yet, the 50-request average price window written to `state.json`. Hook errors exit 0 and log to `errors.log`.
     - _Requirements: R1.4, R2.1, R2.2, R2.4, R4.2, R4.3_
+
+  - [x] 3.4 Prompt hook and unknown work turns
+    - Add `tombstone hook prompt` (`UserPromptSubmit`): store the first 8 words of the prompt with home paths stripped in `state.turn.prompt_name` and reset `state.turn.checked`. Change `resolve_task` to STDIN id, then boxes checked in the turn, then `unknown` named after the prompt; remove the first unchecked fallback. The Stop hook writes one record per checked box with an equal share, and one `unknown` record per turn otherwise.
+    - _Requirements: R2.3, R2.4_
 
 - [ ] 4. Caps and budget math
   - `tombstone.toml`, similar-task median, and the gate that blocks a new task before it starts.
@@ -48,11 +52,11 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - In `caps.py` add `load_config` (tomllib, defaults from R3.2, per-key fallback with a warning), `task_type`, `keywords`, `similar` and `median_similar` (basis `actual` or `est.`).
     - _Requirements: R3.1, R3.2, R3.5, R3.6_
 
-  - [ ] 4.2 Gate decision and the pre-tool hook
+  - [x] 4.2 Gate decision and the pre-tool hook
     - Add `check_task_start` (new task detection, remaining spec budget, spec cap, task cap as reference when nothing is similar) with the stderr message naming the task, the similar cost and the remaining budget, each labeled `est.` or `actual`. Write a `cap` record once per blocked task. Add `tombstone hook pre-tool` for the cap path with fail-open behavior and lazy imports.
     - _Requirements: R3.3, R3.4, R3.6, R4.4, R11.5_
 
-- [ ] 5. Graveyard
+- [x] 5. Graveyard
   - `render_graveyard` in `tombstones.py` returns one HTML string with inline CSS and JS (sortable table, filter box, outcome badges, `est.` or `actual` on every number) and no external resource of any kind. `tombstone graveyard [--out FILE]` writes it to `.kiro/tombstone/graveyard.html`.
   - _Requirements: R2.6, R4.4_
 

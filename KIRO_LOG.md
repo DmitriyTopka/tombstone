@@ -85,3 +85,28 @@ Known wrong record: the fix run touched no checkbox, so R2.3 fell back to "first
 Estimate vs actual: est. 4.545, actual 15.150. The default average request price (0.045, measured on 2.37.1) is far too low on 3.0.0: this stage averaged 0.23 credits per request on auto. Calibration (E1.6) is next.
 
 Stage E1 spend so far: 61.7 credits of the 120 budget (all metered sums above).
+
+## 2026-11-05 R2.3 change, three live bugs, spec tasks 4.2 and 5
+Engine: V3      CLI: 3.0.0      Model: auto. Credits below are the hook-written `actual` values from tombstones.json.
+
+| Run | Tombstone record | Requests | Credits (actual) |
+|---|---|---|---|
+| R2.3 change (approved by Dima): `unknown` + prompt name, no "first unchecked" guess, task 3.4 | unknown "hi there" (see below) | 12 | 3.863 |
+| Fix: reconcile child died with kiro-cli; added a safety net in every hook | unknown "Bug fix: the detached reconcile child does not" | 12 | 4.336 |
+| Task 4.2 gate and pre-tool hook | 4.2 and 3.4, split 50/50 (bug A) | 14 | 2.429 + 2.429 |
+| Fix: bug A (new ids counted as checked), bug B (reconcile filled one share only) | unknown "Bug fix, two more bugs from the live" | 12 | 2.711 |
+| Task 5 graveyard | 5 "Graveyard", share 1.0 | 15 | 5.055 |
+
+Live bugs found by running Tombstone on its own build (each one read from the session file by Claude, fixed by Kiro, with a test):
+1. The detached reconcile child did not survive `kiro-cli` exit: actual stayed null. Fix: full detach plus `reconcile.log`, and a safety net that fills null records at every hook. Seen working: "filled turn ... actual 4.3359 requests 12" 5 ms after Stop.
+2. Bug A: task 3.4 was added already checked, so the next turn counted it as done and split the 4.2 turn in half.
+3. Bug B: reconcile filled only one of the two split records.
+Known noise in the data: the record named "hi there" got its name from Kiro running `tombstone hook prompt` by hand against the real state. Steering now forbids that (Dogfood rules). Records stay as written; none edited by hand.
+
+Gate K1 (2026-11-05):
+- ✅ Price of one spec task matches in two sources: task 5 record actual 5.0545 = `tombstone cost` 5.054 for the same session; all session sums vs `/usage` within 1 credit.
+- ✅ tombstones.json has 7 records, all written by hooks.
+- ⚠️ Task id: task 5 correct with full share; three work turns correctly `unknown` with prompt names; task 4.2 got the right id but a wrong 50/50 split (bug A, fixed after). Re-check on the next three tasks in E2.
+- ✅ Commits after Kiro code, this log filled per run.
+- Budget: E1 spent about 83 of 120 credits (`/usage` 83.69 including measurement 5), under budget.
+Graveyard v1 renders from the real file: 7 tombstones, 35.971 credits actual.
