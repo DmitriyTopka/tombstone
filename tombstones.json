@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "tombstones": [
+    {
+      "id": "tombstone/1",
+      "task_id": "1",
+      "name": "Session parser for V3 and V2",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 52,
+      "estimate": 4.545,
+      "actual": 15.1502,
+      "minutes": 9.4939,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-05",
+      "turns": [
+        {
+          "session_id": "sess_e321d784-0df9-4d3c-82e7-c3a4989c74c7",
+          "turn_id": "17e498bd-a4ae-4902-9871-de9b8d58da33",
+          "requests": 52,
+          "estimate": 4.545,
+          "actual": 15.1502,
+          "minutes": 9.4939,
+          "start": "2026-11-05T18:13:44.830000Z",
+          "end": "2026-11-05T18:23:14.465000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    }
+  ]
+}

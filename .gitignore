@@ -22,3 +22,7 @@ htmlcov/
 # OS and editor
 .DS_Store
 .idea/
+
+# Tombstone runtime state (machine-local)
+.kiro/tombstone/
+*.lock

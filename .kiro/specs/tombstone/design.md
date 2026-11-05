@@ -163,7 +163,11 @@ A task line matches `^\s*- \[( |x|X|-)\]\*?\s+(\d+(?:\.\d+)*)\.?\s+(.+)$`. Lines
 **Task id resolution (R2.3, R2.4).** `resolve_task(project, stdin, state) -> TaskRef`, first match wins:
 
 1. *Hook STDIN.* Look for `task_id`, `taskId`, `task.id` in the JSON (task hooks on V3 may carry it; the exact STDIN of `PreTaskExecution` in spec mode is [UNKNOWN] and the lookup is deliberately tolerant).
-2. *Checkbox diff.* `state.json` keeps `tasks_snapshot[spec] = {task_id: checked}`. The post-tool hook runs only when the tool input path matches `.kiro/specs/<spec>/tasks.md` (a cheap string check, so other tools cost nothing). It re-parses the file, compares with the snapshot and records newly checked ids in `state.turn.checked`, then refreshes the snapshot. Diffing a re-parsed file works for `str_replace` and for a whole-file `fs_write`, so the hook does not depend on the tool's argument names.
+2. *Checkbox diff.* `state.json` keeps `tasks_snapshot[spec] = {task_id: checked}`. The post-tool hook runs only when the tool input path matches `.kiro/specs/<spec>/tasks.md` (a cheap string check, so other tools cost nothing). It re-parses the file, compares with the snapshot and records newly checked ids in `state.turn.checked`, then refreshes the snapshot.
+
+   On the **first** edit of a run there is no snapshot yet, and the pre-edit file state is already gone, so comparing the whole re-parsed file against an empty snapshot would count every already checked task as checked this turn. The real `sess_29996a7d` run hit this: tasks 1.1 through 3.3 and 4.1 were all `[x]`, so the record was attributed to task 1.1 with `share = 0.125` instead of the task 4.1 that the turn actually completed. When no snapshot exists, the baseline is therefore the edit itself: for a `str_replace` the `oldStr`/`newStr` in the hook STDIN show which checkbox line changed from `- [ ]` to `- [x]`, and only that id counts; for a whole-file `fs_write` with no snapshot nothing is treated as newly checked. Once a snapshot exists, later edits diff against it as before.
+
+   `state.turn.checked` is reset when a new turn begins (a change in `state.turn.turn_id`, set by the post-tool, UserPromptSubmit and session-start hooks) so a task completed in one turn never leaks into the next.
 3. *First unchecked task* of the active spec.
 4. *Fallback.* `TaskRef(task_id="unknown", ...)` with the turn id (R2.4). The record is written anyway.
 
@@ -206,7 +210,11 @@ If several tasks were checked in one turn, the turn is split equally between the
 - `false_positive` stays `null` unless the user edits it. The graveyard shows it.
 - `date` is the local date of the last turn end.
 
-**Turn-end handler (R2.1, R4.2, R4.3).** `on_turn_end(project, stdin)` is the body of `tombstone hook stop`. It resolves the session, takes the newest closed turn that is not yet in a record, resolves the task, builds the record, upserts it, and updates the average request price. If the cost is not there yet (the summary can land a moment after `Stop`), the turn is stored with `actual = null` and the watcher fills it in on its next poll (`reconcile_pending`).
+**Turn-end handler (R2.1, R4.2, R4.3).** `on_turn_end(project, stdin)` is the body of `tombstone hook stop`. It resolves the session, takes the newest unrecorded turn, resolves the task, builds the record, upserts it, and updates the average request price.
+
+The `Stop` event fires before the cost of the finishing turn is on disk: in the real V3 session `sess_29996a7d` the `ContextualHookInvoked` event for `tombstone-stop` is line 101 and the `usage_summary` with `promptTurnSummaries` is line 102, so when the hook runs the turn still parses as open. The handler must therefore record the newest unrecorded turn even when it is still open, not just the newest closed turn. It writes the record immediately with `actual = null` and the estimate filled from the request count, then starts a detached reconcile child. The write plus spawn stays well under the 200 ms hook budget (measured around 10 ms).
+
+The reconcile child is `tombstone hook reconcile --session <id> --turn <turn or latest> --project <path>`, started with `subprocess.Popen(start_new_session=True, ...)` and stdout/stderr to devnull so it outlives the hook. It polls the session every 0.5 s for up to 30 s; once the target turn is closed with a cost it fills `actual` and `requests` on the stored turn entry through the same locked `update_json`, recomputes the record totals, and folds the turn into the average price window. If it times out, `actual` is left null and one line is written to `errors.log`. The watcher's `reconcile_pending` still covers the same gap on its next poll, so a turn is reconciled by whichever path lands first.
 
 Average request price (R4.3): `state.price_window` is a list of `[requests, cost]` per priced turn, newest last. Oldest turns are dropped while the remaining requests still total at least 50. `avg_request_price = sum(cost) / sum(requests)` over the window, stored in `state.json`. Until a window exists, the value from `tombstone.toml` is used.
 
@@ -464,7 +472,9 @@ Credits are stored as floats rounded to 4 decimals and shown with at least 3. Un
 |---|---|
 | Session file missing, empty, truncated, unknown format | Turn is unpriced with a reason; no number is invented (R1.5). `cost` prints the reason and exits 0 for partial data, 1 when no turn could be read. |
 | Last jsonl line half written | Skipped; the next poll sees it complete. |
-| Cost not in the session yet at `Stop` | Record stored with `actual = null`; watcher reconciles later. |
+| Cost not in the session yet at `Stop` | The finishing turn still parses as open (the `usage_summary` lands a line after the `tombstone-stop` event). The record is written now with `actual = null` and a request-based estimate; the Stop hook starts a detached `tombstone hook reconcile` child that polls every 0.5 s for up to 30 s and fills `actual`. The watcher reconciles the same gap on its next poll. |
+| Reconcile child times out | `actual` left null, one line in `errors.log`; the watcher may still reconcile later. |
+| First edit of a run, no `tasks_snapshot` yet | The newly checked task is read from the edit's `oldStr`/`newStr` diff, not from every already checked task. A whole-file `fs_write` with no snapshot records nothing. Prevents the wrong-task, fractional-share attribution seen in `sess_29996a7d`. |
 | `tombstones.json` invalid JSON | File untouched; change goes to `pending.jsonl`; warning in state and on stderr. |
 | Two hooks at once | `flock` plus atomic replace; both writes are applied (R2.5). |
 | `tombstone.toml` missing or bad key | Defaults per key; warning in state. |

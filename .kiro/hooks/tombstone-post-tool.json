@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-post-tool","description":"Tombstone dogfood: track tasks.md checkbox edits","trigger":"PostToolUse","action":{"type":"command","command":".venv/bin/tombstone hook post-tool","timeout":10}}]}

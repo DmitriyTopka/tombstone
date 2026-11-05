@@ -65,3 +65,23 @@ What Kiro did on its own: found the old V2 session still on disk and used it ins
 Where Kiro missed: nothing found in review.
 
 Cross-check (K1 criterion 1): metered sum of all V3 sessions since the update is 28.537 credits; `/usage` shows 29.04. The gap of about 0.5 is the three headless `/spec` and `/tasks` probes, which wrote no session file (see LESSONS). Within 1 credit ✅
+
+## 2026-11-05 Spec tasks 3.1, 3.2, 3.3, 4.1 and the first live bug fix
+Engine: V3      CLI: 3.0.0      Model: auto
+
+| Run | What | Requests | Credits (metered) | Tests after |
+|---|---|---|---|---|
+| 3.1 | Locked JSON store | 15 | 3.041 | 69 |
+| 3.2 | tasks.md parsing, task id resolution, post-tool hook | 26 | 5.751 | 91 |
+| 3.3 | Record builder, Stop hook | 27 | 6.613 | 112 |
+| 4.1 | Config, task type, similar tasks (first run with Tombstone hooks live in this repo) | 13 | 3.209 | 131 |
+| fix | Two bugs found on the 4.1 live run | 52 | 15.150 | 139 |
+
+Dogfood: `.kiro/hooks/tombstone-post-tool.json` and `tombstone-stop.json` run `.venv/bin/tombstone hook ...` in this repo from task 4.1 on.
+Bugs the live run found (Claude read the session file, Kiro fixed):
+1. The V3 `Stop` hook fires one event before `usage_summary`, so the turn cost is not on disk when the hook runs. No record was written. Fix: record now with `actual = null`, a detached `tombstone hook reconcile` child fills the cost within 30 s. Verified on the fix run itself: the record got `actual 15.1502`, 52 requests.
+2. With no earlier snapshot, every task already marked done counted as checked in this turn. Fix: baseline from the edit's `oldStr`/`newStr`, `turn.checked` reset on a new turn.
+Known wrong record: the fix run touched no checkbox, so R2.3 fell back to "first unchecked task" and filed it under task `1` (a parent whose subtasks are all done). Proposed spec change, waiting for Dima: a turn that checks no box and has no task id on STDIN goes to `unknown` with the first words of the prompt as its name.
+Estimate vs actual: est. 4.545, actual 15.150. The default average request price (0.045, measured on 2.37.1) is far too low on 3.0.0: this stage averaged 0.23 credits per request on auto. Calibration (E1.6) is next.
+
+Stage E1 spend so far: 61.7 credits of the 120 budget (all metered sums above).

@@ -216,6 +216,157 @@ def cmd_cost(args: argparse.Namespace) -> int:
     return 0 if had_turn else 1
 
 
+# --- tombstone hook ---------------------------------------------------------
+
+
+def _read_stdin_json() -> dict:
+    """Read and parse the hook STDIN JSON. Never raises; {} on any problem."""
+    import json
+
+    try:
+        raw = sys.stdin.read()
+    except (OSError, ValueError):
+        return {}
+    if not raw or not raw.strip():
+        return {}
+    try:
+        value = json.loads(raw)
+    except ValueError:
+        return {}
+    return value if isinstance(value, dict) else {}
+
+
+def _hook_project_root(stdin: dict) -> Optional[Path]:
+    """Find the project root for a hook from STDIN cwd, else the process cwd."""
+    cwd = stdin.get("cwd") if isinstance(stdin, dict) else None
+    start = Path(cwd) if isinstance(cwd, str) and cwd else None
+    return find_project_root(start)
+
+
+def _hook_post_tool(stdin: dict) -> int:
+    """``tombstone hook post-tool``: refresh the tasks snapshot (R2.3, R2.4).
+
+    Does real work only when the tool input path matches
+    ``.kiro/specs/<spec>/tasks.md``; any other tool call returns at once. The
+    hook never fails the agent: on any error it logs and exits 0.
+    """
+    from . import tombstones
+
+    spec = tombstones.stdin_tasks_spec(stdin)
+    if spec is None:
+        return 0
+
+    project = _hook_project_root(stdin)
+    if project is None:
+        return 0
+
+    turn_id = tombstones.stdin_turn_id(stdin)
+    state_path = project / tombstones.TOMBSTONE_DIR / "state.json"
+    tombstones.update_json(
+        state_path,
+        lambda state: tombstones.refresh_snapshot(
+            state, project, spec, stdin=stdin, turn_id=turn_id
+        ),
+        default={"version": 1},
+    )
+    return 0
+
+
+def _hook_stop(stdin: dict) -> int:
+    """``tombstone hook stop``: record the newest closed turn (R2.1, R4.2).
+
+    Resolves the active session and writes a tombstone record for the newest
+    closed turn that is not yet recorded. An error never fails the agent: it
+    is logged and the hook exits 0 (design: hooks fail open).
+    """
+    from . import tombstones
+
+    project = _hook_project_root(stdin)
+    if project is None:
+        return 0
+
+    tombstones.on_turn_end(project, stdin)
+    return 0
+
+
+def _hook_reconcile(args: argparse.Namespace) -> int:
+    """``tombstone hook reconcile``: fill actual for a stored turn (Bug 1).
+
+    Started detached by the Stop hook. Resolves the project, polls the session
+    until the turn is priced, then fills ``actual`` and ``requests`` through the
+    locked store. Reads its arguments, not STDIN, so it works after the parent
+    hook has returned. Fails open: any error exits 0.
+    """
+    from . import tombstones
+
+    project_arg = getattr(args, "project", None)
+    project = Path(project_arg).expanduser() if project_arg \
+        else find_project_root()
+    if project is None:
+        return 0
+
+    kiro_home = Path(args.kiro_home).expanduser() if getattr(args, "kiro_home", None) \
+        else None
+    session_id = getattr(args, "session", None) or None
+    turn_id = getattr(args, "turn", None) or "latest"
+
+    tombstones.reconcile_turn(
+        project, session_id, turn_id, kiro_home=kiro_home
+    )
+    return 0
+
+
+_HOOK_EVENTS = {
+    "post-tool": _hook_post_tool,
+    "stop": _hook_stop,
+}
+
+
+def cmd_hook(args: argparse.Namespace) -> int:
+    """Dispatch a hook event. Fail open: an internal error exits 0 (design)."""
+    event = args.event
+
+    # reconcile reads CLI arguments, not STDIN, so it is dispatched apart from
+    # the STDIN-driven hook handlers (Bug 1).
+    if event == "reconcile":
+        try:
+            return _hook_reconcile(args)
+        except Exception as error:  # noqa: BLE001 - hooks never crash the agent
+            _log_hook_error({}, f"hook reconcile: {error}")
+            return 0
+
+    handler = _HOOK_EVENTS.get(event)
+    if handler is None:
+        print(f"tombstone hook {event}: not implemented yet", file=sys.stderr)
+        return 0
+
+    stdin = _read_stdin_json()
+    try:
+        return handler(stdin)
+    except Exception as error:  # noqa: BLE001 - hooks must never crash the agent
+        _log_hook_error(stdin, f"hook {event}: {error}")
+        return 0
+
+
+def _log_hook_error(stdin: dict, message: str) -> None:
+    """Append a hook error to ``errors.log`` under the project. Never raises."""
+    try:
+        from datetime import datetime, timezone
+
+        project = _hook_project_root(stdin)
+        if project is None:
+            return
+        from . import tombstones
+
+        sidecar = project / tombstones.TOMBSTONE_DIR
+        sidecar.mkdir(parents=True, exist_ok=True)
+        stamp = datetime.now(timezone.utc).isoformat()
+        with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
+            handle.write(f"{stamp} {message}\n")
+    except Exception:  # noqa: BLE001 - logging must never raise
+        pass
+
+
 # --- not-yet-built subcommands ---------------------------------------------
 
 
@@ -245,7 +396,33 @@ def build_parser() -> argparse.ArgumentParser:
                       help="override the Kiro home used to resolve ids")
     cost.set_defaults(func=cmd_cost)
 
-    for name in ("hook", "watch", "mcp", "graveyard", "resume", "init"):
+    hook = sub.add_parser("hook", help="hook entry points, read STDIN")
+    hook.add_argument(
+        "event",
+        choices=[
+            "pre-tool",
+            "post-tool",
+            "stop",
+            "reconcile",
+            "session-start",
+            "task-pre",
+            "task-post",
+        ],
+        help="the hook event to handle",
+    )
+    # reconcile is started detached by the Stop hook and reads these arguments
+    # instead of STDIN (Bug 1).
+    hook.add_argument("--session", default=None,
+                      help="session id for the reconcile child")
+    hook.add_argument("--turn", default="latest",
+                      help="turn id to reconcile, or 'latest'")
+    hook.add_argument("--project", default=None,
+                      help="project root for the reconcile child")
+    hook.add_argument("--kiro-home", default=None,
+                      help="override the Kiro home used to resolve the session")
+    hook.set_defaults(func=cmd_hook)
+
+    for name in ("watch", "mcp", "graveyard", "resume", "init"):
         placeholder = sub.add_parser(name, help=f"{name} (not implemented yet)")
         placeholder.set_defaults(func=_not_ready(name))
 

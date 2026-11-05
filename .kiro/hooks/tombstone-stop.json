@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-stop","description":"Tombstone dogfood: write the tombstone for the finished turn","trigger":"Stop","action":{"type":"command","command":".venv/bin/tombstone hook stop","timeout":10}}]}

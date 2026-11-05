@@ -28,15 +28,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - Records in `tombstones.json`, written by the Stop hook with the task id from the three-step rule.
   - _Requirements: R1.4, R2.1, R2.2, R2.3, R2.4, R2.5, R4.2, R4.3_
 
-  - [ ] 3.1 Locked JSON store
+  - [x] 3.1 Locked JSON store
     - In `tombstones.py` add `update_json` (flock on a lock file, temp file, fsync, `os.replace`), the invalid-JSON path that leaves the file untouched and queues the change in `pending.jsonl`, and load/upsert helpers for `tombstones.json`.
     - _Requirements: R2.5, R2.2_
 
-  - [ ] 3.2 tasks.md parsing and task id resolution
+  - [x] 3.2 tasks.md parsing and task id resolution
     - Add `parse_tasks`, `active_spec`, and `resolve_task`: STDIN keys first, then the checkbox diff against `tasks_snapshot` in `state.json`, then the first unchecked task, then `unknown`. Add `tombstone hook post-tool`, which runs only when the tool input path matches `.kiro/specs/<spec>/tasks.md`, refreshes the snapshot and records newly checked ids for the turn.
     - _Requirements: R2.3, R2.4_
 
-  - [ ] 3.3 Record building and the Stop hook
+  - [x] 3.3 Record building and the Stop hook
     - Add the record builder (turn entries with `share`, sums, outcome, date), idempotent upsert by record id and turn id, and `tombstone hook stop`: newest closed turn, estimate and actual, `actual = null` when the cost is not there yet, the 50-request average price window written to `state.json`. Hook errors exit 0 and log to `errors.log`.
     - _Requirements: R1.4, R2.1, R2.2, R2.4, R4.2, R4.3_
 
@@ -44,7 +44,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - `tombstone.toml`, similar-task median, and the gate that blocks a new task before it starts.
   - _Requirements: R3.1, R3.2, R3.3, R3.4, R3.5, R3.6, R11.5_
 
-  - [ ] 4.1 Config, task type and similar tasks
+  - [x] 4.1 Config, task type and similar tasks
     - In `caps.py` add `load_config` (tomllib, defaults from R3.2, per-key fallback with a warning), `task_type`, `keywords`, `similar` and `median_similar` (basis `actual` or `est.`).
     - _Requirements: R3.1, R3.2, R3.5, R3.6_
 
