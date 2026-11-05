@@ -1,0 +1,147 @@
+{
+  "session_id": "b7b3fa2c-07c1-4f70-b486-b566c4860883",
+  "cwd": "/workspace/project0",
+  "created_at": "2026-11-03T08:51:19.559524Z",
+  "updated_at": "2026-11-03T08:52:23.435034Z",
+  "title": "scrubbed",
+  "session_state": {
+    "version": "v1",
+    "agent_name": "kiro_default",
+    "conversation_metadata": {
+      "user_turn_metadatas": [
+        {
+          "total_request_count": 24,
+          "metering_usage": [
+            {
+              "unit": "credit",
+              "value": 0.08220817595356551,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04061964941956882,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.03963103184079602,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.043835391542288556,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04180853582089552,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04157633565505804,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04124744975124378,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04378515024875622,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.043047811608623546,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.042722076616915426,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.045269229850746266,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.045238886567164176,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.044256570812603646,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.046813176782752895,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.046785984411276946,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04578791409618574,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04834767097844113,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04838034593698176,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04738857744610282,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.049938881592039804,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.06184022636815921,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.04983978855721393,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.05371841326699834,
+              "unitPlural": "credits"
+            },
+            {
+              "unit": "credit",
+              "value": 0.0616046767827529,
+              "unitPlural": "credits"
+            }
+          ],
+          "model": "auto",
+          "end_timestamp": "2026-11-03T08:52:23.432850Z",
+          "turn_duration": {
+            "secs": 63,
+            "nanos": 164698375
+          },
+          "end_reason": "UserTurnEnd"
+        }
+      ]
+    }
+  }
+}

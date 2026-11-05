@@ -33,3 +33,18 @@ Got: in the CLI they exist only on the V3 engine. V2 has tool hooks and `stop`.
 Cause: checked against kiro.dev/docs/hooks/types and the V2 run in E0.2. `PreTaskExecution` in V3 spec mode was not run (too costly on free credits).
 What changes in the plan: the core runs on `preToolUse` / `PreToolUse` and `stop` / `Stop`. Task hooks are an extra where present.
 Marker: [VERIFIED] for V2, [UNKNOWN] for V3 spec mode STDIN
+
+## 2026-11-05 E1 Some turns leave no session file
+Expected: every metered turn lands in `~/.kiro/sessions/`.
+Got: three headless runs with `/spec`, `/spec help`, `/tasks` (the agent answered from docs) cost about 0.35 credits in `/usage` and left no V3 session directory.
+Why it matters: Tombstone cannot price what Kiro does not write down. The README must say the numbers cover sessions on disk, and `/usage` stays the reconciliation source.
+Rule: reconcile metered sums with `/usage` once per stage; a gap under 1 credit is expected, a bigger gap is a bug.
+
+## 2026-11-05 E1 CLI 3.0.0 changed the plan
+Expected (PLAN_v3): V2 is the core, V3 an add-on, PreTaskExecution gives the task id.
+Got: V3 is the default since 03.11, task hooks did not fire headless, `/spec` does not exist in the CLI.
+Rule: the task id comes from the `tasks.md` checkbox edit seen in PostToolUse. Task hooks are a bonus.
+
+## 2026-11-05 E1 The kill target is probably not `kiro-cli`
+Seen: the V3 agent logs come from a Node process (`node:24362`) started by `kiro-cli`.
+Open: record the real process tree before writing the kill step (task 7.3 now says so).

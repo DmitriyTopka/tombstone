@@ -1,0 +1,15 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataModelVersion": 1,
+  "id": "sess_truncated",
+  "title": "scrubbed",
+  "agentMode": "vibe",
+  "workspacePaths": [
+    "/workspace/project0"
+  ],
+  "rootPaths": [
+    "/workspace/project0"
+  ],
+  "modelId": "auto",
+  "status": "idle"
+}

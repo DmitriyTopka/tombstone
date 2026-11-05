@@ -1,0 +1,3 @@
+{"id":"scrubbed","timestamp":"2026-11-05T10:00:00.000Z","payload":{"type":"turn_start","turnId":"t1","executionId":"e1"}}
+{"id":"scrubbed","timestamp":"2026-11-05T10:00:01.000Z","payload":{"type":"assistant","turnId":"t1"}}
+{"id":"scrubbed","timestamp":"2026-11-05T10:00:02.000Z","payload":{"type":"usage_summary","turnId":"t1","requestIds":["r1","r2"],"promptTurnSummar

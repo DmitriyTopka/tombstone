@@ -37,3 +37,31 @@ Where Kiro missed: nothing in the tasks themselves. Surprises are in LESSONS.md 
 - [x] requirements.md approved by Dima on 2026-11-03
 - [x] Repo exists with MIT: github.com/DmitriyTopka/tombstone (private)
 - [ ] 4,000 hackathon credits on balance: not yet, no Didit email as of 2026-11-03
+
+## 2026-11-05 Gate K0 closed
+- [x] 4,000 hackathon credits on balance: `/usage` shows `kiroween-2026: 0.00/4000 credits used, expires in 56 days` (checked 2026-11-05 by Claude in this repo, and by the control session on app.kiro.dev).
+- [x] Kiro CLI updated to 3.0.0; V3 is the default engine. Measurement 5 (MEASURE_0311.md in the planning folder): V3 session path unchanged, turn cost in `promptTurnSummaries[].usage`, `.kiro/hooks/*.json` fire, `exit 2` in PreToolUse blocks. `PreTaskExecution` did not fire in headless chat.
+- requirements.md updated to V3-first (intro, glossary, R1 acceptance check, R2.3 task id from the `tasks.md` checkbox edit, R10 title). No requirement added or removed.
+
+## 2026-11-05 E1.1 + E1.2 Skeleton, design.md, tasks.md
+Engine: V3      CLI: 3.0.0      Model: claude-sonnet-5.5 (spec generation only)
+Requests: 13        Credits (metered): 9.655      Time: 6 min 41 s
+What Kiro did on its own: package skeleton, design.md (505 lines, every module, data formats, error table, open points), tasks.md with 36 tasks, every requirement id cited; found one uncited id (R11.2) itself and added it.
+Where Kiro missed: ran one read-only `git status` against the prompt rule and said so itself. Asked a real question: the steering's subprocess list was too narrow for kill and init. Resolved by Claude in steering (adds `kiro-cli --version`, `ps`, `lsof`, `launchctl`/`systemctl` for init only).
+Gate criteria: "Three files in .kiro/specs/tombstone/, each task cites a requirement" ✅
+
+## 2026-11-05 Spec tasks 1.1, 1.2, 1.3, 2
+Engine: V3      CLI: 3.0.0      Model: auto
+
+| Task | What | Requests | Credits (metered) | Tests after |
+|---|---|---|---|---|
+| 1.1 | V3 parser, scrubbed fixture, 5 edge fixtures | 28 | 5.240 | 10 |
+| 1.2 | V2 parser, real V2 fixture from measurement 2 | 26 | 4.697 | 18 |
+| 1.3 | Session discovery, open-turn progress | 18 | 4.287 | 37 |
+| 2 | `tombstone cost` CLI | 19 | 4.093 | 56 |
+
+`tombstone cost` prints `0.390 credits (actual), 5 requests` on the measurement 5 session and 1.156 / 24 on the measurement 2 V2 session, matching the hand counts.
+What Kiro did on its own: found the old V2 session still on disk and used it instead of a hand-made fixture; scrubbed home paths and message text and wrote a test that checks the scrub.
+Where Kiro missed: nothing found in review.
+
+Cross-check (K1 criterion 1): metered sum of all V3 sessions since the update is 28.537 credits; `/usage` shows 29.04. The gap of about 0.5 is the three headless `/spec` and `/tasks` probes, which wrote no session file (see LESSONS). Within 1 credit ✅

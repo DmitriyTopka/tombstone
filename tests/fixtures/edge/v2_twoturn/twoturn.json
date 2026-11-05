@@ -1,0 +1,38 @@
+{
+  "session_id": "00000000-0000-4000-8000-0000000two00",
+  "cwd": "/workspace/project0",
+  "created_at": "2026-11-03T11:00:00.000000Z",
+  "updated_at": "2026-11-03T11:05:00.000000Z",
+  "title": "scrubbed",
+  "session_state": {
+    "version": "v1",
+    "agent_name": "kiro_default",
+    "conversation_metadata": {
+      "user_turn_metadatas": [
+        {
+          "total_request_count": 2,
+          "metering_usage": [
+            {"unit": "credit", "unitPlural": "credits", "value": 0.10},
+            {"unit": "credit", "unitPlural": "credits", "value": 0.20}
+          ],
+          "model": "auto",
+          "end_timestamp": "2026-11-03T11:01:00.000000Z",
+          "turn_duration": {"secs": 10, "nanos": 0},
+          "end_reason": "UserTurnEnd"
+        },
+        {
+          "total_request_count": 4,
+          "metering_usage": [
+            {"unit": "credit", "unitPlural": "credits", "value": 0.25},
+            {"unit": "token", "unitPlural": "tokens", "value": 1000},
+            {"unit": "credit", "unitPlural": "credits", "value": 0.25}
+          ],
+          "model": "auto",
+          "end_timestamp": "2026-11-03T11:05:00.000000Z",
+          "turn_duration": {"secs": 20, "nanos": 0},
+          "end_reason": "UserTurnEnd"
+        }
+      ]
+    }
+  }
+}

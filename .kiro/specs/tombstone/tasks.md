@@ -6,20 +6,20 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - One parser, format detected per session, read only, never raises on bad data.
   - _Requirements: R1.1, R1.2, R1.3, R1.5, R1.7, R10.1_
 
-  - [ ] 1.1 Fixtures and the V3 parser
+  - [x] 1.1 Fixtures and the V3 parser
     - Copy the V3 session of measurement 5 into `tests/fixtures/` and remove home paths and message text with a small scrub script. Add hand-made edge fixtures: empty file, truncated last line, unknown format, `usage_summary` without a credit entry, an open turn.
     - In `sessions.py` add `Turn`, `Session`, `detect_format`, and `parse_session` for V3: group by `turnId`, cost from `promptTurnSummaries[].usage` with unit `credit`, requests from `requestIds`, model from `session.json`, start from `turn_start`, end from `usage_summary`. Unpriced turns carry a reason.
     - _Requirements: R1.2, R1.3, R1.5, R10.1_
 
-  - [ ] 1.2 The V2 parser
+  - [x] 1.2 The V2 parser
     - Add the V2 branch: `user_turn_metadatas[]`, cost as the sum of `metering_usage` values with unit `credit`, requests from `total_request_count`, times from `end_timestamp` and `turn_duration`. Add the V2 fixture if the session is still on disk, otherwise a hand-made one with the same shape.
     - _Requirements: R1.1, R1.3, R1.5, R10.1_
 
-  - [ ] 1.3 Session discovery and open-turn progress
+  - [x] 1.3 Session discovery and open-turn progress
     - Add `find_session` (V3 by `session_id` glob, V3 by index tail plus `workspacePaths`, V2 by `cwd`) and cache the V3 project hash. Add `open_turn_progress` returning requests so far, jsonl size and mtime for both engines.
     - _Requirements: R1.7, R4.1, R10.1_
 
-- [ ] 2. CLI entry point and `tombstone cost`
+- [x] 2. CLI entry point and `tombstone cost`
   - `cli.main` with argparse, lazy imports per command, project root discovery by walking up from the working directory. `cost` accepts a path, an id or a unique id prefix.
   - Output is one line per turn (engine, model, requests, cost, start, end) and a total. Numbers have at least three decimals and carry `actual` or `est.`. Unpriced turns print the reason. Check by hand: the V3 fixture prints 0.390 credits and 5 requests.
   - _Requirements: R1.3, R1.6, R4.4_
