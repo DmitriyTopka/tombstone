@@ -221,7 +221,8 @@ def write_autopsy(project, stop: dict, session, state: dict,
 def _fmt_minutes(value: object) -> str:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return "unknown"
-    return f"{value:.1f}"
+    # One decimal under 10 minutes, whole minutes otherwise (same as the STOP).
+    return f"{value:.1f}" if value < 10 else f"{value:.0f}"
 
 
 _RECEIPT_NAME = re.compile(r"^\d{4}-\d{2}-\d{2}_[^/\\\x00]+\.md$")

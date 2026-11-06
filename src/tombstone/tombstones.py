@@ -1171,6 +1171,13 @@ PRICE_WINDOW_REQUESTS = 50
 # the default of R3.2 (budget.avg_request_price).
 DEFAULT_AVG_REQUEST_PRICE = 0.25
 
+# Credits per counted V3 unit, used only until the project has its own unit
+# calibration (state.avg_unit_price). Measured over 35 real V3 turns of this
+# repo: 855 units, 135.91 credits, 0.159 credits per unit. A V3 unit is not a
+# request, so the per-request price (0.25) overestimated a fresh project 4.6x
+# (live: 17 units, est. 4.25, actual 0.927). Never used for V2.
+DEFAULT_V3_UNIT_PRICE = 0.16
+
 
 def update_price_window(state: dict, requests: Optional[int],
                         cost: Optional[float]) -> dict:

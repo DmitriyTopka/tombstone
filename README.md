@@ -39,7 +39,7 @@ TOMBSTONE: this turn over budget (est. 1.00 of 0.60). Stop.
 
 In our live runs the agent quoted that line and stopped on its own. If it doesn't, the watcher ends the `kiro-cli` process for this project after a grace period. Your files are never touched.
 
-**Catches a stall.** If the agent keeps calling the model while no project file changes for 10 minutes, that trips the breaker too.
+**Catches a stall.** If the agent keeps calling the model while no project file changes for 10 minutes, that trips the breaker too. In a live test with a short window, the stall stop came 9 steps into a read-only run, and the agent stopped there.
 
 **Leaves a receipt.** `.kiro/tombstone/autopsy/*.md` lists the task, the model, the estimate at the stop, the refusal text, the last 10 tool calls and, once Kiro reports it, the actual cost. A real one from our test run is shown below in "How it works".
 
@@ -82,7 +82,7 @@ A receipt from a live run (cap 0.60 credits, the agent was asked to work past it
 
 - The exact price is known only after the turn. The breaker works on an estimate, and both numbers are kept so you can see the gap.
 - A turn that Kiro aborts has no price in the session file at all. It shows only in `/usage`.
-- The stall detector and the process kill passed their tests, but in our live runs the agent always stopped at the first refused tool, so neither has fired on a real runaway yet.
+- The process kill has only been tested with a fake process list. In every live run the agent stopped at the first refused tool, even when the prompt told it to keep going and the steering file was removed, so the kill never had to fire.
 - The Kiro IDE stores its data elsewhere. It is not a source yet.
 - Installing from GitHub (`uv tool install git+...`) and installing the Power by URL can be checked only once the repo is public.
 

@@ -83,7 +83,7 @@ def test_write_autopsy_fields_and_path(tmp_path):
     text = path.read_text(encoding="utf-8")
     for needle in ("Task id: 2.1", "Build the parser", "Engine: v3", "Model: auto",
                    "Requests at stop: 40", "(est.): 58.000", "Actual after the turn: pending",
-                   "12.5 minutes", STOP_TIME, "STOP reason: over_cap",
+                   "12 minutes", STOP_TIME, "STOP reason: over_cap",
                    "Refusal text: TOMBSTONE: task 2.1 over budget. Stop.",
                    "Step two (kill): no", "500.000 credits"):
         assert needle in text, needle
@@ -319,3 +319,11 @@ def test_settle_refuses_symlinked_autopsy_dir(tmp_path):
     adir.rename(moved)
     adir.symlink_to(real)
     _assert_refused(project, kh, victim, adir / victim.name)
+
+
+def test_autopsy_quiet_minutes_one_decimal_under_ten():
+    from tombstone import autopsy
+    assert autopsy._fmt_minutes(0.4) == "0.4"
+    assert autopsy._fmt_minutes(2.5) == "2.5"
+    assert autopsy._fmt_minutes(12.5) == "12"
+    assert autopsy._fmt_minutes(None) == "unknown"

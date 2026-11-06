@@ -310,22 +310,30 @@ def _round_credits(value: float) -> float:
     return round(float(value), 6)
 
 
-def unit_price(state: dict, engine: Optional[str], default_request_price: float
+def format_minutes(minutes: float) -> str:
+    """One decimal under 10 minutes (0.4, 2.5), whole minutes otherwise."""
+    if minutes < 10:
+        return f"{minutes:.1f}"
+    return f"{minutes:.0f}"
+
+
+def unit_price(state: dict, engine: Optional[str], default_request_price: float,
+               uncalibrated_unit_price: float = tombstones.DEFAULT_V3_UNIT_PRICE
                ) -> tuple[float, str]:
     """Credits per counted unit of an open turn, and the basis of that figure.
 
     V3 with a calibration: ``avg_unit_price`` ("calibrated"). V3 without one
-    yet: the per-request average, which overcounts and is labeled
-    "uncalibrated". V2 counts real requests, so the per-request average is the
-    right price ("per request").
+    yet: ``uncalibrated_unit_price`` (a measured default, not the per-request
+    price), labeled "uncalibrated". V2 counts real requests, so the
+    per-request average is the right price ("per request").
     """
-    request_price = tombstones._avg_price(state, default_request_price)
     if engine == "v2":
-        return request_price, "per request"
+        return (tombstones._avg_price(state, default_request_price),
+                "per request")
     value = state.get("avg_unit_price")
     if isinstance(value, (int, float)) and value > 0:
         return float(value), "calibrated"
-    return request_price, "uncalibrated"
+    return uncalibrated_unit_price, "uncalibrated"
 
 
 def open_estimate(state: dict, units: int, engine: Optional[str],
@@ -453,7 +461,7 @@ def evaluate(state: dict, obs: Observation, cfg, now: datetime) -> Optional[Even
             return make(
                 "stall",
                 f"TOMBSTONE: {label} stalled, no project change for "
-                f"{minutes:.0f} min while the agent keeps calling the model "
+                f"{format_minutes(minutes)} min while the agent keeps calling the model "
                 f"(est. {_fmt(estimate)}). Stop.",
                 f"quiet {minutes:.1f} min, window {cfg.quiet_window_minutes} min",
                 quiet=round(minutes, 2),

@@ -67,10 +67,37 @@ def test_update_unit_window_drops_old_entries_keeping_fifty_units():
 
 def test_unit_price_bases():
     state = watcher.default_state()
-    assert watcher.unit_price(state, "v3", 0.045) == (0.045, "uncalibrated")
+    assert watcher.unit_price(state, "v3", 0.045) == (0.16, "uncalibrated")
     assert watcher.unit_price(state, "v2", 0.045) == (0.045, "per request")
     state["avg_unit_price"] = 0.03
     assert watcher.unit_price(state, "v3", 0.045) == (0.03, "calibrated")
+    # V2 never uses the unit price, calibrated or not.
+    assert watcher.unit_price(state, "v2", 0.045) == (0.045, "per request")
+
+
+def test_uncalibrated_v3_estimate_uses_unit_default_not_request_price():
+    state = watcher.default_state()
+    # Live stall test: 17 units, actual 0.927. Old est. was 17 x 0.25 = 4.25.
+    estimate = watcher.open_estimate(state, 17, "v3", 0.25)
+    assert estimate == pytest.approx(17 * 0.16)
+    assert estimate < 4.25
+
+
+@pytest.mark.parametrize("value,text", [
+    (0.4, "0.4"), (2.5, "2.5"), (10.0, "10"), (11.4, "11")])
+def test_format_minutes(value, text):
+    assert watcher.format_minutes(value) == text
+
+
+def test_stall_message_shows_decimal_minutes_under_ten():
+    cfg = caps.Config(task_cap=40.0, quiet_window_minutes=0.4,
+                      avg_request_price=0.045)
+    state = state_with_turn(last_growth_at=iso(T0 + timedelta(seconds=40)))
+    now = T0 + timedelta(seconds=45)
+    event = watcher.evaluate(state, obs(), cfg, now)
+    assert event is not None and event.kind == "stall"
+    assert "no project change for 0.8 min" in event.message
+    assert "for 0 min" not in event.message
     # V2 counts real requests: the calibrated unit price does not apply.
     assert watcher.unit_price(state, "v2", 0.045) == (0.045, "per request")
 
@@ -239,14 +266,14 @@ def test_calibration_folds_each_closed_turn_once(tmp_path):
     assert state["v3_project_hash"] == "hash1"
 
 
-def test_uncalibrated_first_turn_falls_back_to_request_price(tmp_path):
+def test_uncalibrated_first_turn_uses_v3_unit_default(tmp_path):
     env = Env(tmp_path)
     env.add(line(T0, type="turn_start", turnId="t1", executionId="e"),
             *[line(T0 + timedelta(seconds=i + 1), type="assistant", turnId="t1")
               for i in range(10)])
     env.poll(T0 + timedelta(seconds=20))
     turn = watcher.read_state(env.project)["turn"]
-    assert turn["estimate"] == pytest.approx(10 * 0.045)
+    assert turn["estimate"] == pytest.approx(10 * 0.16)
     assert "uncalibrated" in turn["estimate_basis"]
 
 

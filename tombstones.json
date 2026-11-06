@@ -1230,6 +1230,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/7dd362d5-a123-4e34-9192-5d2decaf92a6",
+      "task_id": "unknown",
+      "name": "Two fixes found in a live stall test",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 14,
+      "estimate": 5.5565,
+      "actual": 2.6326,
+      "minutes": 1.2795,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_ceeba9be-3544-44da-8a13-2fd733b69b22",
+          "turn_id": "7dd362d5-a123-4e34-9192-5d2decaf92a6",
+          "requests": 14,
+          "estimate": 5.5565,
+          "actual": 2.6326,
+          "minutes": 1.2795,
+          "start": "2026-11-06T15:53:28.395000Z",
+          "end": "2026-11-06T15:54:45.168000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
