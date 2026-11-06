@@ -13,7 +13,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from .safepath import guard
+from .safepath import append_nofollow, guard, write_atomic
 
 STOP_NAME = "STOP"
 SIDECAR = Path(".kiro") / "tombstone"
@@ -54,8 +54,7 @@ def write_stop(
     inside the project sidecar directory only (R6.5).
     """
     target = stop_path(project)
-    temp = target.with_name(target.name + ".tmp")
-    if not (guard(project, target) and guard(project, temp)):
+    if not guard(project, target):
         # Symlinked sidecar or STOP path: nothing is written.
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
@@ -69,12 +68,11 @@ def write_stop(
         "time": _iso(time),
         "session_id": session_id,
     }
-    with open(temp, "w", encoding="utf-8") as handle:
-        json.dump(payload, handle, indent=2)
-        handle.write("\n")
-        handle.flush()
-        os.fsync(handle.fileno())
-    os.replace(temp, target)
+    try:
+        write_atomic(target, json.dumps(payload, indent=2) + "\n")
+    except OSError:
+        # A symlink planted at STOP after the guard: nothing is written.
+        pass
     return target
 
 
@@ -125,8 +123,7 @@ def _log_error(project: Optional[Path], text: str) -> None:
             return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
-        with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
-            handle.write(f"{stamp} {text}\n")
+        append_nofollow(sidecar / "errors.log", f"{stamp} {text}\n")
     except OSError:
         pass
 

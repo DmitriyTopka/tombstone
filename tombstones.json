@@ -900,6 +900,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/7d7c168c-1955-4c9c-86e6-0b5f7b14e052",
+      "task_id": "unknown",
+      "name": "Follow the Dogfood rules. Security fix (HIGH) from",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 11.6963,
+      "actual": 7.6959,
+      "minutes": 3.9087,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_d29a0210-2dee-4581-be27-1d331c7a341f",
+          "turn_id": "7d7c168c-1955-4c9c-86e6-0b5f7b14e052",
+          "requests": 21,
+          "estimate": 11.6963,
+          "actual": 7.6959,
+          "minutes": 3.9087,
+          "start": "2026-11-06T10:15:21.876000Z",
+          "end": "2026-11-06T10:19:16.396000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

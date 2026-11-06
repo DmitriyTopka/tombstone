@@ -21,13 +21,18 @@ import html
 import json
 import os
 import re
-import tempfile
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
 
-from .safepath import guard, is_safe_target
+from .safepath import (
+    append_nofollow,
+    guard,
+    is_safe_target,
+    open_nofollow,
+    write_atomic,
+)
 
 # Directory that holds the lock files, pending queues and the error log.
 TOMBSTONE_DIR = Path(".kiro") / "tombstone"
@@ -77,8 +82,7 @@ def _log_warning(sidecar: Path, message: str) -> None:
     try:
         if not guard(_project_of_sidecar(sidecar), sidecar / "errors.log"):
             return
-        with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
-            handle.write(f"{stamp} {message}\n")
+        append_nofollow(sidecar / "errors.log", f"{stamp} {message}\n")
     except OSError:
         pass
 
@@ -109,27 +113,11 @@ def _read_json(path: Path) -> tuple[Optional[dict], bool]:
 
 
 def _atomic_write(path: Path, value: dict) -> None:
-    """Write ``value`` as pretty JSON atomically (temp file, fsync, replace)."""
-    directory = path.parent
-    directory.mkdir(parents=True, exist_ok=True)
-    fd, tmp_name = tempfile.mkstemp(
-        prefix=f".{path.name}.", suffix=".tmp", dir=str(directory)
-    )
-    tmp_path = Path(tmp_name)
-    try:
-        with os.fdopen(fd, "w", encoding="utf-8") as handle:
-            json.dump(value, handle, indent=2, sort_keys=False)
-            handle.write("\n")
-            handle.flush()
-            os.fsync(handle.fileno())
-        os.replace(tmp_path, path)
-    except BaseException:
-        # Leave no temp file behind on failure.
-        try:
-            tmp_path.unlink()
-        except OSError:
-            pass
-        raise
+    """Write ``value`` as pretty JSON atomically (temp file, fsync, replace).
+
+    Goes through ``safepath.write_atomic``, which refuses a symlink target.
+    """
+    write_atomic(path, json.dumps(value, indent=2, sort_keys=False) + "\n")
 
 
 def _queue_pending(sidecar: Path, name: str, change: object) -> None:
@@ -142,8 +130,10 @@ def _queue_pending(sidecar: Path, name: str, change: object) -> None:
         }
     )
     try:
-        with (sidecar / "pending.jsonl").open("a", encoding="utf-8") as handle:
-            handle.write(line + "\n")
+        queue = sidecar / "pending.jsonl"
+        if not guard(_project_of_sidecar(sidecar), queue):
+            return
+        append_nofollow(queue, line + "\n")
     except (OSError, TypeError, ValueError):
         pass
 
@@ -155,8 +145,11 @@ def _drain_pending(sidecar: Path, name: str) -> list[dict]:
     targets are preserved. A missing or unreadable queue yields an empty list.
     """
     queue = sidecar / "pending.jsonl"
+    if not guard(_project_of_sidecar(sidecar), queue):
+        return []
     try:
-        text = queue.read_text(encoding="utf-8")
+        with open_nofollow(queue, "r", encoding="utf-8") as handle:
+            text = handle.read()
     except OSError:
         return []
     drained: list[dict] = []
@@ -178,7 +171,7 @@ def _drain_pending(sidecar: Path, name: str) -> list[dict]:
     if drained:
         try:
             if kept:
-                queue.write_text("\n".join(kept) + "\n", encoding="utf-8")
+                write_atomic(queue, "\n".join(kept) + "\n")
             else:
                 queue.unlink()
         except OSError:
@@ -214,13 +207,20 @@ def update_json(
     sidecar = _tombstone_dir(path)
     project = (sidecar.parent.parent if sidecar.name == "tombstone"
                and sidecar.parent.name == ".kiro" else path.parent)
-    if not (guard(project, sidecar) and guard(project, path)):
+    lock_path = sidecar / f"{path.name}.lock"
+    if not (guard(project, sidecar) and guard(project, path)
+            and guard(project, lock_path)):
         # Symlinked .kiro or state path: write nothing, report the intent.
         return fn(json.loads(json.dumps(default)))
     sidecar = _sidecar_dir(path)
-    lock_path = sidecar / f"{path.name}.lock"
+    try:
+        # Mode "a" creates the lock file without truncating it and refuses a
+        # symlink in the last component.
+        lock_handle = open_nofollow(lock_path, "a")
+    except OSError:
+        return fn(json.loads(json.dumps(default)))
 
-    with open(lock_path, "w") as lock_handle:
+    with lock_handle:
         fcntl.flock(lock_handle.fileno(), fcntl.LOCK_EX)
         try:
             current, valid = _read_json(path)
@@ -1445,7 +1445,7 @@ def spawn_reconcile(project: Path, session_id: Optional[str],
     try:
         if guard(project, sidecar / RECONCILE_LOG):
             sidecar.mkdir(parents=True, exist_ok=True)
-            sink = open(sidecar / RECONCILE_LOG, "ab")
+            sink = open_nofollow(sidecar / RECONCILE_LOG, "ab")
     except OSError:
         sink = None
     try:
@@ -1485,8 +1485,8 @@ def reconcile_log(project: Path, message: str) -> None:
             return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
-        with (sidecar / RECONCILE_LOG).open("a", encoding="utf-8") as handle:
-            handle.write(f"{stamp} pid {os.getpid()} {message}\n")
+        append_nofollow(sidecar / RECONCILE_LOG,
+                        f"{stamp} pid {os.getpid()} {message}\n")
     except OSError:
         pass
 
@@ -1754,8 +1754,7 @@ def _log_reconcile_timeout(project: Path, session_id: Optional[str],
         stamp = datetime.now(timezone.utc).isoformat()
         line = (f"{stamp} reconcile timed out for session "
                 f"{session_id or 'unknown'} turn {turn_id}, actual left null\n")
-        with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
-            handle.write(line)
+        append_nofollow(sidecar / "errors.log", line)
     except OSError:
         pass
 
@@ -2040,5 +2039,5 @@ def write_graveyard(project: Path, out: Optional[Path] = None) -> Path:
         # Symlinked sidecar or page: nothing is written.
         return target
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(page, encoding="utf-8")
+    write_atomic(target, page)
     return target

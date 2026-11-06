@@ -487,15 +487,14 @@ def _log_hook_error(stdin: dict, message: str) -> None:
             return
         from . import tombstones
 
-        from .safepath import guard
+        from .safepath import append_nofollow, guard
 
         sidecar = project / tombstones.TOMBSTONE_DIR
         if not guard(project, sidecar / "errors.log"):
             return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
-        with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
-            handle.write(f"{stamp} {message}\n")
+        append_nofollow(sidecar / "errors.log", f"{stamp} {message}\n")
     except Exception:  # noqa: BLE001 - logging must never raise
         pass
 
@@ -529,7 +528,11 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
     from . import tombstones
 
     out = Path(args.out) if args.out else None
-    target = tombstones.write_graveyard(project, out)
+    try:
+        target = tombstones.write_graveyard(project, out)
+    except OSError as exc:
+        print(f"tombstone graveyard: could not write: {exc}", file=sys.stderr)
+        return 1
     count = len(tombstones.load_tombstones(project / "tombstones.json")["tombstones"])
     print(f"graveyard written: {target} ({count} tombstones)")
     return 0
@@ -679,8 +682,10 @@ def merge_mcp_settings(path: Path, python: str, project: Path) -> str:
     entry = build_mcp_entry(python, project)
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(_json_text({"mcpServers": {"tombstone": entry}}),
-                        encoding="utf-8")
+        try:
+            write_atomic(path, _json_text({"mcpServers": {"tombstone": entry}}))
+        except OSError:
+            return f"{REFUSED} {path}"
         return f"created {path}"
     try:
         data = json.loads(path.read_text(encoding="utf-8"))
@@ -696,7 +701,10 @@ def merge_mcp_settings(path: Path, python: str, project: Path) -> str:
     if "tombstone" in servers:
         return f"exists, tombstone server already registered, left unchanged {path}"
     servers["tombstone"] = entry
-    path.write_text(_json_text(data), encoding="utf-8")
+    try:
+        write_atomic(path, _json_text(data))
+    except OSError:
+        return f"{REFUSED} {path}"
     return f"updated {path} (added the tombstone server, kept the rest)"
 
 
@@ -798,7 +806,7 @@ def _json_text(data: object) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
-from .safepath import REFUSED, is_safe_target  # noqa: E402
+from .safepath import REFUSED, is_safe_target, write_atomic  # noqa: E402
 
 
 def _write_if_absent(path: Path, text: str, project: Optional[Path] = None) -> str:
@@ -810,8 +818,10 @@ def _write_if_absent(path: Path, text: str, project: Optional[Path] = None) -> s
         return f"{REFUSED} {path}"
     if path.exists():
         return f"exists, left unchanged {path}"
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(text, encoding="utf-8")
+    try:
+        write_atomic(path, text)
+    except OSError:
+        return f"{REFUSED} {path}"
     return f"created {path}"
 
 
@@ -1032,8 +1042,7 @@ def _load_installed(project: Path) -> dict[str, str]:
 
 def _save_installed(project: Path, files: dict[str, str]) -> None:
     path = install_record_path(project)
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(_json_text({"version": 1, "files": files}), encoding="utf-8")
+    write_atomic(path, _json_text({"version": 1, "files": files}))
 
 
 def _record_install(project: Path, created: dict[str, str]) -> None:
@@ -1166,12 +1175,17 @@ def uninstall(project: Path, home: Path, purge: bool = False,
             if not servers:
                 del data["mcpServers"]
             if data:
-                mcp_path.write_text(_json_text(data), encoding="utf-8")
-                lines.append(f"removed tombstone entry from {mcp_path} (other settings kept)")
+                try:
+                    write_atomic(mcp_path, _json_text(data))
+                except OSError:
+                    lines.append(f"{REFUSED} {mcp_path}")
+                else:
+                    lines.append(f"removed tombstone entry from {mcp_path} (other settings kept)")
+                    gone.add("mcp-entry")
             else:
                 mcp_path.unlink()
                 lines.append(f"removed {mcp_path} (nothing else was in it)")
-            gone.add("mcp-entry")
+                gone.add("mcp-entry")
 
     # 4. user data, and --purge.
     sidecar = project / ".kiro" / "tombstone"
@@ -1371,8 +1385,7 @@ def write_power_folder(root: Path) -> list[Path]:
     """Write the power folder, replacing generated files. Returns the paths."""
     written: list[Path] = []
     for path, text in build_power_files(root).items():
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(text, encoding="utf-8")
+        write_atomic(path, text)
         written.append(path)
     return written
 

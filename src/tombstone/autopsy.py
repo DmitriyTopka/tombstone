@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
-from .safepath import guard
+from .safepath import guard, write_atomic
 
 SIDECAR = Path(".kiro") / "tombstone"
 TOOL_CALLS = 10
@@ -211,7 +211,10 @@ def write_autopsy(project, stop: dict, session, state: dict,
         # Symlinked sidecar or receipt path: nothing is written.
         return None
     target.parent.mkdir(parents=True, exist_ok=True)
-    target.write_text(scrub("\n".join(lines), home), encoding="utf-8")
+    try:
+        write_atomic(target, scrub("\n".join(lines), home))
+    except OSError:
+        return None
     return target
 
 
@@ -363,6 +366,8 @@ def append_actual(path, turn, home: Optional[Path] = None) -> bool:
             lines.append(f"- Plan balance change (est.): {before - after:.3f} credits "
                          f"({before:.3f} before the stop, {after:.3f} later)")
     lines.append("")
-    path.write_text(scrub(text.rstrip("\n") + "\n" + "\n".join(lines), home),
-                    encoding="utf-8")
+    try:
+        write_atomic(path, scrub(text.rstrip("\n") + "\n" + "\n".join(lines), home))
+    except OSError:
+        return False
     return True
