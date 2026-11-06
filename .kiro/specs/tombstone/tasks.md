@@ -140,15 +140,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - Fixtures are already in place from task 1. Tests run with `pytest` and need no Kiro install.
   - _Requirements: R1.1, R1.2, R1.5, R2.4, R2.5, R3.3, R3.4, R3.6, R4.1, R4.2, R5.2, R5.3, R5.4, R5.7, R6.2, R6.3, R6.4, R7.3, R7.4, R8.1, R8.4, R9.4, R11.1, R11.2, R11.3, R11.4, R11.5_
 
-  - [ ] 11.1 Parser, writer and caps tests
+  - [x] 11.1 Parser, writer and caps tests
     - Cover both formats and every unpriced reason, request counting for open turns against closed turns, task id resolution in all four steps, 20 concurrent writers leaving valid JSON, the invalid-JSON path, and the gate decisions with message text.
     - _Requirements: R1.1, R1.2, R1.5, R2.4, R2.5, R3.3, R3.4, R3.6_
 
-  - [ ] 11.2 Watcher, stop and autopsy tests
+  - [x] 11.2 Watcher, stop and autopsy tests
     - Table tests for `evaluate`, change detection ignores, STOP block and resume, kill with a fake process list, empty list skips step two, autopsy fields, no home path, actual appended once.
     - _Requirements: R4.1, R5.2, R5.3, R5.4, R5.7, R6.2, R6.3, R6.4, R7.3, R7.4_
 
-  - [ ] 11.3 MCP and init tests
+  - [x] 11.3 MCP and init tests
     - `budget()` with and without similar tasks and with the balance missing, tool list equals `["get_budget"]`, `init` run twice leaves files unchanged, `power/` files equal builder output.
     - _Requirements: R8.1, R8.4, R9.4_
 

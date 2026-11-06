@@ -930,6 +930,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/11.1",
+      "task_id": "11.1",
+      "name": "Parser, writer and caps tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 7.983,
+      "actual": 3.1922,
+      "minutes": 1.6101,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_f9f57178-1a5c-452a-8366-7dc70ec2725b",
+          "turn_id": "0d9c2725-5602-4da0-98a0-725bcb5734a4",
+          "requests": 15,
+          "estimate": 7.983,
+          "actual": 3.1922,
+          "minutes": 1.6101,
+          "start": "2026-11-06T14:41:10.305000Z",
+          "end": "2026-11-06T14:42:46.911000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/11.2",
+      "task_id": "11.2",
+      "name": "Watcher, stop and autopsy tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 4.0411,
+      "actual": 1.2903,
+      "minutes": 0.7483,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_ff45a208-0cd7-4c61-ae06-4beb29577fc9",
+          "turn_id": "94017401-24c2-4f33-9b91-9fc9bf0adb63",
+          "requests": 8,
+          "estimate": 4.0411,
+          "actual": 1.2903,
+          "minutes": 0.7483,
+          "start": "2026-11-06T14:42:57.285000Z",
+          "end": "2026-11-06T14:43:42.181000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/11.3",
+      "task_id": "11.3",
+      "name": "MCP and init tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 2.352,
+      "actual": 0.6312,
+      "minutes": 0.2946,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_6f440dc4-9b13-4954-b0f0-29cf2d2b3a31",
+          "turn_id": "4b2cbbfd-7f18-4743-ac87-a6a8b9b2bf0d",
+          "requests": 5,
+          "estimate": 2.352,
+          "actual": 0.6312,
+          "minutes": 0.2946,
+          "start": "2026-11-06T14:44:05.266000Z",
+          "end": "2026-11-06T14:44:22.945000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/aa2325f3-45dc-4243-b6d6-9eb1f4877b61",
+      "task_id": "unknown",
+      "name": "Execute task 11.4 from .kiro/specs/tombstone/tasks.md, following design.md and",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 7,
+      "estimate": 3.1126,
+      "actual": 1.0561,
+      "minutes": 0.4101,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_487abbb2-15b8-4d1a-b7b2-554fde0e472b",
+          "turn_id": "aa2325f3-45dc-4243-b6d6-9eb1f4877b61",
+          "requests": 7,
+          "estimate": 3.1126,
+          "actual": 1.0561,
+          "minutes": 0.4101,
+          "start": "2026-11-06T14:44:32.419000Z",
+          "end": "2026-11-06T14:44:57.026000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
