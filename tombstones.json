@@ -750,6 +750,66 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/46b6eefa-4a27-45ce-a0ae-d3bfe49696f3",
+      "task_id": "unknown",
+      "name": "Security fix from an automated review. Follow the",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 11,
+      "estimate": 4.7657,
+      "actual": 2.2802,
+      "minutes": 1.0141,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_0af0bd43-6b12-440a-9d24-2753ec6f38ca",
+          "turn_id": "46b6eefa-4a27-45ce-a0ae-d3bfe49696f3",
+          "requests": 11,
+          "estimate": 4.7657,
+          "actual": 2.2802,
+          "minutes": 1.0141,
+          "start": "2026-11-06T09:33:07.707000Z",
+          "end": "2026-11-06T09:34:08.550000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/3c368583-485c-4244-9ff3-018bad0bcd9c",
+      "task_id": "unknown",
+      "name": "Follow the Dogfood rules. Close the residual issue",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 20,
+      "estimate": 5.2182,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_85baeafa-d781-404d-af48-52f60334e455",
+          "turn_id": "3c368583-485c-4244-9ff3-018bad0bcd9c",
+          "requests": 20,
+          "estimate": 5.2182,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-06T09:34:27.255000Z",
+          "end": null,
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

@@ -472,17 +472,42 @@ def _event_time(event) -> datetime:
     return moment if moment is not None else datetime.now(timezone.utc)
 
 
+def safe_session_path(raw: str, kiro_home=None) -> Optional[Path]:
+    """Validate a session path taken from state.json. None when refused.
+
+    The path must resolve inside ``<kiro_home>/sessions`` and be a ``sess_*``
+    directory or a V2 ``.json`` / ``.jsonl`` file. Never raises.
+    """
+    from . import watcher
+
+    try:
+        home = Path(kiro_home) if kiro_home is not None else Path.home() / ".kiro"
+        root = (home / "sessions").resolve()
+        candidate = Path(watcher.from_tilde(raw)).resolve()
+        candidate.relative_to(root)
+        if candidate == root:
+            return None
+        if candidate.is_dir() and candidate.name.startswith("sess_"):
+            return candidate
+        if candidate.is_file() and candidate.suffix in (".json", ".jsonl"):
+            return candidate
+    except (OSError, RuntimeError, ValueError):
+        pass
+    return None
+
+
 def _stop_session(project: Path, event, state: dict, kiro_home):
     """Parse the session of the stop for the autopsy, or None."""
-    from . import sessions, watcher
+    from . import sessions
 
     stored = state.get("session") if isinstance(state.get("session"), dict) else {}
     path = None
     raw = stored.get("path")
     if isinstance(raw, str) and raw:
-        candidate = Path(watcher.from_tilde(raw))
-        if candidate.exists():
-            path = candidate
+        path = safe_session_path(raw, kiro_home)
+        if path is None:
+            _log_error(project, "ignored state.session.path outside the Kiro "
+                       "sessions directory; falling back to find_session")
     if path is None:
         path = sessions.find_session(
             project, getattr(event, "session_id", None), kiro_home=kiro_home,

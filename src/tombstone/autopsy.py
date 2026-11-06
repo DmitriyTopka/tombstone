@@ -10,6 +10,7 @@ change from the usage cache instead, never zero.
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import datetime, timezone
 from pathlib import Path
@@ -211,6 +212,43 @@ def _fmt_minutes(value: object) -> str:
     return f"{value:.1f}"
 
 
+_RECEIPT_NAME = re.compile(r"^\d{4}-\d{2}-\d{2}_[^/\\\x00]+\.md$")
+
+
+def safe_autopsy_path(project, raw: str) -> Optional[Path]:
+    """Validate a receipt path taken from state.json. None when refused.
+
+    The path is rebuilt from the trusted autopsy dir plus a file name that
+    matches ``<date>_<task>.md`` with no separators. It must sit directly in
+    that dir (so ``../x.md`` and absolute paths elsewhere are refused), and
+    neither the file nor any component under the project may be a symlink.
+    The resolved result must stay inside the resolved autopsy dir.
+    """
+    try:
+        project = Path(project)
+        base = project / SIDECAR / "autopsy"
+        given = Path(raw)
+        if not given.is_absolute():
+            given = project / given
+        given = Path(os.path.normpath(str(given)))
+        if given.parent != Path(os.path.normpath(str(base))):
+            return None
+        if not _RECEIPT_NAME.match(given.name) or ".." in given.name.split("/"):
+            return None
+        target = base / given.name
+        for part in (project / ".kiro", project / SIDECAR, base, target):
+            if part.is_symlink():
+                return None
+        if not target.is_file():
+            return None
+        resolved = target.resolve()
+        if resolved.suffix != ".md" or resolved.parent != base.resolve():
+            return None
+        return target
+    except (OSError, ValueError, RuntimeError):
+        return None
+
+
 def settle_autopsy(project, *, kiro_home: Optional[Path] = None,
                    home: Optional[Path] = None) -> bool:
     """Append the actual cost to the waiting autopsy once (R7.3, R4.2).
@@ -233,9 +271,22 @@ def settle_autopsy(project, *, kiro_home: Optional[Path] = None,
         if not isinstance(raw_path, str) or not raw_path:
             return False
         session_id = pending.get("session_id")
-        path = Path(watcher.from_tilde(raw_path, home))
-        if not path.is_absolute():
-            path = project / path
+
+        def clear(current: dict) -> None:
+            waiting = current.get("autopsy_pending")
+            if isinstance(waiting, dict) and waiting.get("turn_id") == turn_id:
+                current["autopsy_pending"] = None
+
+        # The path comes from state.json, which anything in the project can
+        # edit. Never write to it unless it is a plain receipt in our dir.
+        path = safe_autopsy_path(project, watcher.from_tilde(raw_path, home))
+        if path is None:
+            from . import stop as stop_module
+            stop_module._log_error(
+                project, "autopsy append refused: pending path is not a plain "
+                         ".md receipt inside .kiro/tombstone/autopsy")
+            watcher.update_state(project, clear, home)
+            return False
 
         found = sessions.find_session(
             project, session_id if isinstance(session_id, str) else None,
@@ -250,11 +301,6 @@ def settle_autopsy(project, *, kiro_home: Optional[Path] = None,
             return False
 
         written = append_actual(path, turn, home)
-
-        def clear(current: dict) -> None:
-            waiting = current.get("autopsy_pending")
-            if isinstance(waiting, dict) and waiting.get("turn_id") == turn_id:
-                current["autopsy_pending"] = None
 
         # A missing receipt file will never be written, so clear it as well.
         watcher.update_state(project, clear, home)

@@ -265,3 +265,57 @@ def test_watcher_loop_settles_autopsy(tmp_path):
                 dispatch=lambda *a: None, kill_step=lambda *a, **k: None)
     assert "## Actual cost (actual)" in path.read_text(encoding="utf-8")
     assert read_pending(project) is None
+
+
+def _refusal_setup(tmp_path):
+    project = make_project(tmp_path)
+    good = autopsy.write_autopsy(project, stop_entry(), make_session(tmp_path), {}, home=HOME)
+    outside = tmp_path / "outside.md"
+    outside.write_text("secret\n", encoding="utf-8")
+    return project, good.parent, outside, make_kiro_home_session(tmp_path, priced=True)
+
+
+def _assert_refused(project, kiro_home, victim, raw):
+    before = victim.read_text(encoding="utf-8")
+    set_pending(project, raw)
+    assert autopsy.settle_autopsy(project, kiro_home=kiro_home, home=HOME) is False
+    assert victim.read_text(encoding="utf-8") == before
+    assert read_pending(project) is None
+    log = (project / ".kiro/tombstone/errors.log").read_text(encoding="utf-8")
+    assert log.count("autopsy append refused") == 1
+
+
+def test_settle_refuses_parent_traversal(tmp_path):
+    project, adir, outside, kh = _refusal_setup(tmp_path)
+    _assert_refused(project, kh, outside, adir / ".." / ".." / ".." / ".." / "outside.md")
+
+
+def test_settle_refuses_absolute_path_elsewhere(tmp_path):
+    project, adir, outside, kh = _refusal_setup(tmp_path)
+    _assert_refused(project, kh, outside, outside)
+
+
+def test_settle_refuses_symlink_inside_autopsy_dir(tmp_path):
+    project, adir, outside, kh = _refusal_setup(tmp_path)
+    link = adir / "2026-11-06_evil.md"
+    link.symlink_to(outside)
+    _assert_refused(project, kh, outside, link)
+
+
+def test_settle_refuses_non_md_file(tmp_path):
+    project, adir, outside, kh = _refusal_setup(tmp_path)
+    other = adir / "2026-11-06_notes.txt"
+    other.write_text("keep\n", encoding="utf-8")
+    _assert_refused(project, kh, other, other)
+
+
+def test_settle_refuses_symlinked_autopsy_dir(tmp_path):
+    project, adir, outside, kh = _refusal_setup(tmp_path)
+    real = tmp_path / "elsewhere"
+    real.mkdir()
+    victim = real / "2026-11-06_x.md"
+    victim.write_text("keep\n", encoding="utf-8")
+    moved = adir.with_name("autopsy_real")
+    adir.rename(moved)
+    adir.symlink_to(real)
+    _assert_refused(project, kh, victim, adir / victim.name)
