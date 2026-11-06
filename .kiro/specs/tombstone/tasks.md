@@ -118,7 +118,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
 
 - [ ] 10. Init and Power
   - One command prepares a project, a Power folder ships the same files.
-  - _Requirements: R9.1, R9.2, R9.3, R9.4, R9.5, R10.2, R10.3, R10.4, R11.1, R11.3_
+  - _Requirements: R9.1, R9.2, R9.3, R9.4, R9.5, R9.6, R9.7, R9.8, R10.2, R10.3, R10.4, R11.1, R11.3_
 
   - [x] 10.1 Hook and config builders
     - In `cli.py` add builder functions returning the V3 hook files (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`, plus the two task triggers calling `tombstone hook task-pre` and `task-post`), the V2 agent config with `preToolUse`, `postToolUse`, `stop` and no `model` key, the steering text and the default `tombstone.toml`. Only `command` actions. Use the absolute `tombstone` path from `shutil.which`.
@@ -131,6 +131,10 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 10.3 Power folder and CLI version check
     - Create `power/` with `plugin.json`, `skills/tombstone/SKILL.md`, `mcp.json` for `get_budget`, and hook templates generated from the builders. Add the tested CLI version constant (3.0.0), store the installed version in `state.json` at init and watcher start, and print one warning on mismatch.
     - _Requirements: R9.1, R10.4_
+
+  - [x] 10.4 Uninstall
+    - Record the sha256 of each file `init` creates in `.kiro/tombstone/installed.json`. Add `tombstone uninstall [--purge] [--force] [--project DIR]`: unload and delete this project's watcher unit, delete the init files, remove only the `tombstone` entry from `.kiro/settings/mcp.json`, keep changed files unless `--force`, keep user data unless `--purge` (never `tombstones.json`), print one line per file. Safe to run twice and works without `installed.json`. Tests use `tmp_path`, a fake HOME and a mocked unit loader.
+    - _Requirements: R9.6, R9.7, R9.8_
 
 - [ ] 11. Tests
   - Fixtures are already in place from task 1. Tests run with `pytest` and need no Kiro install.

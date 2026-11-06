@@ -168,3 +168,7 @@ Spend: `/usage` 174.70 of 4000 on 2026-11-06.
 - Same test task with cap 0.6: the launchd watcher wrote STOP (`est. 1.00 of 0.60`), the next write was refused, the agent stopped and wrote an autopsy. No manual watcher process was running.
 - Removed right after: `launchctl bootout gui/501/com.tombstone.live4-2a89b377` (exit 0), plist deleted, `launchctl list` and `~/Library/LaunchAgents` show no tombstone entry, no `tombstone watch` process left.
 - Gap found: there is no `tombstone uninstall`; removal took two manual commands. Candidate task for E4.
+
+## 2026-11-06 tombstone uninstall (R9.6-R9.8, task 10.4), approved by Dima
+Kiro: 9 requests, 2.984 credits (actual). The record went to `unknown`: task 10.4 was added to tasks.md already checked, and by the bug A rule a new id is never "checked now". Expected, not a bug.
+Live check in a fresh scratch project with an existing `.kiro/settings/mcp.json` holding another server: `init` loaded the launchd unit (1 unit, 1 plist); the user edited `tombstone.toml`; `uninstall` booted out and removed the unit, removed the 7 hook files and the steering file, removed only the `tombstone` entry from mcp.json (the `other` server kept), kept `tombstone.toml` and `tombstones.json` as user data. Second `uninstall` reported "not found" for each file and changed nothing. After: 0 units in `launchctl list`, 0 plists, 0 watcher processes. 420 tests.

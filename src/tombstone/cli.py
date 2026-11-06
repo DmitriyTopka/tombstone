@@ -874,24 +874,34 @@ def cmd_init(args: argparse.Namespace) -> int:
         return 1
     executable = find_executable()
     lines: list[str] = []
+    recorded: dict[str, str] = {}
+
+    def create(path: Path, text: str, key: str) -> None:
+        line = _write_if_absent(path, text)
+        lines.append(line)
+        if line.startswith("created"):
+            recorded[key] = _sha_text(text)
 
     for name, data in build_v3_hook_files(executable, project).items():
-        lines.append(_write_if_absent(project / ".kiro" / "hooks" / name,
-                                      _json_text(data)))
+        create(project / ".kiro" / "hooks" / name, _json_text(data),
+               f".kiro/hooks/{name}")
     v2 = bool(getattr(args, "v2", False))
     agent_path = project / ".kiro" / "agents" / "tombstone.json"
     if v2:
-        lines.append(_write_if_absent(
-            agent_path, _json_text(build_v2_agent_config(executable, project))))
+        create(agent_path, _json_text(build_v2_agent_config(executable, project)),
+               ".kiro/agents/tombstone.json")
     elif agent_path.exists():
         lines.append(f"note: {agent_path} exists. Kiro CLI 3.1.0 loads it as the "
                      "active profile and that profile has no MCP tools. Remove "
                      "it yourself if you use V3 (init never deletes files).")
-    lines.append(merge_mcp_settings(
-        project / ".kiro" / "settings" / "mcp.json", executable, project))
-    lines.append(_write_if_absent(
-        project / ".kiro" / "steering" / "tombstone.md", build_steering_text()))
-    lines.append(_write_if_absent(project / "tombstone.toml", build_default_toml()))
+    mcp_line = merge_mcp_settings(
+        project / ".kiro" / "settings" / "mcp.json", executable, project)
+    lines.append(mcp_line)
+    if mcp_line.startswith(("created", "updated")):
+        recorded["mcp-entry"] = _sha_entry(build_mcp_entry(executable, project))
+    create(project / ".kiro" / "steering" / "tombstone.md", build_steering_text(),
+           ".kiro/steering/tombstone.md")
+    create(project / "tombstone.toml", build_default_toml(), "tombstone.toml")
 
     watch_cmd = (f"{shlex.quote(executable)} -m tombstone watch "
                  f"--project {shlex.quote(str(project))}")
@@ -912,7 +922,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             unit_path = home / ".config" / "systemd" / "user" / f"tombstone-{uid_name}.service"
             text = build_systemd_unit(executable, project)
             load = ["systemctl", "--user", "enable", "--now", unit_path.name]
-        lines.append(_write_if_absent(unit_path, text))
+        create(unit_path, text, "unit")
         load_text = " ".join(shlex.quote(p) for p in load)
         code, detail = _run_load_command(load)
         if code == 0:
@@ -922,6 +932,8 @@ def cmd_init(args: argparse.Namespace) -> int:
             lines.append(f"could not load the watcher unit ({detail or 'exit ' + str(code)})")
             lines.append(f"load it yourself: {load_text}")
             lines.append(f"or run by hand: {watch_cmd}")
+
+    _record_install(project, recorded)
 
     from . import watcher
 
@@ -939,6 +951,227 @@ def cmd_init(args: argparse.Namespace) -> int:
         lines.append("  V2 (legacy):   run `tombstone init --v2` to write .kiro/agents/tombstone.json")
     print("\n".join(lines))
     return 1 if failed else 0
+
+
+# --- install record and uninstall (task 10.4) --------------------------------
+
+INSTALLED_FILE = Path(".kiro") / "tombstone" / "installed.json"
+
+
+def _sha_text(text: str) -> str:
+    import hashlib
+
+    return hashlib.sha256(text.encode("utf-8")).hexdigest()
+
+
+def _sha_file(path: Path) -> Optional[str]:
+    import hashlib
+
+    try:
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def _sha_entry(entry: dict) -> str:
+    import json
+
+    return _sha_text(json.dumps(entry, sort_keys=True))
+
+
+def _load_installed(project: Path) -> dict[str, str]:
+    """The ``files`` map of ``installed.json``; {} when missing or broken."""
+    import json
+
+    try:
+        data = json.loads((project / INSTALLED_FILE).read_text(encoding="utf-8"))
+        files = data.get("files")
+    except (OSError, ValueError, AttributeError):
+        return {}
+    if not isinstance(files, dict):
+        return {}
+    return {str(k): str(v) for k, v in files.items()}
+
+
+def _save_installed(project: Path, files: dict[str, str]) -> None:
+    path = project / INSTALLED_FILE
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(_json_text({"version": 1, "files": files}), encoding="utf-8")
+
+
+def _record_install(project: Path, created: dict[str, str]) -> None:
+    """Store the sha256 of each file init created (merged with older records)."""
+    if not created:
+        return
+    try:
+        files = _load_installed(project)
+        files.update(created)
+        _save_installed(project, files)
+    except OSError:
+        pass
+
+
+def _unit_target(project: Path, home: Path) -> tuple[Path, list[str]]:
+    """Unit file init derives for this project, and the unload command."""
+    import os
+
+    uid_name = unit_id(project)
+    if sys.platform == "darwin":
+        label = f"com.tombstone.{uid_name}"
+        path = home / "Library" / "LaunchAgents" / f"{label}.plist"
+        return path, ["launchctl", "bootout", f"gui/{os.getuid()}/{label}"]
+    path = home / ".config" / "systemd" / "user" / f"tombstone-{uid_name}.service"
+    return path, ["systemctl", "--user", "disable", "--now", path.name]
+
+
+def uninstall(project: Path, home: Path, purge: bool = False,
+              force: bool = False) -> list[str]:
+    """Undo ``init`` for one project. Returns one report line per file.
+
+    A file counts as changed when its sha256 differs from the one stored in
+    ``installed.json`` or, without a record, from what the builders produce
+    today. Changed files are kept unless ``force``. Safe to run twice.
+    """
+    import json
+    import shutil
+
+    project = Path(project).resolve()
+    executable = find_executable()
+    recorded = _load_installed(project)
+    lines: list[str] = []
+    gone: set[str] = set()
+
+    def expected(key: str, text: Optional[str]) -> Optional[str]:
+        return recorded.get(key) or (_sha_text(text) if text is not None else None)
+
+    def remove(path: Path, key: str, text: Optional[str]) -> None:
+        if not path.exists():
+            lines.append(f"not found {path}")
+            gone.add(key)
+            return
+        want = expected(key, text)
+        if not force and _sha_file(path) != want:
+            lines.append(f"kept {path} (changed since init, use --force to remove)")
+            return
+        try:
+            path.unlink()
+        except OSError as exc:
+            lines.append(f"kept {path} (could not remove: {exc})")
+            return
+        lines.append(f"removed {path}")
+        gone.add(key)
+
+    # 1. watcher unit: unload, then delete only the unit init derives here.
+    unit_path, unload = _unit_target(project, home)
+    if unit_path.exists():
+        code, detail = _run_load_command(unload)
+        if code != 0:
+            lines.append(f"note: unload returned {detail or 'exit ' + str(code)} "
+                         f"({' '.join(unload)}); the unit may not have been loaded")
+        text = (build_launchd_plist(executable, project, f"com.tombstone.{unit_id(project)}")
+                if sys.platform == "darwin" else build_systemd_unit(executable, project))
+        remove(unit_path, "unit", text)
+    else:
+        lines.append(f"not found {unit_path}")
+        gone.add("unit")
+
+    # 2. hook files, agent config, steering.
+    hooks_dir = project / ".kiro" / "hooks"
+    builders = build_v3_hook_files(executable, project)
+    names = set(builders)
+    try:
+        names.update(p.name for p in hooks_dir.glob("tombstone-*.json"))
+    except OSError:
+        pass
+    for name in sorted(names):
+        data = builders.get(name)
+        remove(hooks_dir / name, f".kiro/hooks/{name}",
+               _json_text(data) if data is not None else None)
+    remove(project / ".kiro" / "agents" / "tombstone.json",
+           ".kiro/agents/tombstone.json",
+           _json_text(build_v2_agent_config(executable, project)))
+    remove(project / ".kiro" / "steering" / "tombstone.md",
+           ".kiro/steering/tombstone.md", build_steering_text())
+
+    # 3. the tombstone entry of mcp.json, nothing else.
+    mcp_path = project / ".kiro" / "settings" / "mcp.json"
+    try:
+        data = json.loads(mcp_path.read_text(encoding="utf-8")) if mcp_path.exists() else None
+    except (OSError, ValueError):
+        lines.append(f"kept {mcp_path} (not valid JSON, remove the tombstone server by hand)")
+        data = False
+    servers = data.get("mcpServers") if isinstance(data, dict) else None
+    if data is None:
+        lines.append(f"not found {mcp_path}")
+        gone.add("mcp-entry")
+    elif data is False:
+        pass
+    elif not isinstance(servers, dict) or "tombstone" not in servers:
+        lines.append(f"not found tombstone entry in {mcp_path}")
+        gone.add("mcp-entry")
+    else:
+        entry = servers["tombstone"]
+        want = recorded.get("mcp-entry") or _sha_entry(build_mcp_entry(executable, project))
+        if not force and not (isinstance(entry, dict) and _sha_entry(entry) == want):
+            lines.append(f"kept tombstone entry in {mcp_path} (changed since init, use --force to remove)")
+        else:
+            del servers["tombstone"]
+            if not servers:
+                del data["mcpServers"]
+            if data:
+                mcp_path.write_text(_json_text(data), encoding="utf-8")
+                lines.append(f"removed tombstone entry from {mcp_path} (other settings kept)")
+            else:
+                mcp_path.unlink()
+                lines.append(f"removed {mcp_path} (nothing else was in it)")
+            gone.add("mcp-entry")
+
+    # 4. user data, and --purge.
+    sidecar = project / ".kiro" / "tombstone"
+    toml_path = project / "tombstone.toml"
+    if purge:
+        remove(toml_path, "tombstone.toml", build_default_toml())
+    elif toml_path.exists():
+        lines.append(f"kept {toml_path} (user data, --purge removes it)")
+    else:
+        lines.append(f"not found {toml_path}")
+    ledger = project / "tombstones.json"
+    lines.append(f"kept {ledger} (user data, never removed)" if ledger.exists()
+                 else f"not found {ledger}")
+    if purge:
+        if sidecar.exists():
+            shutil.rmtree(sidecar, ignore_errors=True)
+            lines.append(f"removed {sidecar}")
+        else:
+            lines.append(f"not found {sidecar}")
+    else:
+        for item in (sidecar / "autopsy", sidecar / "graveyard.html"):
+            if item.exists():
+                lines.append(f"kept {item} (user data, --purge removes it)")
+        # installed.json: drop entries of removed files, delete when empty.
+        if (project / INSTALLED_FILE).exists():
+            left = {k: v for k, v in recorded.items() if k not in gone}
+            try:
+                if left:
+                    _save_installed(project, left)
+                else:
+                    (project / INSTALLED_FILE).unlink()
+            except OSError:
+                pass
+    return lines
+
+
+def cmd_uninstall(args: argparse.Namespace) -> int:
+    """``tombstone uninstall [--purge] [--force] [--project DIR]``."""
+    project = (Path(args.project).expanduser() if getattr(args, "project", None)
+               else Path.cwd()).resolve()
+    if not project.is_dir():
+        print(f"tombstone uninstall: not a directory: {project}", file=sys.stderr)
+        return 1
+    for line in uninstall(project, Path.home(), purge=bool(args.purge),
+                          force=bool(args.force)):
+        print(line)
+    return 0
 
 
 # --- Power folder (task 10.3) -----------------------------------------------
@@ -1121,6 +1354,17 @@ def build_parser() -> argparse.ArgumentParser:
                            ".kiro/agents/tombstone.json (Kiro 3.1.0 loads it "
                            "as the active profile, which has no MCP tools)")
     init.set_defaults(func=cmd_init)
+
+    uninstall_cmd = sub.add_parser(
+        "uninstall", help="remove what init created (keeps your data)")
+    uninstall_cmd.add_argument("--project", default=None,
+                               help="project root (default: the working directory)")
+    uninstall_cmd.add_argument("--purge", action="store_true",
+                               help="also remove .kiro/tombstone/ and tombstone.toml "
+                                    "(tombstones.json is always kept)")
+    uninstall_cmd.add_argument("--force", action="store_true",
+                               help="remove files even when changed since init")
+    uninstall_cmd.set_defaults(func=cmd_uninstall)
 
     return parser
 

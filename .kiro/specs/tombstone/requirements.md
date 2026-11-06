@@ -141,6 +141,9 @@ Acceptance check: on a 10-request turn the estimate at the end of the turn is wi
 - R9.3 WHEN `tombstone init` runs THE SYSTEM SHALL register the watcher as a launchd agent on macOS or a systemd user unit on Linux.
 - R9.4 IF a file to be created already exists THEN THE SYSTEM SHALL leave it unchanged and report it.
 - R9.5 THE SYSTEM SHALL print after init which command starts Kiro with the hooks active on V3, and on V2 (`kiro-cli chat --agent tombstone`) when `--v2` was used.
+- R9.6 WHEN the user runs `tombstone uninstall` in a project THE SYSTEM SHALL stop and unload the watcher unit of that project (launchd `bootout` or `systemctl --user disable --now`), delete that unit file, delete the files `init` created (`.kiro/hooks/tombstone-*.json`, `.kiro/steering/tombstone.md`, `.kiro/agents/tombstone.json`), remove only the `tombstone` entry from `.kiro/settings/mcp.json`, and print one line per file: removed, not found, or kept.
+- R9.7 THE SYSTEM SHALL NOT delete user data on uninstall: `tombstones.json`, `tombstone.toml`, autopsies and `graveyard.html` are kept and listed, unless the user passes `--purge`, which also removes `.kiro/tombstone/` and `tombstone.toml` but still keeps `tombstones.json`.
+- R9.8 IF a file `init` would remove was changed by the user since init (content differs from what init wrote) THEN THE SYSTEM SHALL keep it and say so, unless `--force` is given.
 
 ### Requirement 10: Work on V3 first, keep V2
 

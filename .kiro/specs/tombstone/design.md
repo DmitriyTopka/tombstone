@@ -485,6 +485,12 @@ With `--v2` the last line is `V2 (legacy):   kiro-cli chat --agent tombstone`.
 
 **Power folder (R9.1).** A top-level `power/` directory with `plugin.json`, `skills/tombstone/SKILL.md`, `mcp.json` (command `/path/to/python`, args `["-m", "tombstone", "mcp"]`), `hooks/v3/*.json` and `hooks/v2/tombstone.json`. The hook files are generated from the same builder functions `init` uses with placeholder interpreter and project paths, and a test compares the files with the builder output so they cannot drift.
 
+### `uninstall` (undo init, R9.6 to R9.8)
+
+At init time every file `init` creates is hashed: `.kiro/tombstone/installed.json` holds `{"version": 1, "files": {<path relative to the project>: <sha256>}}` for the hook files, the steering file, `.kiro/agents/tombstone.json` (with `--v2`), `tombstone.toml`, the watcher unit (key `unit`) and the `tombstone` entry of `mcp.json` (key `mcp-entry`, sha256 of the entry as sorted JSON). Only files init actually created or merged are recorded, so a file that already existed is never claimed.
+
+`tombstone uninstall [--purge] [--force] [--project DIR]` works in this order: unload the unit init derives for this project (`launchctl bootout gui/<uid>/<label>` or `systemctl --user disable --now <unit>`, through `_run_load_command`) and delete that one unit file; delete `.kiro/hooks/tombstone-*.json`, the steering file and the agent config; remove only the `tombstone` key from `mcp.json` and delete the file only if nothing else is left. A file counts as changed when its sha256 differs from the recorded one. If `installed.json` is missing or has no entry for it, it counts as changed when it differs from what the builders produce today. Changed files are kept and reported unless `--force`. The report has one line per file: `removed`, `not found` or `kept`. `tombstones.json`, `tombstone.toml`, autopsies and `graveyard.html` are kept and listed; `--purge` also removes `.kiro/tombstone/` and `tombstone.toml` (the changed check still applies) but never `tombstones.json`. A second run finds nothing and removes nothing.
+
 ## Data Models
 
 Summary of persistent files, all UTF-8 JSON with `\n` line ends and ISO 8601 UTC timestamps (`...Z`):
