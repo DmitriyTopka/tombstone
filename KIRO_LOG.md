@@ -110,3 +110,32 @@ Gate K1 (2026-11-05):
 - ✅ Commits after Kiro code, this log filled per run.
 - Budget: E1 spent about 83 of 120 credits (`/usage` 83.69 including measurement 5), under budget.
 Graveyard v1 renders from the real file: 7 tombstones, 35.971 credits actual.
+
+## 2026-11-06 Watcher, stop, kill (spec tasks 6.1-7.4) and the first live stop tests
+Decisions by Dima on 06.11: watcher and stop before README; 10 to 12 hours of graveyard design after the watcher; repo stays private until about 01.12; no second Kiroween entry.
+
+| Run | Tombstone record | Requests | Credits (actual) |
+|---|---|---|---|
+| 6.1 State and change detection | 6.1 | 17 | 4.214 |
+| 6.2 Evaluate and poll loop | unknown (box flipped by `sed`, bug) | 18 | 7.372 |
+| 7.1 STOP file, blocking, resume | 6.2 + 7.1 split (same bug) | 11 | 2.524 |
+| 7.2 Notification | 7.2 | 9 | 1.427 |
+| Fix: Stop hook diffs tasks.md (catches shell edits) | unknown | 12 | 2.482 |
+| 7.3 Process lookup and kill (built to the measured process tree in LESSONS) | 7.3 | 17 | 4.653 |
+| 7.4 Stop sequence | 7.4 | 18 | 5.444 |
+| Fix: watcher never found the session (index paths are relative to ~/.kiro/sessions), unknown toml keys now warn | - | - | about 4 |
+Task id attribution after the shell-edit fix: 7.2, 7.3, 7.4 each correct with share 1.0 (closes the K1 caveat).
+
+Live stop tests in scratch projects (hooks + `tombstone watch`, logs outside the project):
+
+| Test | Cap | What happened | Credits |
+|---|---|---|---|
+| burn1, loop prompt | 3 | Agent looped 420 s, 439 tool calls, 102 model events. Tombstone never fired: the watcher could not find the session (bug above). External guard killed it. | about 22 (from `/usage`; the killed turn has no cost in the session file) |
+| burn2, loop prompt | 3 | Watcher raised over-cap at est. 3.50 after 41 s, STOP written at 43 s. The agent had read tombstone.toml and the test logs in the project and stopped on its own at 48 s, before hitting the block. Detector proven, block not exercised. | 1.775 |
+| burn3, loop prompt, logs outside, `.kiroignore` | 3 | Agent ignored `.kiroignore`, decided the audit was done and answered in 34 s. No stop needed. | 0.971 |
+| burn4, "80 iterations" prompt | 3 | Agent read each file once and answered in 19 s. | 0.423 |
+| burn5, normal 12-step task | 0.3 | STOP at 9 s (est. 0.50 of 0.30). The next tool (`wc -w`) was refused by the pre-tool hook; the agent stopped and told the user: "A PreToolUse hook blocked the `wc -w` command and said this turn was over budget". Record outcome `killed`. Kill step not needed. | 0.334 |
+
+What this proves: detector, STOP file, pre-tool block and the agent's reaction work end to end on CLI 3.0.0 (burn5). Real numbers for the video: one unguarded loop burned about 22 credits in 7 minutes (burn1); the guarded run stopped at 0.33.
+Not proven yet: the kill step on a live process (the agent always stopped itself after the block), the stall path (quiet project) on a live run, the autopsy (task 8).
+Spend: `/usage` 142.80 of 4000 on 2026-11-06.

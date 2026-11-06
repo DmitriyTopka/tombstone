@@ -111,6 +111,24 @@ def load_config(project: Path) -> Config:
 
     values: dict[str, float] = {}
     warnings: list[str] = []
+
+    known: dict[str, set[str]] = {}
+    for _field, table, key, _default in _CONFIG_KEYS:
+        known.setdefault(table, set()).add(key)
+    for table_name, section in data.items():
+        if table_name not in known:
+            warnings.append(
+                f"unknown table [{table_name}] in tombstone.toml, ignored "
+                f"(known tables: {', '.join(sorted(known))})"
+            )
+        elif isinstance(section, dict):
+            for key_name in section:
+                if key_name not in known[table_name]:
+                    warnings.append(
+                        f"unknown key {table_name}.{key_name} in tombstone.toml, "
+                        f"ignored (known: {', '.join(sorted(known[table_name]))})"
+                    )
+
     for field, table, key, default in _CONFIG_KEYS:
         section = data.get(table)
         present = isinstance(section, dict) and key in section

@@ -435,12 +435,31 @@ def _v3_glob_by_id(kiro_home: Path, session_id: str,
     return None
 
 
+def _parse_index_at(value: object) -> float:
+    """Epoch seconds from an index ``at`` value, 0.0 when missing or bad.
+
+    The real index writes epoch milliseconds. Seconds and ISO 8601 strings
+    are accepted too.
+    """
+    if isinstance(value, bool):
+        return 0.0
+    if isinstance(value, (int, float)):
+        number = float(value)
+        # Epoch seconds stay below 1e11 until the year 5138.
+        return number / 1000.0 if number > 1e11 else number
+    parsed = _parse_time(value)
+    return parsed.timestamp() if parsed is not None else 0.0
+
+
 def _v3_index_candidates(kiro_home: Path) -> list[tuple[float, Path]]:
     """Session paths from the V3 index files, newest ``at`` first.
 
-    Each index line is ``{"op", "sessionPath", "at"}``. A missing or bad
-    ``at`` sorts last. Never raises.
+    Each index line is ``{"op", "sessionPath", "at"}``. ``sessionPath`` is
+    relative to ``<kiro_home>/sessions`` (an absolute path is kept as is) and
+    ``at`` is epoch milliseconds. A missing or bad ``at`` sorts last. Never
+    raises.
     """
+    sessions_root = kiro_home / "sessions"
     index_root = kiro_home / "session-index"
     found: dict[str, float] = {}
     try:
@@ -452,11 +471,14 @@ def _v3_index_candidates(kiro_home: Path) -> list[tuple[float, Path]]:
             session_path = event.get("sessionPath")
             if not isinstance(session_path, str) or not session_path:
                 continue
-            at = _parse_time(event.get("at"))
-            stamp = at.timestamp() if at is not None else 0.0
+            stamp = _parse_index_at(event.get("at"))
+            resolved = Path(session_path).expanduser()
+            if not resolved.is_absolute():
+                resolved = sessions_root / resolved
+            key = str(resolved)
             # Keep the newest "at" seen for each path.
-            if session_path not in found or stamp > found[session_path]:
-                found[session_path] = stamp
+            if key not in found or stamp > found[key]:
+                found[key] = stamp
     ordered = sorted(found.items(), key=lambda item: item[1], reverse=True)
     return [(stamp, Path(path)) for path, stamp in ordered]
 

@@ -56,6 +56,7 @@ def default_state() -> dict:
     return {
         "version": STATE_VERSION,
         "session": None,
+        "hook_session_id": None,
         "turn": {},
         "current_task": None,
         "tasks_snapshot": {},
@@ -539,8 +540,11 @@ def poll_once(project: Path, cfg, now: datetime,
     before = read_state(project)
     fingerprint = project_fingerprint(project)
 
+    # The id a hook saw on STDIN wins; the index lookup is the fallback.
+    hook_id = before.get("hook_session_id")
     session_path = sessions.find_session(
-        project, None, kiro_home=kiro_home,
+        project, hook_id if isinstance(hook_id, str) and hook_id else None,
+        kiro_home=kiro_home,
         v3_project_hash=before.get("v3_project_hash"),
     )
     session = None

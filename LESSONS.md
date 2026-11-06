@@ -61,3 +61,20 @@ PID   PPID  PGID  COMMAND
 Facts: the agent is a Node process (KAS 3.1.0) under `kiro-cli`, in its own process group; each tool command gets its own group too. Killing only `kiro-cli` or only its group leaves the Node agent and the running tool alive.
 Rule for the kill step: match `kiro-cli` whose cwd is the project, then walk its descendants by PPID (Node agent, tools), SIGTERM the leaves first and the root last, SIGKILL whatever is left after 5 s.
 Side find: pytest spawn tests leave `tombstone hook reconcile` children polling for up to 30 s after the suite ends (they exit by themselves). Harmless, but tests should pass a short timeout.
+
+## 2026-11-06 E3 Smart models do not loop on command
+Expected: the burn prompt from E0 keeps the agent reading forever.
+Got: once it looped for 7 minutes (burn1, about 22 credits), three times the auto model decided it was done in 19 to 48 s.
+Rule: the stop mechanics are tested with a normal task and a very low cap (burn5). Real loops are rare and costly, which is the product's point: the video uses burn1's number, not a staged loop.
+
+## 2026-11-06 E3 A killed turn has no price on disk
+Got: the turn killed at 420 s has no `usage_summary`; `tombstone cost` shows 0.000 credits, `/usage` shows about 22.
+Rule: for killed turns the autopsy must say "actual not written by Kiro" and give the `/usage` delta when available, never 0.
+
+## 2026-11-06 E3 The agent reads Tombstone's own files
+Got: in burn2 the agent read tombstone.toml and the logs, saw the cap and stopped itself. `.kiroignore` did not stop it reading `.kiro/` (burn3).
+Rule: test logs live outside the project. The steering file for users can say this openly: the cap is public to the agent, that is a feature.
+
+## 2026-11-06 E3 Refusal text is not in messages.jsonl
+Got: the blocked tool shows as `tool_result` with `"content": "{}", "success": false`; the `TOMBSTONE:` text reached the agent (it quoted it) but is not stored.
+Rule: the autopsy takes the refusal text from the STOP file, not from the session.

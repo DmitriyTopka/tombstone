@@ -509,6 +509,39 @@ def _stdin_task_id(stdin: dict) -> Optional[str]:
     return None
 
 
+def stdin_session_id(stdin: dict) -> Optional[str]:
+    """The ``session_id`` a hook received on STDIN, or None."""
+    if not isinstance(stdin, dict):
+        return None
+    for key in ("session_id", "sessionId"):
+        value = stdin.get(key)
+        if isinstance(value, str) and value:
+            return value
+    return None
+
+
+def remember_session(project: Path, stdin: dict) -> None:
+    """Store the STDIN session id in ``state.hook_session_id`` (watcher input).
+
+    Reads first and writes only when the id changed, so a hook that sees the
+    same session again costs one small read and no lock.
+    """
+    session_id = stdin_session_id(stdin)
+    if session_id is None:
+        return
+    state_path = Path(project) / TOMBSTONE_DIR / "state.json"
+    current, valid = _read_json(state_path)
+    if valid and isinstance(current, dict) \
+            and current.get("hook_session_id") == session_id:
+        return
+
+    def mark(state: dict) -> dict:
+        state["hook_session_id"] = session_id
+        return state
+
+    update_json(state_path, mark, default={"version": 1})
+
+
 def stdin_turn_id(stdin: dict) -> Optional[str]:
     """Pull the current turn id from hook STDIN, tolerating several shapes.
 

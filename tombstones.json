@@ -450,6 +450,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/e3a6bd40-4694-491d-ae0d-4608f612322c",
+      "task_id": "unknown",
+      "name": "Bug fix from the first live burn test.",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 6.2526,
+      "actual": 4.6963,
+      "minutes": 1.7509,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_1e090949-761a-46a0-9cf1-88737a53c642",
+          "turn_id": "e3a6bd40-4694-491d-ae0d-4608f612322c",
+          "requests": 16,
+          "estimate": 6.2526,
+          "actual": 4.6963,
+          "minutes": 1.7509,
+          "start": "2026-11-06T09:04:41.122000Z",
+          "end": "2026-11-06T09:06:26.177000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

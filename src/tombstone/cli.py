@@ -401,6 +401,9 @@ _HOOK_EVENTS = {
 # out on purpose: it is the latency-critical gate.
 _SAFETY_NET_EVENTS = frozenset({"post-tool", "prompt", "stop", "session-start"})
 
+# Hook entries whose STDIN session id is stored for the watcher.
+_SESSION_ID_EVENTS = frozenset({"pre-tool", "post-tool", "prompt", "stop"})
+
 
 def _reconcile_pending_quietly(project: Optional[Path],
                                kiro_home: Optional[Path] = None) -> None:
@@ -434,6 +437,15 @@ def cmd_hook(args: argparse.Namespace) -> int:
         return 0
 
     stdin = _read_stdin_json()
+    if event in _SESSION_ID_EVENTS:
+        try:
+            from . import tombstones
+
+            project = _hook_project_root(stdin)
+            if project is not None:
+                tombstones.remember_session(project, stdin)
+        except Exception as error:  # noqa: BLE001 - fail open
+            _log_hook_error(stdin, f"hook {event} session id: {error}")
     if event in _SAFETY_NET_EVENTS:
         _reconcile_pending_quietly(_hook_project_root(stdin))
     try:
