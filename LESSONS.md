@@ -87,3 +87,8 @@ Rule: anything the hooks read must also be fed by the hooks. Test every feature 
 ## 2026-11-06 E3 A silent end of a Kiro run can be server throttling
 Got: one 11.4 run ended after a tool call with no summary and no files; the next run printed ModelThrottleError. 
 Rule: a run with no summary is a failed run, not a finished one. Read the log tail before trusting the tick.
+
+## 2026-11-06 E5 The human is also an editor of tasks.md
+Expected: only the agent ticks boxes, so the diff since the last tool call is the turn's work.
+Got: I ticked ten parent boxes by hand between turns, and the next agent turn was split eleven ways.
+Rule: take the baseline when the turn starts (prompt and session start), not only after the agent's tools.

@@ -155,3 +155,17 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 11.4 Latency, zero-credit and accuracy checks
     - Median of five `tombstone hook pre-tool` subprocess runs under 200 ms without a STOP file. Static checks: no prompt-type hook, no `model` key, no model, agent or paid-API call, no network module imports, no em or en dash in any text file. Estimate within 30% of actual on the 10-request fixture. Record the manual "no extra metered request" check in `KIRO_LOG.md`.
     - _Requirements: R4.2, R11.1, R11.2, R11.3, R11.4, R11.5_
+
+- [x] 12. Graveyard v2
+  - Design approved by Dima on 2026-11-06.
+  - Reference design: `.kiro/specs/tombstone/graveyard_mockup.html` (a JS mockup with `__DATA__` and `__PLOTS__` placeholders). Port it into `render_graveyard`; do not ship the mockup's client-side rendering of headstones.
+  - _Requirements: R2.6, R2.7_
+
+  - [x] 12.1 Server-rendered headstones and plots
+    - `render_graveyard(records, plots=None)` emits the sky, the stopped row, plots, unmarked graves and the register as HTML. `write_graveyard` reads plot names from the top-level `- [ ] N. Name` lines of `.kiro/specs/*/tasks.md` (checked or not, backticks removed), falling back to "Task N". Height uses the mockup formula. Inline JS only for the detail card, register sort and filter. All text escaped. No external resource; an SVG data URI may keep its xmlns.
+    - _Requirements: R2.6, R2.7_
+
+  - [x] 12.2 Graveyard v2 tests
+    - Update `tests/test_graveyard.py` for the new structure and add: plot grouping and names from a tasks.md fixture, unknown records in Unmarked graves, killed and blocked records in the stopped row, height grows with cost, headstones present with JS disabled (in the HTML source), reduced-motion rule present, dialog markup, no external resource, no em or en dash.
+    - _Requirements: R2.6, R2.7_
+

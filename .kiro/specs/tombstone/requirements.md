@@ -52,6 +52,7 @@ Acceptance check: on the V3 session from measurement 5 the command prints 0.390 
 - R2.4 IF the task id cannot be determined THEN THE SYSTEM SHALL write the record with task id `unknown`, the prompt name from R2.3 when known (otherwise the turn time), one record per turn, and SHALL NOT skip the record.
 - R2.5 THE SYSTEM SHALL keep `tombstones.json` valid JSON after every write, including when two hooks fire close together.
 - R2.6 THE SYSTEM SHALL provide `tombstone graveyard`, which renders a static HTML page from `tombstones.json` with no external resources.
+- R2.7 WHEN `tombstone graveyard` renders the page, THE SYSTEM SHALL draw every record as a headstone whose height grows with its cost (actual, else estimate), group finished tasks into plots by the top-level task number with the plot name taken from `tasks.md`, put records with no task id into an "Unmarked graves" row, put every record whose outcome is not `finished` into a "Stopped by the breaker" row drawn apart from the rest, open a detail card with actual, estimate, requests, minutes, model and engine when a headstone is activated, and keep the sortable register table. The page SHALL follow `.kiro/specs/tombstone/graveyard_mockup.html` for look and copy, work without JavaScript for the headstones, respect `prefers-reduced-motion`, show no horizontal scroll at 375 px, and keep R2.6.
 
 ### Requirement 3: Caps per task and per spec
 

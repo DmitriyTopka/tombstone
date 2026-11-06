@@ -317,7 +317,9 @@ def _hook_prompt(stdin: dict) -> int:
     state_path = project / tombstones.TOMBSTONE_DIR / "state.json"
     tombstones.update_json(
         state_path,
-        lambda state: tombstones.record_prompt(state, stdin),
+        lambda state: tombstones.rebaseline_snapshots(
+            tombstones.record_prompt(state, stdin), project
+        ),
         default={"version": 1},
     )
     return 0
@@ -367,7 +369,23 @@ def _hook_reconcile(args: argparse.Namespace) -> int:
 
 
 def _hook_session_start(stdin: dict) -> int:
-    """``tombstone hook session-start``: only runs the safety net (cmd_hook)."""
+    """``tombstone hook session-start``: re-baseline the tasks snapshots.
+
+    The safety net runs in ``cmd_hook``. Hand ticks made before the session
+    are not counted for the first turn. Fails open.
+    """
+    from . import tombstones
+
+    project = _hook_project_root(stdin)
+    if project is None:
+        return 0
+
+    state_path = project / tombstones.TOMBSTONE_DIR / "state.json"
+    tombstones.update_json(
+        state_path,
+        lambda state: tombstones.rebaseline_snapshots(state, project),
+        default={"version": 1},
+    )
     return 0
 
 

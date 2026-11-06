@@ -17,8 +17,10 @@ merges the queued pending changes first.
 from __future__ import annotations
 
 import fcntl
+import functools
 import html
 import json
+import math
 import os
 import re
 from dataclasses import dataclass
@@ -979,6 +981,24 @@ def sync_checked_at_stop(state: dict, project: Path) -> dict:
     return state
 
 
+def rebaseline_snapshots(state: dict, project: Path) -> dict:
+    """Re-baseline every spec's tasks.md snapshot, counting nothing as checked.
+
+    Called at UserPromptSubmit and SessionStart. A checkbox a human ticked by
+    hand between two agent turns must not be credited to the next turn, so the
+    snapshot is replaced by the file as it is now and ``state.turn.checked`` is
+    left alone. Post-tool and Stop keep the diff. Returns the mutated state.
+    """
+    project = Path(project)
+    snapshots = state.get("tasks_snapshot")
+    if not isinstance(snapshots, dict):
+        snapshots = {}
+        state["tasks_snapshot"] = snapshots
+    for spec in _list_specs(project):
+        snapshots[spec] = _snapshot_for(project, spec)
+    return state
+
+
 # --- record building and the Stop hook (task 3.3) --------------------------
 
 
@@ -1839,100 +1859,189 @@ def _log_reconcile_timeout(project: Path, session_id: Optional[str],
 
 # --- graveyard (R2.6, R4.4) -------------------------------------------------
 
-# Outcomes the page knows how to badge. Anything else is shown as written.
-_OUTCOME_LABELS = {
-    "finished": "FINISHED",
-    "killed": "KILLED",
-    "cap": "BLOCKED BY CAP",
-}
-
 _GRAVEYARD_CSS = """
-:root{--sky-top:#05060a;--sky-bottom:#141a26;--stone:#3a3f47;--stone-light:#4b515b;--stone-dark:#24282e;
---ink:#d9dde3;--muted:#8a919c;--moss:#5f7f5a;--red:#ff3b3b;--red-glow:rgba(255,59,59,.55);--amber:#d9a441}
+:root{
+  --sky-top:#070b14;--sky-low:#121a2a;--hill:#0b1018;--hill-edge:#1a2433;
+  --granite:#7b7f88;--granite-hi:#a3a7ae;--granite-lo:#4a4e57;--cut:#2b2e35;
+  --bone:#e8e4d8;--muted:#9aa3b0;--moss:#5f7f5a;--ember:#ff3b3b;--lantern:#e3b26a;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--sky-top);color:var(--ink);font-family:ui-serif,Georgia,"Times New Roman",serif}
-.sky{min-height:100vh;background:linear-gradient(var(--sky-top),var(--sky-bottom));padding:28px 16px 48px;position:relative;overflow:hidden}
-.moon{position:absolute;top:30px;right:8%;width:76px;height:76px;border-radius:50%;
-background:radial-gradient(circle at 35% 35%,#f4f1e6,#c9c4b0 70%);box-shadow:0 0 60px 12px rgba(240,236,220,.16)}
-header,main,footer{position:relative;max-width:1080px;margin:0 auto}
-h1{font-size:clamp(26px,4vw,40px);letter-spacing:.04em;margin:0 0 6px;font-weight:600}
-.mono{font-family:ui-monospace,Menlo,Consolas,monospace}
-.sub{color:var(--muted);font-size:13px}
-.stats{display:flex;flex-wrap:wrap;gap:22px;margin-top:14px;font-size:13px}
-.stats b{display:block;color:var(--ink);font-size:18px}
-.stats span{color:var(--muted)}
-.controls{margin-top:16px;display:flex;gap:10px;flex-wrap:wrap;align-items:center}
-input[type=search]{background:#1b2029;color:var(--ink);border:1px solid #343b47;border-radius:6px;padding:8px 12px;font:13px ui-monospace,Menlo,monospace;min-width:220px}
-button{background:#1b2029;color:var(--ink);border:1px solid #343b47;border-radius:6px;padding:8px 12px;font:13px ui-monospace,Menlo,monospace;cursor:pointer}
-button:hover,button:focus-visible,input:focus-visible{border-color:var(--red);outline:none}
-button[aria-pressed=true]{border-color:var(--moss)}
-.yard{margin-top:28px;display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:22px 16px}
-.grave{display:flex;flex-direction:column;align-items:center}
-.grave[hidden]{display:none}
-.stone{width:100%;border-radius:70px 70px 6px 6px;padding:22px 12px 14px;text-align:center;
-background:linear-gradient(160deg,var(--stone-light),var(--stone) 45%,var(--stone-dark));
-box-shadow:inset -6px -8px 14px rgba(0,0,0,.35),0 10px 18px rgba(0,0,0,.6);border-bottom:4px solid var(--moss)}
-.rip{font-size:11px;letter-spacing:.3em;color:var(--muted)}
-.tid{font-size:12px;color:var(--muted);margin-top:2px;word-break:break-all}
-.cost{font-size:clamp(28px,3.4vw,38px);font-weight:700;margin:8px 0 2px;font-variant-numeric:tabular-nums}
-.unit{font-size:11px;color:var(--muted)}
-.name{font-size:13px;line-height:1.3;color:#c3c9d3;margin-top:8px;min-height:34px;word-break:break-word}
-.meta{font-size:11px;color:var(--muted);margin-top:6px;line-height:1.5}
-.badge{display:inline-block;margin-top:8px;padding:2px 8px;border-radius:10px;font:10px ui-monospace,Menlo,monospace;letter-spacing:.12em;border:1px solid var(--moss);color:var(--moss)}
-.grave.killed .stone{border-bottom-color:var(--red)}
-.grave.killed .cost{color:var(--red);text-shadow:0 0 12px var(--red-glow)}
-.grave.killed .badge{border-color:var(--red);color:var(--red)}
-.grave.cap .stone{border-bottom-color:var(--amber)}
-.grave.cap .badge{border-color:var(--amber);color:var(--amber)}
-.mound{width:112%;height:14px;margin-top:-3px;border-radius:50%;background:#1c2a22;opacity:.8}
-.empty{color:var(--muted);text-align:center;padding:60px 0;font-size:15px}
-footer{margin-top:36px;color:var(--muted);font-size:11px}
+html,body{margin:0}
+body{background:var(--hill);color:var(--bone);font-family:var(--serif);
+  font-variant-numeric:lining-nums tabular-nums;line-height:1.5;overflow-x:hidden}
+a{color:var(--lantern)}
+:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
+.sky{position:relative;overflow:hidden;padding:72px 24px 120px;
+  background:radial-gradient(ellipse 60% 50% at 78% 18%,rgba(180,195,220,.10),transparent 60%),
+             linear-gradient(var(--sky-top),var(--sky-low) 85%,var(--hill))}
+.moon{position:absolute;right:12%;top:56px;width:110px;height:110px;border-radius:50%;
+  background:radial-gradient(circle at 38% 36%,#f4f1e6,#cfd2c9 58%,#a9ada6 100%);
+  box-shadow:0 0 60px 18px rgba(220,225,235,.12)}
+.moon::after{content:"";position:absolute;inset:0;border-radius:50%;
+  background:radial-gradient(circle at 64% 60%,rgba(0,0,0,.10) 0 8%,transparent 9%),
+             radial-gradient(circle at 40% 70%,rgba(0,0,0,.08) 0 6%,transparent 7%),
+             radial-gradient(circle at 30% 40%,rgba(0,0,0,.06) 0 10%,transparent 11%)}
+.intro{position:relative;max-width:640px}
+h1{font-weight:400;font-size:clamp(44px,8vw,88px);line-height:1;margin:0 0 20px;letter-spacing:.01em}
+.lede{font-size:clamp(18px,2.2vw,22px);color:var(--bone);margin:0 0 8px;max-width:36em}
+.sub{color:var(--muted);margin:0;font-size:16px;max-width:40em}
+.ground{position:relative;background:var(--hill);padding:0 24px 64px}
+.ground::before{content:"";position:absolute;left:0;right:0;top:-80px;height:81px;
+  background:linear-gradient(var(--hill-edge),var(--hill) 30px);
+  clip-path:polygon(0 70%,12% 52%,28% 64%,46% 40%,63% 58%,80% 44%,100% 62%,100% 100%,0 100%)}
+.field{max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;gap:56px 34px;padding-top:70px}
+.plot{display:flex;flex-direction:column;align-items:stretch;max-width:100%}
+.row{display:flex;align-items:flex-end;gap:12px;padding:0 10px;border-bottom:6px solid var(--moss);
+  background:linear-gradient(to top,rgba(95,127,90,.22),transparent 36px)}
+.plaque{margin-top:10px;font-size:15px;line-height:1.3;max-width:24em}
+.plaque b{font-weight:400;color:var(--bone)}
+.plaque .num{color:var(--muted);margin-right:8px}
+.plaque span.sum{display:block;color:var(--muted);font-size:14px}
+.section-note{max-width:1240px;margin:0 auto;color:var(--muted);font-size:15px}
+.section-note h2{font-weight:400;font-size:24px;color:var(--bone);margin:0 0 4px}
+.wide{flex-basis:100%}
+.stone{--h:160px;position:relative;width:calc(var(--h) * .7);height:var(--h);min-width:96px;overflow:visible;
+  appearance:none;border:0;padding:16px 10px 12px;margin:0;cursor:pointer;color:var(--cut);
+  font:inherit;text-align:center;display:flex;flex-direction:column;align-items:center;
+  border-radius:48% 48% 6px 6px / 34% 34% 6px 6px;
+  background:
+    radial-gradient(ellipse 80% 40% at 30% 12%,rgba(255,255,255,.22),transparent 70%),
+    radial-gradient(circle at 70% 80%,rgba(0,0,0,.18),transparent 55%),
+    linear-gradient(100deg,var(--granite-hi),var(--granite) 45%,var(--granite-lo));
+  box-shadow:inset -6px 0 10px rgba(0,0,0,.25),inset 4px 0 6px rgba(255,255,255,.08),0 10px 14px -8px rgba(0,0,0,.8);
+  transform-origin:bottom center;transition:transform .2s ease}
+.stone::after{content:"";position:absolute;left:-6px;right:-6px;bottom:-6px;height:10px;border-radius:50%;
+  background:radial-gradient(ellipse at center,rgba(95,127,90,.9),rgba(95,127,90,0) 70%)}
+.stone:hover{transform:rotate(-1.2deg)}
+.stone .tid{font-size:13px;letter-spacing:.06em;opacity:.85}
+.stone .cost{font-size:calc(var(--h) * .17);line-height:1.05;margin-top:auto;
+  text-shadow:0 1px 0 rgba(255,255,255,.28),0 -1px 0 rgba(0,0,0,.35)}
+.stone .unit{font-size:12px;opacity:.85}
+.stone .epi{font-size:12px;max-width:100%;overflow-wrap:anywhere;font-style:italic;line-height:1.25;margin:auto 0 0;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
+  text-shadow:0 1px 0 rgba(255,255,255,.22)}
+.stone .tid,.stone .unit{text-shadow:0 1px 0 rgba(255,255,255,.22)}
+.unmarked .stone{border-radius:14px 14px 4px 4px;filter:brightness(.82) saturate(.7)}
+.stopped .row{flex-wrap:wrap;row-gap:70px;padding-top:60px;border-bottom-color:#4a2a2a;
+  background:linear-gradient(to top,rgba(255,59,59,.12),transparent 50px)}
+.stopped .stone{background:
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M22 0 L18 22 L27 38 L14 64 L20 92 L10 140' fill='none' stroke='%231c1d22' stroke-width='2.2'/><path d='M18 22 L8 28 M27 38 L36 46' fill='none' stroke='%231c1d22' stroke-width='1.4'/></svg>") center/100% 100% no-repeat,
+    radial-gradient(ellipse 80% 40% at 30% 12%,rgba(255,255,255,.18),transparent 70%),
+    linear-gradient(100deg,#8d8a8a,#6c6a6c 45%,#45434a)}
+.stopped .stone::after{background:radial-gradient(ellipse at center,rgba(255,59,59,.85),rgba(255,59,59,0) 70%);height:14px;bottom:-8px}
+.stopped .stone .cost{color:#3a1010}
+.ghost{position:absolute;left:50%;top:-58px;width:46px;height:70px;margin-left:-23px;pointer-events:none;
+  border-radius:50% 50% 30% 30%;
+  background:radial-gradient(ellipse at 50% 35%,rgba(230,235,245,.55),rgba(230,235,245,.08) 60%,transparent 72%);
+  filter:blur(3px)}
+.ghost::after{content:"";position:absolute;left:30%;right:30%;top:42%;height:18%;border-radius:50%;
+  background:radial-gradient(circle,rgba(255,59,59,.65),transparent 70%)}
+@media (prefers-reduced-motion:no-preference){
+  .ghost{animation:drift 7s ease-in-out infinite}
+  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+  .fog{animation:clear 2.8s ease-out .3s forwards}
+  @keyframes clear{to{opacity:0;transform:translateX(18%)}}
+}
+.fog{position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:radial-gradient(ellipse 70% 30% at 30% 70%,rgba(200,210,225,.20),transparent 70%),
+             radial-gradient(ellipse 60% 25% at 70% 85%,rgba(200,210,225,.16),transparent 70%)}
+@media (prefers-reduced-motion:reduce){.fog{display:none}.stone{transition:none}.stone:hover{transform:none}}
+dialog{max-width:420px;width:calc(100% - 32px);border:0;padding:24px 26px;border-radius:4px;
+  background:#e9e3d2;color:#1e1c18;font-family:var(--serif);box-shadow:0 30px 60px rgba(0,0,0,.6)}
+dialog::backdrop{background:rgba(3,5,10,.7)}
+dialog h3{font-weight:400;font-size:22px;margin:0 0 4px;line-height:1.25}
+dialog .meta{color:#5b574d;margin:0 0 16px;font-size:15px}
+dialog dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0 0 18px}
+dialog dt{color:#5b574d}
+dialog dd{margin:0;text-align:right}
+dialog .gap{font-size:14px;color:#5b574d;margin:0 0 18px}
+dialog button{font:inherit;font-size:15px;padding:8px 16px;border:1px solid #1e1c18;background:transparent;border-radius:3px;cursor:pointer}
+.register{max-width:1180px;margin:0 auto;padding:8px 24px 72px}
+.register h2{font-weight:400;font-size:26px;margin:0 0 6px}
+.register p{color:var(--muted);margin:0 0 16px}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px;font-family:var(--sans);font-size:14px}
+.controls input{font:inherit;padding:8px 10px;background:#101722;color:var(--bone);border:1px solid #2a3546;border-radius:3px;min-width:220px;max-width:100%}
+.tablewrap{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:15px}
+th,td{padding:8px 10px;border-bottom:1px solid #1d2635;text-align:left;white-space:nowrap}
+td.name{white-space:normal;min-width:220px}
+th button{font:inherit;color:var(--muted);background:none;border:0;padding:0;cursor:pointer}
+th button[aria-sort]{color:var(--bone)}
+td.n,th.n{text-align:right}
+tr.killed td{color:#ffb3b3}
+tr[hidden]{display:none}
+footer{max-width:1180px;margin:0 auto;padding:0 24px 48px;color:var(--muted);font-size:14px}
+@media (max-width:640px){
+  .sky{padding:48px 16px 100px}
+  .ground,.register,footer{padding-left:16px;padding-right:16px}
+  .moon{width:70px;height:70px;top:32px;right:16px}
+  .stone{min-width:84px;--h:calc(var(--hh) * .82) !important}
+  .row{flex-wrap:wrap;row-gap:30px}
+  .field{gap:44px 20px}
+}
 """.strip()
 
+# Detail card, register sort and register filter only. The headstones
+# themselves are plain HTML and need no script.
 _GRAVEYARD_JS = """
 (function(){
-var yard=document.getElementById("yard");
-if(!yard){return;}
-var cards=Array.prototype.slice.call(yard.querySelectorAll(".grave"));
-var box=document.getElementById("filter");
-var buttons=Array.prototype.slice.call(document.querySelectorAll("button[data-sort]"));
-var state={key:"cost",dir:-1};
-function value(card,key){
-  var raw=card.getAttribute("data-"+key)||"";
-  if(key==="name"||key==="date"||key==="outcome"){return raw;}
-  var n=parseFloat(raw);
-  return isNaN(n)?-1:n;
-}
-function sortNow(){
-  cards.sort(function(a,b){
-    var x=value(a,state.key),y=value(b,state.key);
-    if(x<y){return -1*state.dir;}
-    if(x>y){return 1*state.dir;}
-    return 0;
-  });
-  cards.forEach(function(card){yard.appendChild(card);});
-  buttons.forEach(function(btn){
-    var on=btn.getAttribute("data-sort")===state.key;
-    btn.setAttribute("aria-pressed",on?"true":"false");
-    btn.textContent=btn.getAttribute("data-label")+(on?(state.dir<0?" (desc)":" (asc)"):"");
+var card=document.getElementById("card");
+var ground=document.getElementById("ground");
+if(card&&ground&&typeof card.showModal==="function"){
+  var fields=[["Actual","actual"],["Estimate during the turn","estimate"],["Requests","requests"],
+              ["Minutes","minutes"],["Model","model"],["Engine","engine"]];
+  ground.addEventListener("click",function(e){
+    var b=e.target.closest?e.target.closest(".stone"):null;
+    if(!b){return;}
+    document.getElementById("ct").textContent=b.getAttribute("data-title")||"";
+    document.getElementById("cm").textContent=b.getAttribute("data-meta")||"";
+    document.getElementById("cg").textContent=b.getAttribute("data-gap")||"";
+    var dl=document.getElementById("cd");
+    while(dl.firstChild){dl.removeChild(dl.firstChild);}
+    fields.forEach(function(f){
+      var dt=document.createElement("dt");dt.textContent=f[0];
+      var dd=document.createElement("dd");dd.textContent=b.getAttribute("data-"+f[1])||"n/a";
+      dl.appendChild(dt);dl.appendChild(dd);
+    });
+    card.showModal();
   });
 }
-function filterNow(){
-  var q=(box&&box.value||"").toLowerCase().trim();
-  cards.forEach(function(card){
-    var hay=card.getAttribute("data-text")||"";
-    card.hidden=q!==""&&hay.indexOf(q)===-1;
+var tb=document.getElementById("tb"),q=document.getElementById("q");
+if(!tb){return;}
+var rows=Array.prototype.slice.call(tb.querySelectorAll("tr"));
+var heads=Array.prototype.slice.call(document.querySelectorAll("th button"));
+var key="actual",dir=-1;
+function val(tr,k){
+  var raw=tr.getAttribute("data-"+k);
+  if(raw===null||raw===""){return null;}
+  var n=Number(raw);
+  return (k==="actual"||k==="estimate"||k==="requests"||k==="minutes")?(isNaN(n)?null:n):raw;
+}
+function render(){
+  var s=(q&&q.value||"").toLowerCase().trim();
+  rows.sort(function(a,b){
+    var x=val(a,key),y=val(b,key);
+    if(x===null||y===null){return (x===null)-(y===null);}
+    return (x<y?-1:(x>y?1:0))*dir;
+  });
+  rows.forEach(function(tr){
+    tb.appendChild(tr);
+    tr.hidden=s!==""&&(tr.getAttribute("data-text")||"").indexOf(s)===-1;
+  });
+  heads.forEach(function(b){
+    if(b.getAttribute("data-k")===key){b.setAttribute("aria-sort",dir<0?"descending":"ascending");}
+    else{b.removeAttribute("aria-sort");}
   });
 }
-buttons.forEach(function(btn){
-  btn.addEventListener("click",function(){
-    var key=btn.getAttribute("data-sort");
-    if(state.key===key){state.dir=-state.dir;}else{state.key=key;state.dir=(key==="name")?1:-1;}
-    sortNow();
+heads.forEach(function(b){
+  b.addEventListener("click",function(){
+    var k=b.getAttribute("data-k");
+    dir=(k===key)?-dir:-1;key=k;render();
   });
 });
-if(box){box.addEventListener("input",filterNow);}
-sortNow();
+if(q){q.addEventListener("input",render);}
 })();
 """.strip()
 
@@ -1952,7 +2061,7 @@ def _g_credits(value: Optional[float]) -> str:
 
 
 def _g_cost(record: dict) -> tuple[Optional[float], str]:
-    """The price shown big on a card and its label (R4.4).
+    """The price a headstone shows and its label (R4.4).
 
     ``actual`` when the record has it, else the estimate labeled ``est.``,
     else no price at all (label ``unpriced``).
@@ -1966,140 +2075,268 @@ def _g_cost(record: dict) -> tuple[Optional[float], str]:
     return None, "unpriced"
 
 
-def _g_median(values: list[float]) -> Optional[float]:
-    if not values:
-        return None
-    ordered = sorted(values)
-    mid = len(ordered) // 2
-    if len(ordered) % 2:
-        return ordered[mid]
-    return (ordered[mid - 1] + ordered[mid]) / 2
+def _g_str(record: dict, key: str, default: str = "") -> str:
+    value = record.get(key)
+    return value if isinstance(value, str) and value else default
 
 
-def _g_card(record: dict) -> str:
-    """One tombstone card as HTML. Every field is escaped."""
-    esc = html.escape
+def _g_task_id(record: dict) -> str:
+    value = record.get("task_id")
+    return str(value) if value is not None and str(value) != "" else "unknown"
+
+
+def _g_height(cost: Optional[float], peak: float) -> int:
+    """Headstone height in px, the mockup formula: 118 + 150 * sqrt(cost / peak)."""
+    return round(118 + 150 * math.sqrt((cost or 0.0) / peak))
+
+
+def _g_plot_key(task_id: str) -> str:
+    return task_id.split(".")[0]
+
+
+def _g_task_sort(task_id: str) -> list:
+    return [(0, int(p), "") if p.isdigit() else (1, 0, p) for p in re.split(r"[.]", task_id)]
+
+
+def _g_stone(record: dict, peak: float) -> str:
+    """One headstone as a ``<button>`` with plain text inside. Everything escaped."""
+    esc = functools.partial(html.escape, quote=True)
     cost, label = _g_cost(record)
-    outcome = record.get("outcome") if isinstance(record.get("outcome"), str) else "unknown"
-    badge = _OUTCOME_LABELS.get(outcome, outcome.upper())
-    task_id = str(record.get("task_id") if record.get("task_id") is not None else "unknown")
-    name = record.get("name") if isinstance(record.get("name"), str) and record.get("name") else "(unnamed)"
-    spec = record.get("spec") if isinstance(record.get("spec"), str) else "-"
-    engine = record.get("engine") if isinstance(record.get("engine"), str) else "-"
-    model = record.get("model") if isinstance(record.get("model"), str) else "unknown model"
-    date = record.get("date") if isinstance(record.get("date"), str) else ""
-
+    task_id = _g_task_id(record)
+    outcome = _g_str(record, "outcome", "unknown")
+    name = _g_str(record, "name", "(unnamed)")
+    tid = "no task" if task_id == "unknown" else f"task {task_id}"
     estimate = _g_num(record.get("estimate"))
     actual = _g_num(record.get("actual"))
-    requests = record.get("requests") if isinstance(record.get("requests"), int) \
-        and not isinstance(record.get("requests"), bool) else None
+    requests = record.get("requests")
+    if isinstance(requests, bool) or not isinstance(requests, int):
+        requests = None
     minutes = _g_num(record.get("minutes"))
+    date = _g_str(record, "date")
+    source = _g_str(record, "source")
+    height = _g_height(cost, peak)
 
-    # Requests and minutes are measured once the turn is priced, else est.
+    meta = f"{'No task' if task_id == 'unknown' else 'Task ' + task_id}, {outcome}"
+    if date:
+        meta += f", {date}"
+    if source:
+        meta += f", test project {source}"
     basis = "actual" if actual is not None else "est."
-    meta = [f"est. {_g_credits(estimate)}"]
-    meta.append(f"actual {_g_credits(actual)}" if actual is not None else "actual pending")
-    meta.append(f"{requests if requests is not None else 'n/a'} req ({basis})")
-    meta.append(f"{minutes:.1f} min ({basis})" if minutes is not None else "n/a min")
-
-    false_positive = record.get("false_positive")
-    extra = ""
-    if false_positive is True:
-        extra = '<div class="meta mono">marked as false positive</div>'
-    elif false_positive is False and outcome == "killed":
-        extra = '<div class="meta mono">confirmed real stop</div>'
-
-    css = {"killed": "killed", "cap": "cap"}.get(outcome, "")
-    text = " ".join([task_id, name, spec, engine, model, outcome, date]).lower()
-    sort_cost = cost if cost is not None else -1
-    return (
-        f'<article class="grave {css}" data-cost="{sort_cost}" '
-        f'data-date="{esc(date, quote=True)}" '
-        f'data-requests="{requests if requests is not None else -1}" '
-        f'data-name="{esc(name.lower(), quote=True)}" '
-        f'data-outcome="{esc(outcome, quote=True)}" '
-        f'data-text="{esc(text, quote=True)}">'
-        f'<div class="stone">'
-        f'<div class="rip">R.I.P.</div>'
-        f'<div class="tid mono">{esc(spec)} / task {esc(task_id)}</div>'
-        f'<div class="cost">{esc(_g_credits(cost))}</div>'
-        f'<div class="unit mono">credits {esc(label)}</div>'
-        f'<div class="name">{esc(name)}</div>'
-        f'<div class="meta mono">{esc(" | ".join(meta))}</div>'
-        f'<div class="meta mono">{esc(engine)} | {esc(model)} | {esc(date or "no date")}</div>'
-        f'{extra}'
-        f'<span class="badge">{esc(badge)}</span>'
-        f'</div><div class="mound"></div></article>'
-    )
-
-
-def render_graveyard(records: list) -> str:
-    """Render tombstone records as one static HTML page (R2.6, R4.4).
-
-    Inline CSS and JS only: no link, no external script, no font, no network
-    address. One card per record, the price as the big number, sorted by cost
-    (highest first) before the page loads, so it reads without JS. The JS adds
-    sorting and a filter box. Every record field is HTML escaped. Bad input
-    (non-dict items, missing fields) is skipped or shown as ``n/a``.
-    """
-    rows = [r for r in (records or []) if isinstance(r, dict)]
-    rows.sort(key=lambda r: (_g_cost(r)[0] is None, -(_g_cost(r)[0] or 0.0)))
-
-    actuals = [v for v in (_g_num(r.get("actual")) for r in rows) if v is not None]
-    est_only = sum(1 for r in rows if _g_num(r.get("actual")) is None
-                   and _g_num(r.get("estimate")) is not None)
-    est_only_total = sum(_g_num(r.get("estimate")) or 0.0 for r in rows
-                         if _g_num(r.get("actual")) is None)
-    killed = sum(1 for r in rows if r.get("outcome") == "killed")
-    capped = sum(1 for r in rows if r.get("outcome") == "cap")
-    median = _g_median(actuals)
-
-    stats = [
-        (str(len(rows)), "tombstones"),
-        (_g_credits(sum(actuals)), f"credits actual ({len(actuals)} priced)"),
-        (_g_credits(median), "median per tombstone (actual)"),
-        (f"{_g_credits(est_only_total)}", f"credits est. ({est_only} not priced yet)"),
-        (str(killed), "killed by the breaker"),
-        (str(capped), "blocked by a cap"),
-    ]
-    stats_html = "".join(
-        f"<div><b>{html.escape(value)}</b><span>{html.escape(label)}</span></div>"
-        for value, label in stats
-    )
-
-    if rows:
-        body = "\n".join(_g_card(r) for r in rows)
+    if actual is not None and estimate is not None and actual > 0:
+        pct = round(100 * (estimate - actual) / actual)
+        gap = (f"The estimate was {abs(pct)} percent "
+               f"{'above' if estimate >= actual else 'below'} the actual price.")
     else:
-        body = '<p class="empty">No tombstones yet. The graveyard is quiet.</p>'
+        gap = "The actual price had not arrived when this was written."
 
-    buttons = "".join(
-        f'<button type="button" data-sort="{key}" data-label="{label}" '
-        f'aria-pressed="false">{label}</button>'
-        for key, label in (("cost", "Cost"), ("date", "Date"),
-                           ("requests", "Requests"), ("name", "Name"),
-                           ("outcome", "Outcome"))
+    unit = f"credits {label}"
+    aria = f"{tid}, {_g_credits(cost)} credits {label}, {name}"
+    ghost = '<span class="ghost" aria-hidden="true"></span>' if outcome != "finished" else ""
+    return (
+        f'<button type="button" class="stone" style="--hh:{height}px;--h:{height}px" '
+        f'aria-label="{esc(aria)}" data-title="{esc(name)}" data-meta="{esc(meta)}" '
+        f'data-actual="{esc(_g_credits(actual) + " credits actual" if actual is not None else "n/a, actual pending")}" '
+        f'data-estimate="{esc(_g_credits(estimate) + " credits est." if estimate is not None else "n/a")}" '
+        f'data-requests="{esc(str(requests) + " " + basis if requests is not None else "n/a")}" '
+        f'data-minutes="{esc(f"{minutes:.1f} {basis}" if minutes is not None else "n/a")}" '
+        f'data-model="{esc(_g_str(record, "model", "n/a"))}" '
+        f'data-engine="{esc(_g_str(record, "engine", "n/a"))}" '
+        f'data-gap="{esc(gap)}">'
+        f'{ghost}<span class="tid">{esc(tid)}</span>'
+        f'<span class="cost">{esc(_g_credits(cost))}</span>'
+        f'<span class="unit">{esc(unit)}</span>'
+        f'<span class="epi">{esc(name)}</span></button>'
     )
+
+
+def _g_sum_label(rows: list) -> str:
+    """'4.250 credits actual', or 'est. and actual' when some price is still an estimate."""
+    total = sum(_g_cost(r)[0] or 0.0 for r in rows)
+    mixed = any(_g_cost(r)[1] != "actual" for r in rows)
+    return f"{total:.3f} credits {'est. and actual' if mixed else 'actual'}"
+
+
+def _g_register_row(record: dict) -> str:
+    esc = functools.partial(html.escape, quote=True)
+    task_id = _g_task_id(record)
+    name = _g_str(record, "name", "(unnamed)")
+    outcome = _g_str(record, "outcome", "unknown")
+    date = _g_str(record, "date")
+    actual = _g_num(record.get("actual"))
+    estimate = _g_num(record.get("estimate"))
+    requests = record.get("requests")
+    if isinstance(requests, bool) or not isinstance(requests, int):
+        requests = None
+    minutes = _g_num(record.get("minutes"))
+    basis = "actual" if actual is not None else "est."
+
+    def num(v: Optional[float]) -> str:
+        return "" if v is None else repr(v)
+
+    text = " ".join([task_id, name, outcome, date, _g_str(record, "spec")]).lower()
+    cls = ' class="killed"' if outcome != "finished" else ""
+    return (
+        f'<tr{cls} data-task_id="{esc(task_id)}" data-name="{esc(name.lower())}" '
+        f'data-actual="{num(actual)}" data-estimate="{num(estimate)}" '
+        f'data-requests="{"" if requests is None else requests}" data-minutes="{num(minutes)}" '
+        f'data-outcome="{esc(outcome)}" data-date="{esc(date)}" data-text="{esc(text)}">'
+        f"<td>{esc(task_id)}</td><td class=\"name\">{esc(name)}</td>"
+        f"<td class=\"n\">{esc(_g_credits(actual) + ' actual' if actual is not None else 'n/a')}</td>"
+        f"<td class=\"n\">{esc(_g_credits(estimate) + ' est.' if estimate is not None else 'n/a')}</td>"
+        f"<td class=\"n\">{esc(f'{requests} {basis}' if requests is not None else 'n/a')}</td>"
+        f"<td class=\"n\">{esc(f'{minutes:.1f} {basis}' if minutes is not None else 'n/a')}</td>"
+        f"<td>{esc(outcome)}</td><td>{esc(date)}</td></tr>"
+    )
+
+
+def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
+    """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
+
+    Headstones, plots, the stopped row, unmarked graves and the register are
+    plain server-rendered HTML, so they read with JavaScript off. The inline
+    script only opens the detail card and sorts and filters the register.
+    ``plots`` maps a top-level task number (as text) to its name from
+    ``tasks.md``; a missing number reads "Task N". No external resource; the
+    SVG data URI keeps its xmlns. Every record field is HTML escaped.
+    """
+    esc = functools.partial(html.escape, quote=True)
+    plots = plots if isinstance(plots, dict) else {}
+    rows = [r for r in (records or []) if isinstance(r, dict)]
+    costs = [_g_cost(r)[0] or 0.0 for r in rows]
+    peak = max(costs + [1.0])
+
+    stopped = [r for r in rows if r.get("outcome") != "finished"]
+    finished = [r for r in rows if r.get("outcome") == "finished"]
+    known = [r for r in finished if _g_task_id(r) != "unknown"]
+    unmarked = [r for r in finished if _g_task_id(r) == "unknown"]
+
+    parts: list[str] = []
+    if stopped:
+        parts.append(
+            '<div class="section-note wide stopped-note"><h2>Stopped by the breaker</h2>'
+            "These turns went over their cap or were blocked before they started. "
+            "The next tool call was refused and the agent stopped. "
+            "The cost is what Kiro charged before it did.</div>"
+            '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
+            + "".join(_g_stone(r, peak) for r in stopped) + "</div></div>"
+            '<div class="section-note wide"><h2>Finished tasks</h2>'
+            "Grouped by the top-level task in tasks.md.</div>"
+        )
+
+    groups: dict[str, list] = {}
+    for r in known:
+        groups.setdefault(_g_plot_key(_g_task_id(r)), []).append(r)
+    for key in sorted(groups, key=lambda k: _g_task_sort(k)):
+        members = sorted(groups[key], key=lambda r: _g_task_sort(_g_task_id(r)))
+        title = plots.get(key) if isinstance(plots.get(key), str) and plots.get(key) else f"Task {key}"
+        n = len(members)
+        parts.append(
+            '<div class="plot"><div class="row">'
+            + "".join(_g_stone(r, peak) for r in members)
+            + f'</div><div class="plaque"><span class="num">{esc(key)}</span><b>{esc(title)}</b>'
+            f'<span class="sum">{n} {"grave" if n == 1 else "graves"}, '
+            f"{esc(_g_sum_label(members))}</span></div></div>"
+        )
+
+    if unmarked:
+        parts.append(
+            '<div class="section-note wide"><h2>Unmarked graves</h2>'
+            f"{len(unmarked)} turns ticked no box in tasks.md: bug fixes, retries, a hello. "
+            "Tombstone does not guess their task, so each is named by the first words of its "
+            f"prompt. {esc(_g_sum_label(unmarked))}.</div>"
+            '<div class="plot unmarked wide"><div class="row" style="flex-wrap:wrap;row-gap:40px">'
+            + "".join(_g_stone(r, peak) for r in unmarked) + "</div></div>"
+        )
+
+    if not rows:
+        parts.append('<p class="section-note wide">No tombstones yet. The graveyard is quiet.</p>')
+
+    register_rows = sorted(
+        rows, key=lambda r: (_g_num(r.get("actual")) is None, -(_g_num(r.get("actual")) or 0.0)))
+    if not finished and not stopped:
+        lede = "Nothing is buried here yet. Finish a spec task and its stone appears."
+    elif not finished:
+        n_stopped = len(stopped)
+        lede = (f"No task has finished yet. The breaker stopped {n_stopped} "
+                f"{'turn' if n_stopped == 1 else 'turns'}.")
+    elif len(finished) == 1:
+        lede = f"1 task is buried here. It cost {_g_sum_label(finished)}."
+    else:
+        lede = (f"{len(finished)} tasks are buried here. Together they cost "
+                f"{_g_sum_label(finished)}.")
 
     return (
         "<!doctype html>\n"
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        "<title>Tombstone Graveyard</title>\n"
+        "<title>The Graveyard</title>\n"
         f"<style>\n{_GRAVEYARD_CSS}\n</style>\n</head>\n<body>\n"
-        '<div class="sky">\n<div class="moon"></div>\n<header>\n'
-        "<h1>The Graveyard</h1>\n"
-        '<div class="sub mono">tombstones.json, every task priced in Kiro credits. '
-        "Numbers say est. or actual.</div>\n"
-        f'<div class="stats mono">{stats_html}</div>\n'
-        '<div class="controls">'
-        '<input id="filter" type="search" placeholder="Filter by name, task, spec, outcome" '
-        'aria-label="Filter tombstones">'
-        f"{buttons}</div>\n</header>\n"
-        f'<main class="yard" id="yard">\n{body}\n</main>\n'
-        '<footer class="mono">Generated from tombstones.json. '
-        "No network, no external files.</footer>\n</div>\n"
+        '<div class="fog" aria-hidden="true"></div>\n'
+        '<header class="sky">\n<div class="moon" aria-hidden="true"></div>\n'
+        '<div class="intro">\n<h1>The Graveyard</h1>\n'
+        f'<p class="lede" id="lede">{esc(lede)}</p>\n'
+        '<p class="sub">Each stone is one spec task Kiro finished. The taller the stone, '
+        "the more it cost. Open a stone for the estimate, the requests and the time.</p>\n"
+        "</div>\n</header>\n<main>\n"
+        f'<section class="ground" id="ground" aria-label="Graves by task">'
+        f'<div class="field">{"".join(parts)}</div></section>\n'
+        '<section class="register" aria-labelledby="regh">\n'
+        '<h2 id="regh">The register</h2>\n'
+        "<p>Every row of tombstones.json, the same data as the stones above.</p>\n"
+        '<div class="controls"><label>Find a task '
+        '<input id="q" type="search" placeholder="task id or words"></label></div>\n'
+        '<div class="tablewrap"><table>\n<thead><tr>'
+        '<th><button type="button" data-k="task_id">Task</button></th>'
+        '<th><button type="button" data-k="name">Name</button></th>'
+        '<th class="n"><button type="button" data-k="actual">Actual</button></th>'
+        '<th class="n"><button type="button" data-k="estimate">Estimate</button></th>'
+        '<th class="n"><button type="button" data-k="requests">Requests</button></th>'
+        '<th class="n"><button type="button" data-k="minutes">Minutes</button></th>'
+        '<th><button type="button" data-k="outcome">Outcome</button></th>'
+        '<th><button type="button" data-k="date">Date</button></th>'
+        "</tr></thead>\n"
+        f'<tbody id="tb">{"".join(_g_register_row(r) for r in register_rows)}</tbody>'
+        "</table></div>\n</section>\n</main>\n"
+        "<footer>Every number on this page comes from tombstones.json, written by "
+        "Tombstone's hooks while Kiro worked. Credits are Kiro credits as the session "
+        "files report them.</footer>\n"
+        '<dialog id="card" aria-labelledby="ct"><h3 id="ct"></h3><p class="meta" id="cm"></p>'
+        '<dl id="cd"></dl><p class="gap" id="cg"></p>'
+        '<form method="dialog"><button>Close</button></form></dialog>\n'
         f"<script>\n{_GRAVEYARD_JS}\n</script>\n</body>\n</html>\n"
     )
+
+
+_PLOT_LINE = re.compile(r"^- \[[ xX\-~]\] (\d+)\. (.+?)\s*$")
+
+
+def read_plot_names(project: Path) -> dict:
+    """Plot names from the top-level ``- [ ] N. Name`` lines of every
+    ``.kiro/specs/*/tasks.md`` (checked or not, backticks removed).
+
+    The first spec in name order wins on a repeated number. Unreadable or
+    symlinked files are skipped; never raises.
+    """
+    names: dict[str, str] = {}
+    specs = Path(project) / ".kiro" / "specs"
+    try:
+        files = sorted(specs.glob("*/tasks.md"))
+    except OSError:
+        return names
+    for path in files:
+        try:
+            if path.is_symlink():
+                continue
+            text = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            continue
+        for line in text.splitlines():
+            match = _PLOT_LINE.match(line)
+            if match:
+                title = match.group(2).replace("`", "").strip()
+                if title:
+                    names.setdefault(match.group(1), title)
+    return names
 
 
 def write_graveyard(project: Path, out: Optional[Path] = None) -> Path:
@@ -2110,7 +2347,7 @@ def write_graveyard(project: Path, out: Optional[Path] = None) -> Path:
     """
     project = Path(project)
     store = load_tombstones(project / "tombstones.json")
-    page = render_graveyard(store.get("tombstones") or [])
+    page = render_graveyard(store.get("tombstones") or [], read_plot_names(project))
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
     if out is None and not guard(project, target):
