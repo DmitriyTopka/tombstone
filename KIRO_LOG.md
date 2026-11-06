@@ -162,3 +162,9 @@ Live runs of `tombstone init --no-watcher-unit` in fresh scratch projects, cap l
 3. live3: stdlib MCP server answers `initialize` in about 45 ms. Full chain worked: the agent called `@tombstone/get_budget`, the watcher raised over-cap (est. 1.00 of 0.60), the next `Write File` was refused, the agent quoted `TOMBSTONE: this turn over budget (est. 1.00 of 0.60). Stop.` and stopped without retrying. Autopsy written with refusal text, plan balance at stop 3874.15 (live `/usage` parse), actual 0.536 appended after the turn.
 Open: estimate on a fresh project is high (1.00 vs 0.536 actual) until the per-unit price calibrates; kill step still not exercised live (the agent always stops after the block); stall path not run live; launchd unit not loaded live (needs Dima's OK, it changes his login items).
 Spend: `/usage` 174.70 of 4000 on 2026-11-06.
+
+## 2026-11-06 Live check of the launchd watcher (Dima's OK: "install and remove")
+- `tombstone init` in a fresh scratch project wrote `~/Library/LaunchAgents/com.tombstone.live4-2a89b377.plist` and loaded it: `launchctl list` showed `25562 0 com.tombstone.live4-2a89b377`.
+- Same test task with cap 0.6: the launchd watcher wrote STOP (`est. 1.00 of 0.60`), the next write was refused, the agent stopped and wrote an autopsy. No manual watcher process was running.
+- Removed right after: `launchctl bootout gui/501/com.tombstone.live4-2a89b377` (exit 0), plist deleted, `launchctl list` and `~/Library/LaunchAgents` show no tombstone entry, no `tombstone watch` process left.
+- Gap found: there is no `tombstone uninstall`; removal took two manual commands. Candidate task for E4.
