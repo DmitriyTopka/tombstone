@@ -139,3 +139,26 @@ Live stop tests in scratch projects (hooks + `tombstone watch`, logs outside the
 What this proves: detector, STOP file, pre-tool block and the agent's reaction work end to end on CLI 3.0.0 (burn5). Real numbers for the video: one unguarded loop burned about 22 credits in 7 minutes (burn1); the guarded run stopped at 0.33.
 Not proven yet: the kill step on a live process (the agent always stopped itself after the block), the stall path (quiet project) on a live run, the autopsy (task 8).
 Spend: `/usage` 142.80 of 4000 on 2026-11-06.
+
+## 2026-11-06 Autopsy, MCP, init and Power (spec tasks 8.1-10.3) and the first end-to-end live run
+Engine: V3      CLI: 3.0.0, auto-updated to 3.1.0 during the day      Model: auto
+All task records below were written by the hooks with share 1.0 and the right task id.
+
+| Run | Requests | Credits (actual) |
+|---|---|---|
+| 8.1 Autopsy | 14 | 3.547 |
+| 8.2 Append actual | 21 | 4.289 |
+| 9.1 Usage probe and cache | 11 | 2.460 |
+| 9.2 get_budget and stdio server | 13 | 3.005 |
+| 10.1 Hook and config builders | 11 | 2.211 |
+| 10.2 init and watcher units (`--no-watcher-unit` added) | 9 | 1.974 |
+| 10.3 Power folder and CLI version check | 18 | 4.668 |
+| Fix: hooks used a bare `tombstone`, MCP not registered, V2 agent profile hijacked V3 | 15 | 5.326 |
+| Fix: stdlib MCP server, zero runtime dependencies | 14 | 2.859 |
+
+Live runs of `tombstone init --no-watcher-unit` in fresh scratch projects, cap lowered for the test:
+1. live1: every hook failed with `tombstone: command not found` (bare name, venv not on PATH). The watcher still wrote STOP and an autopsy, but nothing blocked the agent. Kiro 3.1.0 also loaded `.kiro/agents/tombstone.json` as the active profile (`profile.loaded {"agentId":"tombstone"}` in kiro.log), which hid the MCP tool.
+2. live2: hooks fixed. The agent could not see get_budget: the first prompt left at 09:28:30.968, the MCP server finished connecting at 09:28:32.708 (1.8 s, mostly importing the `mcp` SDK). The agent read tombstone.toml itself, saw the 0.3 cap and paused to ask the user. Steering working as intended.
+3. live3: stdlib MCP server answers `initialize` in about 45 ms. Full chain worked: the agent called `@tombstone/get_budget`, the watcher raised over-cap (est. 1.00 of 0.60), the next `Write File` was refused, the agent quoted `TOMBSTONE: this turn over budget (est. 1.00 of 0.60). Stop.` and stopped without retrying. Autopsy written with refusal text, plan balance at stop 3874.15 (live `/usage` parse), actual 0.536 appended after the turn.
+Open: estimate on a fresh project is high (1.00 vs 0.536 actual) until the per-unit price calibrates; kill step still not exercised live (the agent always stops after the block); stall path not run live; launchd unit not loaded live (needs Dima's OK, it changes his login items).
+Spend: `/usage` 174.70 of 4000 on 2026-11-06.

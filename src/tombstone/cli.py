@@ -1,7 +1,7 @@
 """Command line entry point for the tombstone command.
 
 ``cli.main`` parses arguments with argparse and imports a command's module
-only after parsing, so a hook path never pays for ``mcp``, ``subprocess`` or
+only after parsing, so a hook path never pays for ``subprocess`` or
 ``tomllib`` it does not use (design: lazy imports per command).
 
 Task 2 lands the entry point and ``tombstone cost``. Other subcommands are
@@ -238,8 +238,18 @@ def _read_stdin_json() -> dict:
     return value if isinstance(value, dict) else {}
 
 
+# Set by ``cmd_hook`` from ``--project`` for the duration of one hook call.
+_PROJECT_OVERRIDE: Optional[Path] = None
+
+
 def _hook_project_root(stdin: dict) -> Optional[Path]:
-    """Find the project root for a hook from STDIN cwd, else the process cwd."""
+    """Find the project root for a hook.
+
+    ``--project`` wins for every event; otherwise STDIN ``cwd``, otherwise
+    the process cwd.
+    """
+    if _PROJECT_OVERRIDE is not None:
+        return _PROJECT_OVERRIDE
     cwd = stdin.get("cwd") if isinstance(stdin, dict) else None
     start = Path(cwd) if isinstance(cwd, str) and cwd else None
     return find_project_root(start)
@@ -419,7 +429,19 @@ def _reconcile_pending_quietly(project: Optional[Path],
 
 
 def cmd_hook(args: argparse.Namespace) -> int:
-    """Dispatch a hook event. Fail open: an internal error exits 0 (design)."""
+    """Dispatch a hook event, honouring ``--project`` for every event."""
+    global _PROJECT_OVERRIDE
+    project_arg = getattr(args, "project", None)
+    previous = _PROJECT_OVERRIDE
+    _PROJECT_OVERRIDE = Path(project_arg).expanduser() if project_arg else None
+    try:
+        return _dispatch_hook(args)
+    finally:
+        _PROJECT_OVERRIDE = previous
+
+
+def _dispatch_hook(args: argparse.Namespace) -> int:
+    """Run one hook event. Fail open: an internal error exits 0 (design)."""
     event = args.event
 
     # reconcile reads CLI arguments, not STDIN, so it is dispatched apart from
@@ -547,6 +569,9 @@ def cmd_watch(args: argparse.Namespace) -> int:
 
     from . import watcher
 
+    warning = watcher.check_cli_version(project)
+    if warning:
+        print(warning, file=sys.stderr)
     print(f"tombstone watch: polling {project} every {watcher.POLL_SECONDS:g} s",
           file=sys.stderr)
     try:
@@ -556,7 +581,464 @@ def cmd_watch(args: argparse.Namespace) -> int:
     return 0
 
 
+# --- tombstone mcp ----------------------------------------------------------
+
+
+def cmd_mcp(args: argparse.Namespace) -> int:
+    """``tombstone mcp``: serve ``get_budget`` over stdio (R8.1)."""
+    project = Path(args.project).expanduser() if getattr(args, "project", None) \
+        else find_project_root()
+
+    from . import mcp_server
+
+    try:
+        mcp_server.serve(project)
+    except KeyboardInterrupt:
+        return 0
+    return 0
+
+
 # --- argument parser --------------------------------------------------------
+
+
+# --- init builders (task 10.1) ----------------------------------------------
+#
+# Pure functions: they return the text or data that `tombstone init` writes.
+# Only shell `command` actions are produced (R11.1) and no `model` key is ever
+# written (R11.3).
+
+_HOOK_TIMEOUT_SECONDS = 10
+
+# (file stem, trigger, hook event, description)
+_V3_HOOKS: tuple[tuple[str, str, str, str], ...] = (
+    ("pre-tool", "PreToolUse", "pre-tool",
+     "Tombstone: block tools when the STOP file exists or a cap is breached"),
+    ("post-tool", "PostToolUse", "post-tool",
+     "Tombstone: track tasks.md checkbox edits"),
+    ("stop", "Stop", "stop",
+     "Tombstone: write the tombstone for the finished turn"),
+    ("session-start", "SessionStart", "session-start",
+     "Tombstone: remember the session id"),
+    ("prompt", "UserPromptSubmit", "prompt",
+     "Tombstone: remember the prompt so a turn without a task gets a readable name"),
+    ("task-pre", "PreTaskExecution", "task-pre",
+     "Tombstone: store the task id when a spec task starts"),
+    ("task-post", "PostTaskExecution", "task-post",
+     "Tombstone: note that a spec task ended"),
+)
+
+# V2 camelCase keys and the hook event each one calls.
+_V2_HOOKS: tuple[tuple[str, str], ...] = (
+    ("preToolUse", "pre-tool"),
+    ("postToolUse", "post-tool"),
+    ("stop", "stop"),
+)
+
+
+def find_executable() -> str:
+    """Absolute path of the interpreter that runs ``tombstone``.
+
+    Hooks and the MCP server call ``<python> -m tombstone ...`` so they work
+    when the virtualenv holding tombstone is not on PATH.
+    """
+    return sys.executable or "python3"
+
+
+def _sh_quote(text: str) -> str:
+    """Always single-quote ``text`` for ``sh`` (paths may hold spaces)."""
+    return "'" + str(text).replace("'", "'\"'\"'") + "'"
+
+
+def hook_command(python: str, event: str, project: Path) -> str:
+    """The shell command of one hook: quoted interpreter, ``-m tombstone``."""
+    return (f"{_sh_quote(python)} -m tombstone hook {event} "
+            f"--project {_sh_quote(str(Path(project).resolve()))}")
+
+
+def build_mcp_entry(python: str, project: Path) -> dict:
+    """The ``tombstone`` entry of ``mcpServers`` in ``.kiro/settings/mcp.json``."""
+    return {"command": str(python),
+            "args": ["-m", "tombstone", "mcp", "--project",
+                     str(Path(project).resolve())]}
+
+
+def merge_mcp_settings(path: Path, python: str, project: Path) -> str:
+    """Add the ``tombstone`` server to the settings file. Returns the report line.
+
+    Keeps every other key and server. An existing ``tombstone`` entry, an
+    unreadable file or a non-object ``mcpServers`` is left as it is (R9.4).
+    """
+    import json
+
+    entry = build_mcp_entry(python, project)
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(_json_text({"mcpServers": {"tombstone": entry}}),
+                        encoding="utf-8")
+        return f"created {path}"
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return f"exists, not valid JSON, left unchanged {path}; add the tombstone server by hand"
+    if not isinstance(data, dict):
+        return f"exists, not a JSON object, left unchanged {path}; add the tombstone server by hand"
+    servers = data.get("mcpServers")
+    if servers is None:
+        servers = data["mcpServers"] = {}
+    if not isinstance(servers, dict):
+        return f"exists, mcpServers is not an object, left unchanged {path}"
+    if "tombstone" in servers:
+        return f"exists, tombstone server already registered, left unchanged {path}"
+    servers["tombstone"] = entry
+    path.write_text(_json_text(data), encoding="utf-8")
+    return f"updated {path} (added the tombstone server, kept the rest)"
+
+
+def build_v3_hook_files(executable: str, project: Path) -> dict[str, dict]:
+    """V3 hook files keyed by file name (``tombstone-<name>.json``)."""
+    files: dict[str, dict] = {}
+    for stem, trigger, event, description in _V3_HOOKS:
+        files[f"tombstone-{stem}.json"] = {
+            "version": "v1",
+            "hooks": [{
+                "name": f"tombstone-{stem}",
+                "description": description,
+                "trigger": trigger,
+                "action": {
+                    "type": "command",
+                    "command": hook_command(executable, event, project),
+                    "timeout": _HOOK_TIMEOUT_SECONDS,
+                },
+            }],
+        }
+    return files
+
+
+def build_v2_agent_config(executable: str, project: Path) -> dict:
+    """The V2 agent config for ``.kiro/agents/tombstone.json``. No model key."""
+    hooks = {
+        key: [{"command": hook_command(executable, event, project),
+               "timeout_ms": _HOOK_TIMEOUT_SECONDS * 1000}]
+        for key, event in _V2_HOOKS
+    }
+    return {
+        "name": "tombstone",
+        "description": "Tombstone circuit breaker hooks (no model override)",
+        "hooks": hooks,
+    }
+
+
+def build_steering_text() -> str:
+    """Steering file text for ``.kiro/steering/tombstone.md``."""
+    return """---
+inclusion: always
+---
+
+# Budget mode (Tombstone)
+
+This project runs under Tombstone, a circuit breaker that caps credits per task and per spec. The cap is public: the numbers are in `tombstone.toml` and in the `get_budget` answer, and you are expected to plan within them.
+
+## Before each spec task
+
+1. Call the MCP tool `get_budget` with the task name.
+2. Read the three numbers: similar task cost, remaining spec budget, plan balance.
+3. If the remaining spec budget is lower than the similar task cost, do not start. Tell the human the three numbers and ask how to proceed.
+4. If the plan balance is null or older than 30 minutes, say so in one line and continue.
+
+## While working
+
+- Keep the model you were given. Never switch, suggest or request another model to save credits.
+- Prefer one focused edit over re-reading the same files. If you have read a file twice without changing anything, stop and say what is blocking you.
+- If a tool call is refused with a message starting `TOMBSTONE:`, that means stop. Stop immediately. Do not retry the tool, do not try another tool to get around it, do not edit the cap. Quote the message to the human and wait.
+- Do not edit or delete anything in `.kiro/tombstone/`, `tombstone.toml` or `tombstones.json` unless the human asks for it.
+
+## After a task
+
+- Mention the task id so the tombstone gets the right name.
+"""
+
+
+def build_default_toml() -> str:
+    """Default ``tombstone.toml``; uses exactly the keys ``load_config`` reads."""
+    return """# Tombstone configuration. All numbers are credits unless stated.
+
+[caps]
+# Hard cap per task and per spec, in credits.
+task = 40
+spec = 300
+
+[stall]
+# Minutes of model calls with no project file change before a stall is declared.
+quiet_window_minutes = 10
+
+[budget]
+# Estimated price of one request (measured on Kiro CLI 3.0.0). Used for est. only.
+avg_request_price = 0.25
+# Warn when the plan balance is below this many credits.
+min_plan_balance = 0
+
+[stop]
+# Seconds between the STOP file and killing the agent process.
+kill_grace_seconds = 30
+"""
+
+
+# --- tombstone init (task 10.2) ---------------------------------------------
+
+
+def _json_text(data: object) -> str:
+    import json
+
+    return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
+
+
+def _write_if_absent(path: Path, text: str) -> str:
+    """Create ``path`` only when absent (R9.4). Returns the printed line."""
+    if path.exists():
+        return f"exists, left unchanged {path}"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(text, encoding="utf-8")
+    return f"created {path}"
+
+
+def unit_id(project: Path) -> str:
+    """``<name>-<hash8>``: project name plus a short hash of its path."""
+    import hashlib
+    import re
+
+    resolved = Path(project).resolve()
+    name = re.sub(r"[^A-Za-z0-9._-]+", "-", resolved.name).strip("-") or "project"
+    digest = hashlib.sha256(str(resolved).encode("utf-8")).hexdigest()[:8]
+    return f"{name}-{digest}"
+
+
+def build_launchd_plist(executable: str, project: Path, label: str) -> str:
+    """launchd plist text for the watcher (RunAtLoad, KeepAlive)."""
+    import plistlib
+
+    data = {
+        "Label": label,
+        "ProgramArguments": [str(executable), "-m", "tombstone", "watch",
+                             "--project", str(Path(project).resolve())],
+        "RunAtLoad": True,
+        "KeepAlive": True,
+    }
+    return plistlib.dumps(data).decode("utf-8")
+
+
+def _systemd_quote(arg: str) -> str:
+    escaped = arg.replace("\\", "\\\\").replace('"', '\\"').replace("%", "%%")
+    return f'"{escaped}"'
+
+
+def build_systemd_unit(executable: str, project: Path) -> str:
+    """systemd user unit text for the watcher."""
+    exec_start = " ".join(_systemd_quote(a) for a in (
+        str(executable), "-m", "tombstone", "watch", "--project",
+        str(Path(project).resolve())))
+    return (
+        "[Unit]\n"
+        "Description=Tombstone watcher\n"
+        "\n"
+        "[Service]\n"
+        f"ExecStart={exec_start}\n"
+        "Restart=always\n"
+        "\n"
+        "[Install]\n"
+        "WantedBy=default.target\n"
+    )
+
+
+def _run_load_command(command: list[str]) -> tuple[int, str]:
+    """Run the unit load command. The only place init calls launchctl or
+    systemctl (steering allows it for init only)."""
+    import subprocess
+
+    try:
+        done = subprocess.run(command, capture_output=True, text=True,
+                              timeout=30, check=False)
+    except (OSError, subprocess.SubprocessError) as exc:
+        return 1, str(exc)
+    return done.returncode, (done.stderr or done.stdout or "").strip()
+
+
+def cmd_init(args: argparse.Namespace) -> int:
+    """``tombstone init``: create project files and the watcher unit."""
+    import os
+    import shlex
+
+    project = (Path(args.project).expanduser() if getattr(args, "project", None)
+               else Path.cwd()).resolve()
+    if not project.is_dir():
+        print(f"tombstone init: not a directory: {project}", file=sys.stderr)
+        return 1
+    executable = find_executable()
+    lines: list[str] = []
+
+    for name, data in build_v3_hook_files(executable, project).items():
+        lines.append(_write_if_absent(project / ".kiro" / "hooks" / name,
+                                      _json_text(data)))
+    v2 = bool(getattr(args, "v2", False))
+    agent_path = project / ".kiro" / "agents" / "tombstone.json"
+    if v2:
+        lines.append(_write_if_absent(
+            agent_path, _json_text(build_v2_agent_config(executable, project))))
+    elif agent_path.exists():
+        lines.append(f"note: {agent_path} exists. Kiro CLI 3.1.0 loads it as the "
+                     "active profile and that profile has no MCP tools. Remove "
+                     "it yourself if you use V3 (init never deletes files).")
+    lines.append(merge_mcp_settings(
+        project / ".kiro" / "settings" / "mcp.json", executable, project))
+    lines.append(_write_if_absent(
+        project / ".kiro" / "steering" / "tombstone.md", build_steering_text()))
+    lines.append(_write_if_absent(project / "tombstone.toml", build_default_toml()))
+
+    watch_cmd = (f"{shlex.quote(executable)} -m tombstone watch "
+                 f"--project {shlex.quote(str(project))}")
+    failed = False
+    if getattr(args, "no_watcher_unit", False):
+        lines.append("watcher unit skipped (--no-watcher-unit)")
+        lines.append("run the watcher by hand:")
+        lines.append(f"  {watch_cmd}")
+    else:
+        uid_name = unit_id(project)
+        home = Path.home()
+        if sys.platform == "darwin":
+            label = f"com.tombstone.{uid_name}"
+            unit_path = home / "Library" / "LaunchAgents" / f"{label}.plist"
+            text = build_launchd_plist(executable, project, label)
+            load = ["launchctl", "bootstrap", f"gui/{os.getuid()}", str(unit_path)]
+        else:
+            unit_path = home / ".config" / "systemd" / "user" / f"tombstone-{uid_name}.service"
+            text = build_systemd_unit(executable, project)
+            load = ["systemctl", "--user", "enable", "--now", unit_path.name]
+        lines.append(_write_if_absent(unit_path, text))
+        load_text = " ".join(shlex.quote(p) for p in load)
+        code, detail = _run_load_command(load)
+        if code == 0:
+            lines.append(f"loaded watcher unit: {load_text}")
+        else:
+            failed = True
+            lines.append(f"could not load the watcher unit ({detail or 'exit ' + str(code)})")
+            lines.append(f"load it yourself: {load_text}")
+            lines.append(f"or run by hand: {watch_cmd}")
+
+    from . import watcher
+
+    version_warning = watcher.check_cli_version(project)
+    if version_warning:
+        lines.append(version_warning)
+
+    lines.append("")
+    lines.append("Start Kiro with the hooks active:")
+    lines.append("  V3 (default):  kiro-cli chat            hooks in .kiro/hooks are active,")
+    lines.append("                                          get_budget comes from .kiro/settings/mcp.json")
+    if v2:
+        lines.append("  V2 (legacy):   kiro-cli chat --agent tombstone")
+    else:
+        lines.append("  V2 (legacy):   run `tombstone init --v2` to write .kiro/agents/tombstone.json")
+    print("\n".join(lines))
+    return 1 if failed else 0
+
+
+# --- Power folder (task 10.3) -----------------------------------------------
+
+_PLUGIN_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json"
+_MCP_SCHEMA = "https://agent-plugins.org/schemas/1.0.0/mcp.schema.json"
+_REPO_URL = "https://github.com/DmitriyTopka/tombstone"
+POWER_PROJECT_PLACEHOLDER = "/path/to/project"
+POWER_PYTHON_PLACEHOLDER = "/path/to/python"
+
+
+def build_plugin_json() -> dict:
+    """``power/plugin.json`` (Agent Plugins spec)."""
+    from . import __version__
+
+    return {
+        "$schema": _PLUGIN_SCHEMA,
+        "name": "tombstone",
+        "version": __version__,
+        "description": ("Circuit breaker for Kiro specs: prices tasks in "
+                        "credits, enforces caps, stops stuck agents."),
+        "author": {"name": "DmitriyTopka", "url": "https://github.com/DmitriyTopka"},
+        "keywords": ["kiro", "budget", "credits", "circuit-breaker", "mcp"],
+        "homepage": _REPO_URL,
+        "repository": _REPO_URL,
+        "license": "MIT",
+    }
+
+
+def build_power_mcp_json() -> dict:
+    """``power/mcp.json``: the stdio server for ``get_budget``."""
+    return {
+        "$schema": _MCP_SCHEMA,
+        "mcpServers": {
+            "tombstone": {"type": "stdio", "command": POWER_PYTHON_PLACEHOLDER,
+                          "args": ["-m", "tombstone", "mcp"]},
+        },
+    }
+
+
+def build_skill_text() -> str:
+    """``power/skills/tombstone/SKILL.md``."""
+    return """---
+name: tombstone
+description: Plan within a credit budget. Call get_budget before each spec task and treat a TOMBSTONE: refusal as a hard stop.
+---
+
+# Tombstone budget skill
+
+Tombstone is a circuit breaker that caps credits per task and per spec. The caps are public, in `tombstone.toml` and in the `get_budget` answer.
+
+## get_budget
+
+Before each spec task, call the MCP tool `get_budget` with the task name. It returns three groups of numbers, all in credits:
+
+- `similar`: the median cost of similar finished tasks, with `basis` (`actual` or `est.`), plus `task_cap`.
+- `spec`: the spec `cap`, `spent`, `remaining` and `basis`.
+- `plan_balance`: the plan `value` (actual), `age_minutes` and a `reason` when it is unavailable.
+
+If `spec.remaining` is lower than `similar.median`, do not start the task. Tell the human the numbers and ask how to proceed. If `plan_balance.value` is null or older than 30 minutes, say so in one line and continue. Keep the model you were given and never suggest another one to save credits.
+
+## A TOMBSTONE: refusal
+
+A tool call refused with a message that starts with `TOMBSTONE:` means stop. Do not retry the tool, do not try another tool to get around it, and do not edit the cap or anything in `.kiro/tombstone/`, `tombstone.toml` or `tombstones.json`. Quote the message to the human and wait. The human removes the block with `tombstone resume`.
+
+## Hooks are not part of the power
+
+Hooks are not a documented power component. The files in `power/hooks/` (`v3/*.json` and `v2/tombstone.json`) are reference templates generated from the same builders as `tombstone init`, with placeholder paths (`/path/to/python`, `/path/to/project`). `tombstone init` installs the real hook files into `.kiro/hooks/` and registers the MCP server in `.kiro/settings/mcp.json` of the project, both with the absolute interpreter path. It writes `.kiro/agents/tombstone.json` only with `--v2`, because Kiro CLI 3.1.0 loads that file as the active profile and that profile has no MCP tools. Installing the power alone does not enable the cap gate.
+"""
+
+
+def build_power_files(root: Path) -> dict[Path, str]:
+    """Every file of the ``power/`` folder, keyed by path under ``root``.
+
+    Hook templates come from the same builders ``init`` uses, with a
+    placeholder interpreter and project path.
+    """
+    root = Path(root)
+    project = Path(POWER_PROJECT_PLACEHOLDER)
+    python = POWER_PYTHON_PLACEHOLDER
+    files: dict[Path, str] = {
+        root / "plugin.json": _json_text(build_plugin_json()),
+        root / "mcp.json": _json_text(build_power_mcp_json()),
+        root / "skills" / "tombstone" / "SKILL.md": build_skill_text(),
+        root / "hooks" / "v2" / "tombstone.json": _json_text(
+            build_v2_agent_config(python, project)),
+    }
+    for name, data in build_v3_hook_files(python, project).items():
+        files[root / "hooks" / "v3" / name] = _json_text(data)
+    return files
+
+
+def write_power_folder(root: Path) -> list[Path]:
+    """Write the power folder, replacing generated files. Returns the paths."""
+    written: list[Path] = []
+    for path, text in build_power_files(root).items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(text, encoding="utf-8")
+        written.append(path)
+    return written
 
 
 def build_parser() -> argparse.ArgumentParser:
@@ -623,9 +1105,22 @@ def build_parser() -> argparse.ArgumentParser:
                         help="project root (default: found from the working directory)")
     resume.set_defaults(func=cmd_resume)
 
-    for name in ("mcp", "init"):
-        placeholder = sub.add_parser(name, help=f"{name} (not implemented yet)")
-        placeholder.set_defaults(func=_not_ready(name))
+    mcp_cmd = sub.add_parser("mcp", help="run the stdio MCP server (get_budget)")
+    mcp_cmd.add_argument("--project", default=None,
+                         help="project root (default: found from the working directory)")
+    mcp_cmd.set_defaults(func=cmd_mcp)
+
+    init = sub.add_parser("init", help="create project files and the watcher unit")
+    init.add_argument("--project", default=None,
+                      help="project root (default: the working directory)")
+    init.add_argument("--no-watcher-unit", action="store_true",
+                      help="do not write or load the launchd/systemd unit; "
+                           "print how to run the watcher by hand")
+    init.add_argument("--v2", action="store_true",
+                      help="also write the legacy V2 agent config "
+                           ".kiro/agents/tombstone.json (Kiro 3.1.0 loads it "
+                           "as the active profile, which has no MCP tools)")
+    init.set_defaults(func=cmd_init)
 
     return parser
 

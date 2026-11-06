@@ -696,6 +696,52 @@ def kill_step_once(project: Path, cfg, now: datetime) -> Optional[dict]:
     return result
 
 
+# --- CLI version check (R10.4) ----------------------------------------------
+
+# The Kiro CLI version this release was measured against. Hooks never probe it.
+TESTED_CLI_VERSION = "3.1.0"
+_VERSION_RE = re.compile(r"\d+\.\d+\.\d+(?:[-+.][0-9A-Za-z.-]+)?")
+
+
+def installed_cli_version() -> Optional[str]:
+    """Version printed by ``kiro-cli --version``, or None when unavailable."""
+    import subprocess
+
+    try:
+        done = subprocess.run(["kiro-cli", "--version"], capture_output=True,
+                              text=True, timeout=10, check=False)
+    except (OSError, subprocess.SubprocessError):
+        return None
+    match = _VERSION_RE.search(done.stdout or "")
+    return match.group(0) if match else None
+
+
+def check_cli_version(project: Path, installed: Optional[str] = None,
+                      probe: Optional[Callable[[], Optional[str]]] = None
+                      ) -> Optional[str]:
+    """Store installed and tested versions in ``state.cli_version``.
+
+    Returns one warning line when the installed version is known and differs
+    from ``TESTED_CLI_VERSION``, else None. Never raises: the check must not
+    break ``init`` or the watcher.
+    """
+    try:
+        if installed is None:
+            installed = (probe or installed_cli_version)()
+
+        def apply(state: dict) -> None:
+            state["cli_version"] = {"installed": installed,
+                                    "tested": TESTED_CLI_VERSION}
+
+        update_state(Path(project), apply)
+    except Exception:  # noqa: BLE001
+        return None
+    if installed and installed != TESTED_CLI_VERSION:
+        return (f"warning: kiro-cli {installed} is installed, tombstone was "
+                f"tested on {TESTED_CLI_VERSION}; numbers may be off")
+    return None
+
+
 def run(project: Path, *, kiro_home: Optional[Path] = None,
         interval: float = POLL_SECONDS,
         sleep: Callable[[float], None] = time.sleep,
@@ -710,7 +756,7 @@ def run(project: Path, *, kiro_home: Optional[Path] = None,
     ``max_polls``, ``sleep``, ``clock`` and ``dispatch`` exist for tests.
     Returns the number of polls made.
     """
-    from . import caps
+    from . import autopsy, caps
 
     project = Path(project)
     clock = clock or (lambda: datetime.now(timezone.utc))
@@ -727,6 +773,7 @@ def run(project: Path, *, kiro_home: Optional[Path] = None,
                 dispatch(project, event)
             kill_step(project, cfg, now)
             tombstones.reconcile_pending(project, kiro_home=kiro_home)
+            autopsy.settle_autopsy(project, kiro_home=kiro_home)
         except Exception as exc:  # the loop must stay alive
             try:
                 _log(project, f"watcher poll failed: {type(exc).__name__}: {exc}")

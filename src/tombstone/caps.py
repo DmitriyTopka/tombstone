@@ -35,7 +35,7 @@ from typing import Literal, Optional
 DEFAULT_TASK_CAP = 40.0
 DEFAULT_SPEC_CAP = 300.0
 DEFAULT_QUIET_WINDOW_MINUTES = 10.0
-DEFAULT_AVG_REQUEST_PRICE = 0.045
+DEFAULT_AVG_REQUEST_PRICE = 0.25
 DEFAULT_MIN_PLAN_BALANCE = 0.0
 DEFAULT_KILL_GRACE_SECONDS = 30.0
 
@@ -483,6 +483,145 @@ def cached_balance(project: Path) -> Optional[float]:
     if isinstance(value, bool) or not isinstance(value, (int, float)):
         return None
     return float(value)
+
+
+# --- plan balance probe (R8.3, R8.4, R11.4) --------------------------------
+
+USAGE_TTL_MINUTES = 5.0
+USAGE_TIMEOUT_SECONDS = 15
+USAGE_COMMAND = ["kiro-cli", "chat", "--no-interactive", "/usage"]
+_ANSI_RE = re.compile(r"\x1b\[[0-9;?]*[ -/]*[@-~]|\x1b\][^\x07\x1b]*(?:\x07|\x1b\\)")
+_PLAN_RE = re.compile(
+    r"Credits\s*\(\s*([\d,]*\.?\d+)\s+of\s+([\d,]*\.?\d+)\s+covered in plan\s*\)",
+    re.IGNORECASE)
+_BONUS_RE = re.compile(
+    r"^\s*(?P<name>[^:\n]+?)\s*:\s*(?P<used>[\d,]*\.?\d+)\s*/\s*"
+    r"(?P<total>[\d,]*\.?\d+)\s+credits used", re.IGNORECASE | re.MULTILINE)
+
+
+@dataclass(frozen=True)
+class Balance:
+    """The plan balance in credits (actual, as reported by ``/usage``).
+
+    ``value`` is plan remaining plus every bonus remaining, or None with a
+    ``reason``. ``plan_remaining`` and ``bonus`` keep the parts. ``age_minutes``
+    is the age of the figure (0 right after a probe).
+    """
+    value: Optional[float]
+    age_minutes: Optional[float]
+    reason: Optional[str]
+    plan_remaining: Optional[float] = None
+    bonus: tuple[tuple[str, float], ...] = ()
+
+
+def _num(text: str) -> float:
+    return float(text.replace(",", ""))
+
+
+def parse_usage(output: str) -> tuple[Optional[dict], Optional[str]]:
+    """Parse ``/usage`` text into ``{"balance", "plan_remaining", "bonus"}``.
+
+    Strips ANSI codes and ``[INFO]`` log lines first. Returns ``(None, reason)``
+    when the plan line is missing.
+    """
+    clean = _ANSI_RE.sub("", output or "")
+    lines = [ln for ln in clean.splitlines() if not ln.lstrip().startswith("[INFO]")]
+    text = "\n".join(lines)
+    plan = _PLAN_RE.search(text)
+    if plan is None:
+        return None, "unparseable /usage output"
+    plan_remaining = round(_num(plan.group(2)) - _num(plan.group(1)), 6)
+    bonus = [(m.group("name").strip(),
+              round(_num(m.group("total")) - _num(m.group("used")), 6))
+             for m in _BONUS_RE.finditer(text)]
+    total = round(plan_remaining + sum(v for _, v in bonus), 6)
+    return {"balance": total, "plan_remaining": plan_remaining,
+            "bonus": [{"name": n, "remaining": v} for n, v in bonus]}, None
+
+
+def _probe_usage() -> tuple[Optional[dict], Optional[str]]:
+    """Run the local ``/usage`` probe once. Never raises."""
+    import subprocess
+    import tempfile
+
+    try:
+        # cwd outside the project, so the project's own hooks do not fire.
+        with tempfile.TemporaryDirectory() as tmp:
+            done = subprocess.run(USAGE_COMMAND, cwd=tmp, capture_output=True,
+                                  text=True, timeout=USAGE_TIMEOUT_SECONDS)
+    except FileNotFoundError:
+        return None, "kiro-cli not found"
+    except subprocess.TimeoutExpired:
+        return None, "/usage probe timed out"
+    except OSError as exc:
+        return None, f"/usage probe failed: {exc.__class__.__name__}"
+    if done.returncode != 0:
+        return None, f"/usage probe exited with {done.returncode}"
+    return parse_usage(done.stdout or "")
+
+
+def _balance_from(data: object, now: "datetime") -> Balance:
+    from datetime import datetime, timezone
+
+    if not isinstance(data, dict):
+        return Balance(None, None, "no usage cache")
+    age = None
+    fetched = data.get("fetched_at")
+    if isinstance(fetched, str):
+        try:
+            when = datetime.fromisoformat(fetched.replace("Z", "+00:00"))
+            if when.tzinfo is None:
+                when = when.replace(tzinfo=timezone.utc)
+            age = max(0.0, (now - when).total_seconds() / 60.0)
+        except ValueError:
+            age = None
+    value = data.get("balance")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return Balance(None, age, data.get("reason") or "plan balance unavailable")
+    plan = data.get("plan_remaining")
+    plan = float(plan) if isinstance(plan, (int, float)) and not isinstance(plan, bool) else None
+    parts = tuple((str(b.get("name")), float(b.get("remaining")))
+                  for b in (data.get("bonus") or [])
+                  if isinstance(b, dict) and isinstance(b.get("remaining"), (int, float)))
+    return Balance(float(value), age, None, plan, parts)
+
+
+def plan_balance(project: Path, now: "datetime", refresh: bool) -> Balance:
+    """The plan balance from the cache, probing at most every 5 minutes.
+
+    With ``refresh`` False this only reads ``usage.json`` (hooks). With
+    ``refresh`` True and a missing or stale cache it runs the ``/usage`` probe
+    and caches the result, failures included, so a failing probe is not
+    retried within 5 minutes. ``now`` must be timezone-aware.
+    """
+    import json
+    from datetime import timezone
+
+    from . import tombstones
+
+    if now.tzinfo is None:
+        now = now.replace(tzinfo=timezone.utc)
+    path = Path(project) / ".kiro" / "tombstone" / "usage.json"
+    try:
+        cached = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        cached = None
+    current = _balance_from(cached, now)
+    fresh = (isinstance(cached, dict) and current.age_minutes is not None
+             and current.age_minutes < USAGE_TTL_MINUTES)
+    if not refresh or fresh:
+        return current
+
+    parsed, reason = _probe_usage()
+    record = {"fetched_at": now.astimezone(timezone.utc).isoformat(),
+              "balance": None, "reason": reason}
+    if parsed is not None:
+        record.update(parsed)
+    try:
+        tombstones.update_json(path, lambda _old: record, {})
+    except OSError:
+        pass
+    return _balance_from(record, now)
 
 
 def _cap_record(task: object, today: str) -> dict:

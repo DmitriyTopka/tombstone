@@ -1,0 +1,9 @@
+[INFO] kiro-cli 3.0.0 starting
+[INFO] loading config
+[1mEstimated Usage[0m | resets on 2026-12-01 | [32mKIRO FREE[0m
+
+Bonus credits
+kiroween-2026: 142.80/4000 credits used, expires in 55 days
+
+[1mCredits[0m (1.15 of 50 covered in plan), 2.3%
+[INFO] done

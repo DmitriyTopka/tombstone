@@ -96,11 +96,11 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - Markdown receipt with the evidence, no home path in it.
   - _Requirements: R7.1, R7.2, R7.3, R7.4_
 
-  - [ ] 8.1 Write the autopsy
+  - [x] 8.1 Write the autopsy
     - In `autopsy.py` add `write_autopsy` producing `.kiro/tombstone/autopsy/<date>_<task>.md` with all fields from R7.2, the last 10 tool calls from `tool_call` events, and `scrub` replacing the home directory with `~` over the whole document.
     - _Requirements: R7.1, R7.2, R7.4_
 
-  - [ ] 8.2 Append the actual cost
+  - [x] 8.2 Append the actual cost
     - Add `append_actual`, guarded by `state.autopsy_pending` so it appends once, called by the watcher and by the Stop hook when the closing turn has a cost.
     - _Requirements: R7.3, R4.2_
 
@@ -108,11 +108,11 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - One tool, no model call, plan balance from a cached local probe.
   - _Requirements: R8.1, R8.2, R8.3, R8.4, R8.5, R11.4_
 
-  - [ ] 9.1 Usage probe and cache
+  - [x] 9.1 Usage probe and cache
     - In `caps.py` add `plan_balance`: cache in `.kiro/tombstone/usage.json`, refresh at most every 5 minutes (failures cached too) with `subprocess.run(["kiro-cli", "chat", "--no-interactive", "/usage"], timeout=15)`, parser tested against a recorded sample, `None` with a reason when unavailable. Hooks read the cache only.
     - _Requirements: R8.3, R8.4, R11.4_
 
-  - [ ] 9.2 Budget function and stdio server
+  - [x] 9.2 Budget function and stdio server
     - In `mcp_server.py` add `budget()` (similar median with count and basis, spec cap and remaining, plan balance with age in minutes) and `serve()` registering exactly one tool `get_budget(task_name=None)` on stdio. Add `tombstone mcp`.
     - _Requirements: R8.1, R8.2, R8.4, R8.5_
 
@@ -120,15 +120,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - One command prepares a project, a Power folder ships the same files.
   - _Requirements: R9.1, R9.2, R9.3, R9.4, R9.5, R10.2, R10.3, R10.4, R11.1, R11.3_
 
-  - [ ] 10.1 Hook and config builders
+  - [x] 10.1 Hook and config builders
     - In `cli.py` add builder functions returning the V3 hook files (`PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`, plus the two task triggers calling `tombstone hook task-pre` and `task-post`), the V2 agent config with `preToolUse`, `postToolUse`, `stop` and no `model` key, the steering text and the default `tombstone.toml`. Only `command` actions. Use the absolute `tombstone` path from `shutil.which`.
     - _Requirements: R9.2, R10.2, R10.3, R11.1, R11.3_
 
-  - [ ] 10.2 `tombstone init` and watcher units
+  - [x] 10.2 `tombstone init` and watcher units
     - Add `init`: create each file only when absent and print `created` or `exists, left unchanged`; write the launchd plist or systemd user unit and print the load command (running it needs a steering change, see design.md Open points); print how to start Kiro on V2 (`kiro-cli chat --agent tombstone`) and on V3.
     - _Requirements: R9.2, R9.3, R9.4, R9.5_
 
-  - [ ] 10.3 Power folder and CLI version check
+  - [x] 10.3 Power folder and CLI version check
     - Create `power/` with `plugin.json`, `skills/tombstone/SKILL.md`, `mcp.json` for `get_budget`, and hook templates generated from the builders. Add the tested CLI version constant (3.0.0), store the installed version in `state.json` at init and watcher start, and print one warning on mismatch.
     - _Requirements: R9.1, R10.4_
 

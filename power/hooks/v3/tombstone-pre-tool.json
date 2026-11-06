@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "tombstone-pre-tool",
+      "description": "Tombstone: block tools when the STOP file exists or a cap is breached",
+      "trigger": "PreToolUse",
+      "action": {
+        "type": "command",
+        "command": "'/path/to/python' -m tombstone hook pre-tool --project '/path/to/project'",
+        "timeout": 10
+      }
+    }
+  ]
+}

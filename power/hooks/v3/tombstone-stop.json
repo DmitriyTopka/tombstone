@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "tombstone-stop",
+      "description": "Tombstone: write the tombstone for the finished turn",
+      "trigger": "Stop",
+      "action": {
+        "type": "command",
+        "command": "'/path/to/python' -m tombstone hook stop --project '/path/to/project'",
+        "timeout": 10
+      }
+    }
+  ]
+}

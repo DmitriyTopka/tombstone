@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "tombstone-task-post",
+      "description": "Tombstone: note that a spec task ended",
+      "trigger": "PostTaskExecution",
+      "action": {
+        "type": "command",
+        "command": "'/path/to/python' -m tombstone hook task-post --project '/path/to/project'",
+        "timeout": 10
+      }
+    }
+  ]
+}

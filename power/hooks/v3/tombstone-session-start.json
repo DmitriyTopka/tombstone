@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "tombstone-session-start",
+      "description": "Tombstone: remember the session id",
+      "trigger": "SessionStart",
+      "action": {
+        "type": "command",
+        "command": "'/path/to/python' -m tombstone hook session-start --project '/path/to/project'",
+        "timeout": 10
+      }
+    }
+  ]
+}

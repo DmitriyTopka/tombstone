@@ -2,7 +2,7 @@
 
 ## Overview
 
-Tombstone is a Python 3.11+ package with no runtime dependency except `mcp`. It has three kinds of running code, all of them local and none of them calling a model:
+Tombstone is a Python 3.11+ package with no runtime dependency (standard library only). It has three kinds of running code, all of them local and none of them calling a model:
 
 - **Hook commands.** Short-lived `tombstone hook <event>` processes started by Kiro shell hooks. They read the hook JSON from STDIN and either exit 0 quickly or exit 2 with a one-line reason on stderr.
 - **The watcher.** One long-lived process per project (`tombstone watch`). It polls the active session every 2 seconds, keeps `.kiro/tombstone/state.json` current, and runs the stop sequence.
@@ -10,7 +10,7 @@ Tombstone is a Python 3.11+ package with no runtime dependency except `mcp`. It 
 
 Everything else (`cost`, `graveyard`, `init`, `resume`) is a one-shot CLI command.
 
-V3 is the primary engine (Kiro CLI 3.0.0, default). V2 is legacy and reached with `--v2`. Both are read through one parser (R10.1). Tested CLI versions: 2.37.1 and 3.0.0.
+V3 is the primary engine (Kiro CLI 3.0.0, default). V2 is legacy and reached with `--v2`. Both are read through one parser (R10.1). Tested CLI versions: 2.37.1 and 3.1.0 (3.0.0 was measured earlier).
 
 ### Architecture
 
@@ -48,7 +48,8 @@ Data flow in one sentence: hooks and the watcher read session files and `tasks.m
 | `tombstones.json` is the cost history, `state.json` is the scratchpad | Records are committed to the repo. State is machine-local and noisy. |
 | One watcher process per project | No project registry, no cross-project process search. The unit name carries a short hash of the project path. |
 | Plain functions, `dataclass` only for passive data | Matches the steering. State that is real (the watcher loop) is a dict persisted to `state.json`, not an object. |
-| Lazy imports everywhere on the hook path | `mcp`, `subprocess`, `tomllib` and HTML code are imported only by the commands that need them. |
+| MCP server is a hand-written stdio JSON-RPC loop | Importing the `mcp` SDK took about 1.8 s, and a one-shot headless run starts its turn before the tool is listed. The stdlib loop answers `initialize` in milliseconds. |
+| Lazy imports everywhere on the hook path | `subprocess`, `tomllib` and HTML code are imported only by the commands that need them. |
 
 ## Components and Interfaces
 
@@ -240,7 +241,7 @@ spec = 300           # credits per spec
 quiet_window_minutes = 10
 
 [budget]
-avg_request_price = 0.045   # credits, used until state.json has 50 requests
+avg_request_price = 0.25    # credits, used until state.json has 50 requests
 min_plan_balance = 0        # 0 disables the check
 
 [stop]
@@ -457,9 +458,14 @@ One job: argument parsing and the one-shot commands. Subcommands:
 **Hook files written by init (R9.2, R10.2, R10.3, R11.1, R11.3).**
 
 - V3, `.kiro/hooks/tombstone-*.json`, schema `{"version": "v1", "hooks": [{"name", "trigger", "matcher"?, "action": {"type": "command", "command"}}]}` with PascalCase triggers: `PreToolUse`, `PostToolUse`, `Stop`, `SessionStart`, and `PreTaskExecution` / `PostTaskExecution` where available. The task hook files only call `tombstone hook task-pre|task-post`, which store the task id from STDIN in `state.current_task`. The core never waits for them (R10.3).
-- V2, `.kiro/agents/tombstone.json`, camelCase keys `preToolUse`, `postToolUse`, `stop`, `agentSpawn`. No `model` key is written, ever (R11.3). Started with `kiro-cli chat --agent tombstone`.
+- V2, `.kiro/agents/tombstone.json`, written only by `tombstone init --v2`. camelCase keys `preToolUse`, `postToolUse`, `stop`, `agentSpawn`. No `model` key is written, ever (R11.3). Started with `kiro-cli chat --agent tombstone`.
 - Every action has type `command`. No action of type `agent` is generated (R11.1).
-- The command is the absolute path of the `tombstone` executable found at init time (`shutil.which`), so hooks work from a bare environment.
+- The command is `'<sys.executable>' -m tombstone hook <event> --project '<dir>'`, with both paths always single-quoted for `sh`. The console script is never used: the virtualenv that holds tombstone is usually not on PATH, and the first live run on 3.1.0 failed with `tombstone: command not found` for every hook. Paths with spaces work (tested through `sh -c`).
+- The watcher unit and the printed `watch` command use the same `<python> -m tombstone watch` form.
+
+**Why the V2 agent config is opt-in (R9.2, 3.1.0 profile loading).** On Kiro CLI 3.1.0 the V3 engine loads `.kiro/agents/tombstone.json` as the active profile (`kiro.log`: `[ProfileLoader] profile.loaded {"agentId":"tombstone"}`). That profile defines no MCP tools, so the `tombstone` MCP server connected and listed `get_budget` in `mcp.log`, but the agent could not call it. Default `init` therefore does not write the file. If one already exists, `init` prints a note and leaves it alone (it never deletes files, R9.4).
+
+**MCP registration (R9.2).** `init` writes `.kiro/settings/mcp.json` with `mcpServers.tombstone = {"command": "<sys.executable>", "args": ["-m", "tombstone", "mcp", "--project", "<dir>"]}`. If the file exists, the entry is merged into `mcpServers` and every other key and server is kept. If a `tombstone` entry is already there, it is left as is and reported (`already registered`). An unreadable or non-object file is left unchanged and reported.
 
 **Existing files (R9.4).** `init` never overwrites. For each target it prints `created <path>` or `exists, left unchanged <path>`.
 
@@ -468,13 +474,16 @@ One job: argument parsing and the one-shot commands. Subcommands:
 **After init (R9.5).** Prints:
 
 ```
-V3 (default):  kiro-cli chat            hooks in .kiro/hooks are active
-V2 (legacy):   kiro-cli chat --agent tombstone
+V3 (default):  kiro-cli chat            hooks in .kiro/hooks are active,
+                                        get_budget comes from .kiro/settings/mcp.json
+V2 (legacy):   run `tombstone init --v2` to write .kiro/agents/tombstone.json
 ```
 
-**CLI version (R10.4).** The tested version (`3.0.0`) is a constant. The installed version is read at `init` and at watcher start, stored in `state.cli_version`, and a mismatch prints one warning line. Hooks never run `kiro-cli`; `cost` and `graveyard` print the stored value.
+With `--v2` the last line is `V2 (legacy):   kiro-cli chat --agent tombstone`.
 
-**Power folder (R9.1).** A top-level `power/` directory with `plugin.json`, `skills/tombstone/SKILL.md`, `mcp.json` (command `tombstone`, args `["mcp"]`), `hooks/v3/*.json` and `hooks/v2/tombstone.json`. The hook files are generated from the same builder functions `init` uses, and a test compares the files with the builder output so they cannot drift.
+**CLI version (R10.4).** The tested version (`3.1.0`) is a constant. The installed version is read at `init` and at watcher start, stored in `state.cli_version`, and a mismatch prints one warning line. Hooks never run `kiro-cli`; `cost` and `graveyard` print the stored value.
+
+**Power folder (R9.1).** A top-level `power/` directory with `plugin.json`, `skills/tombstone/SKILL.md`, `mcp.json` (command `/path/to/python`, args `["-m", "tombstone", "mcp"]`), `hooks/v3/*.json` and `hooks/v2/tombstone.json`. The hook files are generated from the same builder functions `init` uses with placeholder interpreter and project paths, and a test compares the files with the builder output so they cannot drift.
 
 ## Data Models
 

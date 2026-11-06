@@ -6,7 +6,7 @@ inclusion: always
 
 ## Stack
 
-- Python 3.11 or newer. Standard library only, plus the `mcp` package for the `get_budget` server. No other runtime dependency.
+- Python 3.11 or newer. Standard library only, no runtime dependency. The `get_budget` server is a minimal stdio JSON-RPC 2.0 loop, not the `mcp` SDK, so it starts fast.
 - `tomllib` for config, `json` for session files. `subprocess` only for this list: `git status`, `osascript`, `notify-send`, `kiro-cli chat --no-interactive "/usage"` (cached 5 minutes), `kiro-cli --version`, `ps` and `lsof` (macOS process lookup for the kill step), and `launchctl` / `systemctl --user` called only by `tombstone init` to load the watcher unit. Linux process lookup reads `/proc`.
 - The watcher is one process. macOS: launchd plist. Linux: systemd user unit.
 - The graveyard is one static HTML file with inline CSS and JS. No libraries, no CDN, no fonts from the network.

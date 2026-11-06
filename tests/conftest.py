@@ -32,3 +32,12 @@ def _short_reconcile_timeout(monkeypatch):
                         timeout_s=1 if timeout_s is None else timeout_s)
 
     monkeypatch.setattr(tombstones, "spawn_reconcile", short)
+
+
+@pytest.fixture(autouse=True)
+def _no_real_kiro_cli_probe(monkeypatch):
+    """Tests never run ``kiro-cli --version``; the tested version is reported."""
+    from tombstone import watcher
+
+    monkeypatch.setattr(watcher, "installed_cli_version",
+                        lambda: watcher.TESTED_CLI_VERSION)

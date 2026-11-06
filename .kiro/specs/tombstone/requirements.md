@@ -60,7 +60,7 @@ Acceptance check: on the V3 session from measurement 5 the command prints 0.390 
 #### Acceptance Criteria
 
 - R3.1 THE SYSTEM SHALL read caps from `tombstone.toml` at the repo root: task cap, spec cap, quiet window in minutes, minimum plan balance to start, average request price, kill grace in seconds.
-- R3.2 IF `tombstone.toml` is missing THEN THE SYSTEM SHALL use the defaults: task cap 40, spec cap 300, quiet window 10, average request price 0.045, kill grace 30.
+- R3.2 IF `tombstone.toml` is missing THEN THE SYSTEM SHALL use the defaults: task cap 40, spec cap 300, quiet window 10, average request price 0.25, kill grace 30.
 - R3.3 WHEN the first tool of a new task is about to run AND the remaining spec budget is lower than the median cost of similar tasks THEN THE SYSTEM SHALL exit the pre-tool hook with code 2 and a message that names the task, the similar cost and the remaining budget.
 - R3.4 WHEN the spec total reaches the spec cap THE SYSTEM SHALL block new tasks of that spec the same way and mark the record outcome `cap`.
 - R3.5 THE SYSTEM SHALL find similar tasks in `tombstones.json` by task name keywords and task type (test, migration, refactor, docs, other) and return their median cost.
@@ -137,10 +137,10 @@ Acceptance check: on a 10-request turn the estimate at the end of the turn is wi
 #### Acceptance Criteria
 
 - R9.1 THE SYSTEM SHALL ship as a Power folder: `plugin.json`, `skills/tombstone/SKILL.md`, `mcp.json` with `get_budget`, hook templates for V2 and V3.
-- R9.2 WHEN the user runs `tombstone init` in a project THE SYSTEM SHALL create `tombstone.toml`, `.kiro/steering/tombstone.md`, V3 hooks in `.kiro/hooks/tombstone-*.json` and a V2 agent config `.kiro/agents/tombstone.json` with `preToolUse` and `stop` hooks.
+- R9.2 WHEN the user runs `tombstone init` in a project THE SYSTEM SHALL create `tombstone.toml`, `.kiro/steering/tombstone.md`, V3 hooks in `.kiro/hooks/tombstone-*.json` and `.kiro/settings/mcp.json` with the `tombstone` MCP server (merged into an existing file), all commands using the absolute interpreter path (`<python> -m tombstone ...`). WHERE the user passes `--v2` THE SYSTEM SHALL also create the V2 agent config `.kiro/agents/tombstone.json` with `preToolUse` and `stop` hooks; without `--v2` it SHALL NOT, because Kiro CLI 3.1.0 loads that file as the active profile and that profile has no MCP tools.
 - R9.3 WHEN `tombstone init` runs THE SYSTEM SHALL register the watcher as a launchd agent on macOS or a systemd user unit on Linux.
 - R9.4 IF a file to be created already exists THEN THE SYSTEM SHALL leave it unchanged and report it.
-- R9.5 THE SYSTEM SHALL print after init which command starts Kiro with the hooks active on V2 (`kiro-cli chat --agent tombstone`) and on V3.
+- R9.5 THE SYSTEM SHALL print after init which command starts Kiro with the hooks active on V3, and on V2 (`kiro-cli chat --agent tombstone`) when `--v2` was used.
 
 ### Requirement 10: Work on V3 first, keep V2
 

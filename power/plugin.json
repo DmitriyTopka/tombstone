@@ -1,0 +1,20 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tombstone",
+  "version": "0.1.0",
+  "description": "Circuit breaker for Kiro specs: prices tasks in credits, enforces caps, stops stuck agents.",
+  "author": {
+    "name": "DmitriyTopka",
+    "url": "https://github.com/DmitriyTopka"
+  },
+  "keywords": [
+    "kiro",
+    "budget",
+    "credits",
+    "circuit-breaker",
+    "mcp"
+  ],
+  "homepage": "https://github.com/DmitriyTopka/tombstone",
+  "repository": "https://github.com/DmitriyTopka/tombstone",
+  "license": "MIT"
+}

@@ -1,1 +1,310 @@
-"""Write the Markdown receipt after a stop."""
+"""Write the Markdown receipt after a stop (R7.1 to R7.4).
+
+The receipt lives in ``.kiro/tombstone/autopsy/<date>_<task>.md``. The home
+directory is replaced with ``~`` over the whole document before it is
+written. A killed turn has no ``usage_summary`` in the session, so Kiro never
+writes an actual cost for it: the receipt says so and shows the plan balance
+change from the usage cache instead, never zero.
+"""
+
+from __future__ import annotations
+
+import json
+import re
+from datetime import datetime, timezone
+from pathlib import Path
+from typing import Optional
+
+SIDECAR = Path(".kiro") / "tombstone"
+TOOL_CALLS = 10
+CELL_LIMIT = 200
+ACTUAL_HEADING = "## Actual cost (actual)"
+BALANCE_PREFIX = "- Plan balance at stop (est.): "
+NOT_WRITTEN = "not written by Kiro for a killed turn"
+
+
+def scrub(text: str, home: Optional[Path] = None) -> str:
+    """Replace the home directory and its resolved form with ``~`` (R7.4)."""
+    base = Path(home) if home is not None else Path.home()
+    forms = {str(base)}
+    try:
+        forms.add(str(base.resolve()))
+    except OSError:
+        pass
+    for form in sorted(forms, key=len, reverse=True):
+        if not form or form in ("/", "~"):
+            continue
+        text = re.sub(re.escape(form) + r"(?![\w.\-])", "~", text)
+    return text
+
+
+def _parse_time(value: object) -> Optional[datetime]:
+    if not isinstance(value, str) or not value:
+        return None
+    text = value.strip()
+    if text.endswith("Z"):
+        text = text[:-1] + "+00:00"
+    try:
+        moment = datetime.fromisoformat(text)
+    except ValueError:
+        return None
+    if moment.tzinfo is None:
+        moment = moment.replace(tzinfo=timezone.utc)
+    return moment
+
+
+def _read_usage(project: Path) -> tuple[Optional[float], Optional[datetime]]:
+    """The cached plan balance and its fetch time. Reads only."""
+    try:
+        data = json.loads((project / SIDECAR / "usage.json").read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return None, None
+    if not isinstance(data, dict):
+        return None, None
+    value = data.get("balance")
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return None, None
+    return float(value), _parse_time(data.get("fetched_at"))
+
+
+def _cell(value: object) -> str:
+    if value is None:
+        return ""
+    text = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    text = " ".join(text.split())
+    if len(text) > CELL_LIMIT:
+        text = text[:CELL_LIMIT - 3] + "..."
+    return text.replace("|", "\\|")
+
+
+def _tool_calls(session) -> Optional[list[tuple]]:
+    """The last tool calls of a V3 session, oldest first. None when unreadable."""
+    from . import sessions
+
+    path = getattr(session, "path", None)
+    if getattr(session, "engine", None) != "v3" or path is None:
+        return None
+    root = sessions._v3_root(Path(path))
+    if root is None:
+        return None
+    rows: list[tuple] = []
+    for event in sessions._read_jsonl(root / "messages.jsonl"):
+        payload = event.get("payload")
+        if not isinstance(payload, dict) or payload.get("type") != "tool_call":
+            continue
+        args = payload.get("args")
+        shown = payload.get("title") or args
+        rows.append((payload.get("toolName"), shown, payload.get("status"),
+                     event.get("timestamp")))
+    return rows[-TOOL_CALLS:]
+
+
+def _task_slug(stop: dict) -> str:
+    task_id = stop.get("task_id")
+    if task_id and task_id != "unknown":
+        return re.sub(r"[./\\]", "-", str(task_id))
+    return "unknown-" + re.sub(r"[^\w\-]", "-", str(stop.get("turn_id") or "turn"))
+
+
+def _step_two(stop: dict) -> str:
+    kill = stop.get("kill")
+    warnings = stop.get("warnings") or []
+    if isinstance(kill, dict):
+        status = kill.get("status")
+        if status == "killed":
+            return "yes (processes ended)"
+        if status == "no_process":
+            return "skipped: no kiro-cli process bound to this project"
+        return f"{status}"
+    if warnings:
+        return "skipped: " + "; ".join(str(w) for w in warnings)
+    return "no (not yet; waits for the grace period and more requests after the stop)"
+
+
+def _fmt(value: Optional[float]) -> str:
+    return "unknown" if value is None else f"{value:.3f}"
+
+
+def write_autopsy(project, stop: dict, session, state: dict,
+                  home: Optional[Path] = None) -> Path:
+    """Write the receipt for ``stop`` and return its path (R7.1, R7.2)."""
+    from . import stop as stop_module
+    from . import tombstones
+
+    project = Path(project)
+    state = state if isinstance(state, dict) else {}
+    when = _parse_time(stop.get("time")) or datetime.now(timezone.utc)
+    task_id = stop.get("task_id")
+    spec = stop.get("spec")
+    name = None
+    if task_id and task_id != "unknown":
+        try:
+            name = tombstones._name_for_task(project, spec, task_id)
+        except Exception:  # noqa: BLE001 - the name is a nicety
+            name = None
+    task = state.get("current_task") if isinstance(state.get("current_task"), dict) else {}
+    if not name:
+        turn_state = state.get("turn") if isinstance(state.get("turn"), dict) else {}
+        name = task.get("name") or turn_state.get("prompt_name")
+
+    turn = None
+    for candidate in getattr(session, "turns", []) or []:
+        if candidate.turn_id == stop.get("turn_id"):
+            turn = candidate
+    if turn is None and getattr(session, "turns", None):
+        turn = session.turns[-1]
+
+    requests = stop.get("requests_at_stop")
+    if requests is None and turn is not None:
+        requests = turn.requests
+    estimate = stop.get("estimate")
+    balance, fetched = _read_usage(project)
+    before = balance if (balance is not None and fetched is not None
+                         and fetched <= when) else None
+
+    # The refusal text is not stored in the session; the STOP file has it.
+    stop_file = stop_module.read_stop(project) or {}
+    refusal = stop_file.get("message") or stop.get("message") or ""
+
+    quiet = stop.get("quiet_minutes")
+    lines = [
+        f"# Autopsy: task {task_id or 'unknown'}" + (f" - {name}" if name else ""),
+        "",
+        f"- Task id: {task_id or 'unknown'}",
+        f"- Task name: {name or 'unknown'}",
+        f"- Engine: {getattr(session, 'engine', None) or 'unknown'}",
+        f"- Model: {getattr(session, 'model', None) or 'unknown'}",
+        f"- Requests at stop: {requests if requests is not None else 'unknown'}",
+        "- Cost per request: unknown (no actual cost yet)",
+        f"- Estimate at stop (est.): {_fmt(estimate if isinstance(estimate, (int, float)) else None)} credits",
+        "- Actual after the turn: pending",
+        f"- Quiet project: {_fmt_minutes(quiet)} minutes",
+        f"- STOP time: {when.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",
+        f"- STOP reason: {stop.get('reason') or 'unknown'}",
+        f"- Refusal text: {refusal or 'unknown'}",
+        f"- Step two (kill): {_step_two(stop)}",
+        BALANCE_PREFIX + (f"{before:.3f} credits" if before is not None else "unknown"),
+        "",
+        f"## Last {TOOL_CALLS} tool calls",
+        "",
+    ]
+    calls = _tool_calls(session)
+    if calls is None:
+        lines.append("Tool calls are not available for this session format.")
+    elif not calls:
+        lines.append("No tool calls found in the session.")
+    else:
+        lines += ["| Tool | Title or args | Status | Time |", "|---|---|---|---|"]
+        for tool, shown, status, stamp in calls:
+            lines.append(f"| {_cell(tool)} | {_cell(shown)} | {_cell(status)} | {_cell(stamp)} |")
+    lines.append("")
+
+    target = project / SIDECAR / "autopsy" / f"{when.strftime('%Y-%m-%d')}_{_task_slug(stop)}.md"
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(scrub("\n".join(lines), home), encoding="utf-8")
+    return target
+
+
+def _fmt_minutes(value: object) -> str:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return "unknown"
+    return f"{value:.1f}"
+
+
+def settle_autopsy(project, *, kiro_home: Optional[Path] = None,
+                   home: Optional[Path] = None) -> bool:
+    """Append the actual cost to the waiting autopsy once (R7.3, R4.2).
+
+    Guarded by ``state.autopsy_pending``: with nothing pending it costs one
+    small JSON read. The pending marker is cleared only after the section was
+    written, so the append happens once. Called by the watcher loop and by the
+    Stop hook path. Returns True when something was appended. Never raises.
+    """
+    from . import sessions, tombstones, watcher
+
+    project = Path(project)
+    try:
+        state, _valid = tombstones._read_json(project / SIDECAR / "state.json")
+        pending = state.get("autopsy_pending") if isinstance(state, dict) else None
+        if not isinstance(pending, dict):
+            return False
+        turn_id = pending.get("turn_id")
+        raw_path = pending.get("path")
+        if not isinstance(raw_path, str) or not raw_path:
+            return False
+        session_id = pending.get("session_id")
+        path = Path(watcher.from_tilde(raw_path, home))
+        if not path.is_absolute():
+            path = project / path
+
+        found = sessions.find_session(
+            project, session_id if isinstance(session_id, str) else None,
+            kiro_home=kiro_home, v3_project_hash=state.get("v3_project_hash"))
+        if found is None:
+            return False
+        turn = None
+        for candidate in sessions.parse_session(found).turns:
+            if candidate.turn_id == turn_id:
+                turn = candidate
+        if turn is None or turn.state != "closed" or turn.cost is None:
+            return False
+
+        written = append_actual(path, turn, home)
+
+        def clear(current: dict) -> None:
+            waiting = current.get("autopsy_pending")
+            if isinstance(waiting, dict) and waiting.get("turn_id") == turn_id:
+                current["autopsy_pending"] = None
+
+        # A missing receipt file will never be written, so clear it as well.
+        watcher.update_state(project, clear, home)
+        return written
+    except Exception as exc:  # noqa: BLE001 - never break the watcher or a hook
+        try:
+            from . import stop as stop_module
+            stop_module._log_error(
+                project, f"autopsy append failed: {type(exc).__name__}: {exc}")
+        except Exception:  # noqa: BLE001
+            pass
+        return False
+
+
+def append_actual(path, turn, home: Optional[Path] = None) -> bool:
+    """Append the actual cost section once (R7.3). Returns True when written.
+
+    ``turn`` is a ``sessions.Turn`` or None. A killed turn has no cost, so the
+    section says it was not written by Kiro and shows the plan balance change
+    when the cache holds a value from before the stop and a later one.
+    """
+    path = Path(path)
+    try:
+        text = path.read_text(encoding="utf-8")
+    except OSError:
+        return False
+    if ACTUAL_HEADING in text:
+        return False
+
+    cost = getattr(turn, "cost", None) if turn is not None else None
+    lines = ["", ACTUAL_HEADING, ""]
+    if cost is not None:
+        requests = getattr(turn, "requests", None)
+        lines.append(f"- Actual (actual): {cost:.3f} credits")
+        if isinstance(requests, int) and requests > 0:
+            lines.append(f"- Cost per request (actual): {cost / requests:.3f} credits")
+    else:
+        lines.append(f"- actual: {NOT_WRITTEN}")
+        match = re.search(re.escape(BALANCE_PREFIX) + r"([0-9.]+) credits", text)
+        before = float(match.group(1)) if match else None
+        project = path.parents[3] if len(path.parents) > 3 else None
+        after, fetched = _read_usage(project) if project is not None else (None, None)
+        if before is None:
+            lines.append("- Plan balance change (est.): unknown (no cached balance from before the stop)")
+        elif after is None or fetched is None or after == before:
+            lines.append(f"- Plan balance change (est.): unknown (balance before the stop was {before:.3f}; no newer reading yet)")
+        else:
+            lines.append(f"- Plan balance change (est.): {before - after:.3f} credits "
+                         f"({before:.3f} before the stop, {after:.3f} later)")
+    lines.append("")
+    path.write_text(scrub(text.rstrip("\n") + "\n" + "\n".join(lines), home),
+                    encoding="utf-8")
+    return True

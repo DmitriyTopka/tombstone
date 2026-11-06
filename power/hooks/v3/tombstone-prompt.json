@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "tombstone-prompt",
+      "description": "Tombstone: remember the prompt so a turn without a task gets a readable name",
+      "trigger": "UserPromptSubmit",
+      "action": {
+        "type": "command",
+        "command": "'/path/to/python' -m tombstone hook prompt --project '/path/to/project'",
+        "timeout": 10
+      }
+    }
+  ]
+}

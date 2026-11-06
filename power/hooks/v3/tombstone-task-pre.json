@@ -1,0 +1,15 @@
+{
+  "version": "v1",
+  "hooks": [
+    {
+      "name": "tombstone-task-pre",
+      "description": "Tombstone: store the task id when a spec task starts",
+      "trigger": "PreTaskExecution",
+      "action": {
+        "type": "command",
+        "command": "'/path/to/python' -m tombstone hook task-pre --project '/path/to/project'",
+        "timeout": 10
+      }
+    }
+  ]
+}

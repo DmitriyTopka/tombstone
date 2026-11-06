@@ -480,6 +480,276 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/8.1",
+      "task_id": "8.1",
+      "name": "Write the autopsy",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 14,
+      "estimate": 6.6712,
+      "actual": 3.5472,
+      "minutes": 1.8504,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_f1f4a161-efb6-48e8-840d-74a003ed84ba",
+          "turn_id": "13c066e3-c0cd-44b5-8a0d-1ad843bf5c80",
+          "requests": 14,
+          "estimate": 6.6712,
+          "actual": 3.5472,
+          "minutes": 1.8504,
+          "start": "2026-11-06T09:12:27.302000Z",
+          "end": "2026-11-06T09:14:18.326000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/8.2",
+      "task_id": "8.2",
+      "name": "Append the actual cost",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 10.4396,
+      "actual": 4.2887,
+      "minutes": 1.5087,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_3b8b4a1f-448b-42de-a9df-471e32f6b15d",
+          "turn_id": "515e103b-d9c3-407d-8a11-a22fac739758",
+          "requests": 21,
+          "estimate": 10.4396,
+          "actual": 4.2887,
+          "minutes": 1.5087,
+          "start": "2026-11-06T09:14:25.067000Z",
+          "end": "2026-11-06T09:15:55.589000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/9.1",
+      "task_id": "9.1",
+      "name": "Usage probe and cache",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 11,
+      "estimate": 3.9317,
+      "actual": 2.46,
+      "minutes": 0.9602,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_77f9b370-051a-4344-b2ba-3919f957ffab",
+          "turn_id": "cf66ab88-1f23-4efa-8829-780c007172e6",
+          "requests": 11,
+          "estimate": 3.9317,
+          "actual": 2.46,
+          "minutes": 0.9602,
+          "start": "2026-11-06T09:16:34.973000Z",
+          "end": "2026-11-06T09:17:32.584000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/9.2",
+      "task_id": "9.2",
+      "name": "Budget function and stdio server",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 4.8362,
+      "actual": 3.005,
+      "minutes": 1.254,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_c34f03a1-0596-439a-9c85-d453ede95350",
+          "turn_id": "d48c473b-6f24-460f-ba88-f88973a9f6bc",
+          "requests": 13,
+          "estimate": 4.8362,
+          "actual": 3.005,
+          "minutes": 1.254,
+          "start": "2026-11-06T09:17:40.072000Z",
+          "end": "2026-11-06T09:18:55.311000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/10.1",
+      "task_id": "10.1",
+      "name": "Hook and config builders",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 11,
+      "estimate": 3.607,
+      "actual": 2.2106,
+      "minutes": 1.0375,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_846ac5fd-1f5e-47de-9d87-6524dbeab1c1",
+          "turn_id": "a5ec7046-e26b-4c1f-a470-bb74e9c043e6",
+          "requests": 11,
+          "estimate": 3.607,
+          "actual": 2.2106,
+          "minutes": 1.0375,
+          "start": "2026-11-06T09:19:14.820000Z",
+          "end": "2026-11-06T09:20:17.069000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/10.2",
+      "task_id": "10.2",
+      "name": "`tombstone init` and watcher units",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 3.2047,
+      "actual": 1.9741,
+      "minutes": 1.06,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_b94b4663-f9b1-40f0-a181-006325444115",
+          "turn_id": "8266295f-4529-4cc9-8e36-bbd84a0873d7",
+          "requests": 9,
+          "estimate": 3.2047,
+          "actual": 1.9741,
+          "minutes": 1.06,
+          "start": "2026-11-06T09:20:25.650000Z",
+          "end": "2026-11-06T09:21:29.250000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/10.3",
+      "task_id": "10.3",
+      "name": "Power folder and CLI version check",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 6.6475,
+      "actual": 4.6679,
+      "minutes": 2.0435,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_547b2124-bd8b-4882-bc20-8ef18c9fdb4c",
+          "turn_id": "45b4ed2b-a5f8-41c2-976c-70dccc3c418a",
+          "requests": 18,
+          "estimate": 6.6475,
+          "actual": 4.6679,
+          "minutes": 2.0435,
+          "start": "2026-11-06T09:21:46.594000Z",
+          "end": "2026-11-06T09:23:49.203000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/b26fbb45-aa66-4c23-b913-2d0a97dde1e1",
+      "task_id": "unknown",
+      "name": "Bug fix from the first live run of",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 6.0451,
+      "actual": 5.3255,
+      "minutes": 2.4171,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_536ffd44-f550-49f0-90d1-9925cc0ef6f8",
+          "turn_id": "b26fbb45-aa66-4c23-b913-2d0a97dde1e1",
+          "requests": 15,
+          "estimate": 6.0451,
+          "actual": 5.3255,
+          "minutes": 2.4171,
+          "start": "2026-11-06T09:25:49.701000Z",
+          "end": "2026-11-06T09:28:14.725000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/1f6f0484-9e1f-476c-82d2-1f1f2bf67677",
+      "task_id": "unknown",
+      "name": "Performance fix for the MCP server, from the",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 14,
+      "estimate": 5.6177,
+      "actual": 2.8591,
+      "minutes": 1.4519,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_dedf5d01-7bfb-4b6d-a756-ec812993b138",
+          "turn_id": "1f6f0484-9e1f-476c-82d2-1f1f2bf67677",
+          "requests": 14,
+          "estimate": 5.6177,
+          "actual": 2.8591,
+          "minutes": 1.4519,
+          "start": "2026-11-06T09:29:15.612000Z",
+          "end": "2026-11-06T09:30:42.726000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

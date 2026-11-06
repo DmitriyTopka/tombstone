@@ -1,0 +1,24 @@
+{
+  "name": "tombstone",
+  "description": "Tombstone circuit breaker hooks (no model override)",
+  "hooks": {
+    "preToolUse": [
+      {
+        "command": "'/path/to/python' -m tombstone hook pre-tool --project '/path/to/project'",
+        "timeout_ms": 10000
+      }
+    ],
+    "postToolUse": [
+      {
+        "command": "'/path/to/python' -m tombstone hook post-tool --project '/path/to/project'",
+        "timeout_ms": 10000
+      }
+    ],
+    "stop": [
+      {
+        "command": "'/path/to/python' -m tombstone hook stop --project '/path/to/project'",
+        "timeout_ms": 10000
+      }
+    ]
+  }
+}

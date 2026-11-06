@@ -1130,7 +1130,7 @@ PRICE_WINDOW_REQUESTS = 50
 # Fallback average request price in credits, used until the window has data
 # and until caps.load_config (task 4) can read tombstone.toml. This mirrors
 # the default of R3.2 (budget.avg_request_price).
-DEFAULT_AVG_REQUEST_PRICE = 0.045
+DEFAULT_AVG_REQUEST_PRICE = 0.25
 
 
 def update_price_window(state: dict, requests: Optional[int],
@@ -1370,6 +1370,7 @@ def on_turn_end(project: Path, stdin: dict, *,
             lambda s: update_price_window(s, turn.requests, turn.cost),
             default={"version": 1},
         )
+        _settle_autopsy(project, kiro_home)
     elif turn.cost is None:
         # The cost has not landed yet. Start a detached reconcile child that
         # polls the session and fills actual once the usage_summary appears
@@ -1378,6 +1379,15 @@ def on_turn_end(project: Path, stdin: dict, *,
                         kiro_home=kiro_home)
 
     return record
+
+
+def _settle_autopsy(project: Path, kiro_home: Optional[Path]) -> None:
+    """Append the actual cost to a waiting autopsy (R7.3). Never raises."""
+    try:
+        from . import autopsy
+        autopsy.settle_autopsy(project, kiro_home=kiro_home)
+    except Exception:  # noqa: BLE001 - the receipt is a nicety
+        pass
 
 
 def spawn_reconcile(project: Path, session_id: Optional[str],
@@ -1627,6 +1637,7 @@ def reconcile_turn(project: Path, session_id: Optional[str], turn_id: str,
                 reconcile_log(project, f"filled turn {turn_id} actual "
                                        f"{_round_credits(turn.cost)} requests "
                                        f"{turn.requests}")
+                _settle_autopsy(project, kiro_home)
             else:
                 reconcile_log(project, f"turn {turn_id} priced but no record "
                                        "holds it")
