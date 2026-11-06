@@ -840,6 +840,66 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/d4caeefc-ef2e-4280-951c-4bd46b2b3e24",
+      "task_id": "unknown",
+      "name": "Security fix from an automated review of `tombstone",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 24,
+      "estimate": 10.8843,
+      "actual": 6.5992,
+      "minutes": 4.2168,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_337a6099-7cc9-49f3-9640-d7e65d9c126f",
+          "turn_id": "d4caeefc-ef2e-4280-951c-4bd46b2b3e24",
+          "requests": 24,
+          "estimate": 10.8843,
+          "actual": 6.5992,
+          "minutes": 4.2168,
+          "start": "2026-11-06T10:04:57.553000Z",
+          "end": "2026-11-06T10:09:10.559000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/cb6a961c-9de8-4ee5-9193-536aac612ecb",
+      "task_id": "unknown",
+      "name": "Follow the Dogfood rules. Close the gap you",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 27,
+      "estimate": 13.2069,
+      "actual": 8.6959,
+      "minutes": 3.7841,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_c7366332-29b7-423c-9a8f-134af3fb4500",
+          "turn_id": "cb6a961c-9de8-4ee5-9193-536aac612ecb",
+          "requests": 27,
+          "estimate": 13.2069,
+          "actual": 8.6959,
+          "minutes": 3.7841,
+          "start": "2026-11-06T10:09:32.040000Z",
+          "end": "2026-11-06T10:13:19.084000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

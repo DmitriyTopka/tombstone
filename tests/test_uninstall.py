@@ -104,7 +104,7 @@ def test_changed_file_kept_unless_force(env, capsys):
 def test_works_without_installed_json(env):
     home, project, _ = env
     _init(project)
-    (project / cli.INSTALLED_FILE).unlink()
+    cli.install_record_path(project.resolve()).unlink()
     hook = project / ".kiro" / "hooks" / "tombstone-stop.json"
     hook.write_text("{}\n", encoding="utf-8")
     cli.main(["uninstall", "--project", str(project)])

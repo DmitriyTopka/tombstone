@@ -27,6 +27,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
 
+from .safepath import guard, is_safe_target
+
 # Directory that holds the lock files, pending queues and the error log.
 TOMBSTONE_DIR = Path(".kiro") / "tombstone"
 
@@ -53,6 +55,15 @@ def _tombstone_dir(path: Path) -> Path:
     return path.parent
 
 
+def _project_of_sidecar(sidecar: Path) -> Path:
+    """The project root for a sidecar directory (its grandparent when it is
+    ``.kiro/tombstone``, else the directory itself)."""
+    sidecar = Path(sidecar)
+    if sidecar.name == "tombstone" and sidecar.parent.name == ".kiro":
+        return sidecar.parent.parent
+    return sidecar
+
+
 def _sidecar_dir(path: Path) -> Path:
     """Create and return the directory for lock, pending and log files."""
     directory = _tombstone_dir(path)
@@ -64,6 +75,8 @@ def _log_warning(sidecar: Path, message: str) -> None:
     """Append one warning line to ``errors.log``. Never raises."""
     stamp = datetime.now(timezone.utc).isoformat()
     try:
+        if not guard(_project_of_sidecar(sidecar), sidecar / "errors.log"):
+            return
         with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
             handle.write(f"{stamp} {message}\n")
     except OSError:
@@ -198,6 +211,12 @@ def update_json(
     includes the changes that were deferred while the file was broken.
     """
     path = Path(path)
+    sidecar = _tombstone_dir(path)
+    project = (sidecar.parent.parent if sidecar.name == "tombstone"
+               and sidecar.parent.name == ".kiro" else path.parent)
+    if not (guard(project, sidecar) and guard(project, path)):
+        # Symlinked .kiro or state path: write nothing, report the intent.
+        return fn(json.loads(json.dumps(default)))
     sidecar = _sidecar_dir(path)
     lock_path = sidecar / f"{path.name}.lock"
 
@@ -1424,8 +1443,9 @@ def spawn_reconcile(project: Path, session_id: Optional[str],
     sidecar = project / TOMBSTONE_DIR
     sink = None
     try:
-        sidecar.mkdir(parents=True, exist_ok=True)
-        sink = open(sidecar / RECONCILE_LOG, "ab")
+        if guard(project, sidecar / RECONCILE_LOG):
+            sidecar.mkdir(parents=True, exist_ok=True)
+            sink = open(sidecar / RECONCILE_LOG, "ab")
     except OSError:
         sink = None
     try:
@@ -1461,6 +1481,8 @@ def reconcile_log(project: Path, message: str) -> None:
     """Append one timestamped line to ``reconcile.log``. Never raises."""
     sidecar = Path(project) / TOMBSTONE_DIR
     try:
+        if not guard(project, sidecar / RECONCILE_LOG):
+            return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
         with (sidecar / RECONCILE_LOG).open("a", encoding="utf-8") as handle:
@@ -1726,6 +1748,8 @@ def _log_reconcile_timeout(project: Path, session_id: Optional[str],
     """Log one line when a reconcile child times out. Never raises (Bug 1)."""
     sidecar = project / TOMBSTONE_DIR
     try:
+        if not guard(project, sidecar / "errors.log"):
+            return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
         line = (f"{stamp} reconcile timed out for session "
@@ -2012,6 +2036,9 @@ def write_graveyard(project: Path, out: Optional[Path] = None) -> Path:
     page = render_graveyard(store.get("tombstones") or [])
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
+    if out is None and not guard(project, target):
+        # Symlinked sidecar or page: nothing is written.
+        return target
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(page, encoding="utf-8")
     return target

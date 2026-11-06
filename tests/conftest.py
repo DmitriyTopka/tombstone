@@ -17,6 +17,12 @@ def _isolated_cwd(tmp_path_factory, monkeypatch):
 
 
 @pytest.fixture(autouse=True)
+def _isolated_state_dir(tmp_path_factory, monkeypatch):
+    """Install records go to a temp XDG state dir, never the real one."""
+    monkeypatch.setenv("XDG_STATE_HOME", str(tmp_path_factory.mktemp("xdg_state")))
+
+
+@pytest.fixture(autouse=True)
 def _short_reconcile_timeout(monkeypatch):
     """Any reconcile child a test really spawns gives up after 1 second.
 

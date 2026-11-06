@@ -13,6 +13,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from .safepath import guard
+
 STOP_NAME = "STOP"
 SIDECAR = Path(".kiro") / "tombstone"
 
@@ -52,6 +54,10 @@ def write_stop(
     inside the project sidecar directory only (R6.5).
     """
     target = stop_path(project)
+    temp = target.with_name(target.name + ".tmp")
+    if not (guard(project, target) and guard(project, temp)):
+        # Symlinked sidecar or STOP path: nothing is written.
+        return target
     target.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "reason": reason,
@@ -63,7 +69,6 @@ def write_stop(
         "time": _iso(time),
         "session_id": session_id,
     }
-    temp = target.with_name(target.name + ".tmp")
     with open(temp, "w", encoding="utf-8") as handle:
         json.dump(payload, handle, indent=2)
         handle.write("\n")
@@ -116,6 +121,8 @@ def _log_error(project: Optional[Path], text: str) -> None:
         return
     try:
         sidecar = Path(project) / SIDECAR
+        if not guard(project, sidecar / "errors.log"):
+            return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
         with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
@@ -192,11 +199,12 @@ def resume(project: Path) -> bool:
     """
     target = stop_path(project)
     removed = False
-    try:
-        target.unlink()
-        removed = True
-    except FileNotFoundError:
-        pass
+    if guard(project, target):
+        try:
+            target.unlink()
+            removed = True
+        except FileNotFoundError:
+            pass
 
     state_path = Path(project) / SIDECAR / "state.json"
     if state_path.is_file():
@@ -641,6 +649,8 @@ def begin_stop(event, *, project: Optional[Path] = None, kiro_home=None,
     else:
         try:
             written = write_fn(project, dict(entry), session, state)
+            if written is None:
+                raise OSError("autopsy write refused (symlink or outside project)")
             entry["autopsy"] = str(written)
 
             def mark(current: dict) -> None:

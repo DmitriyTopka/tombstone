@@ -16,6 +16,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
 
+from .safepath import guard
+
 SIDECAR = Path(".kiro") / "tombstone"
 TOOL_CALLS = 10
 CELL_LIMIT = 200
@@ -127,8 +129,12 @@ def _fmt(value: Optional[float]) -> str:
 
 
 def write_autopsy(project, stop: dict, session, state: dict,
-                  home: Optional[Path] = None) -> Path:
-    """Write the receipt for ``stop`` and return its path (R7.1, R7.2)."""
+                  home: Optional[Path] = None) -> Optional[Path]:
+    """Write the receipt for ``stop`` and return its path (R7.1, R7.2).
+
+    Returns None when the target is refused as a symlink or outside the
+    project (nothing is written).
+    """
     from . import stop as stop_module
     from . import tombstones
 
@@ -201,6 +207,9 @@ def write_autopsy(project, stop: dict, session, state: dict,
     lines.append("")
 
     target = project / SIDECAR / "autopsy" / f"{when.strftime('%Y-%m-%d')}_{_task_slug(stop)}.md"
+    if not guard(project, target):
+        # Symlinked sidecar or receipt path: nothing is written.
+        return None
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(scrub("\n".join(lines), home), encoding="utf-8")
     return target
@@ -323,6 +332,9 @@ def append_actual(path, turn, home: Optional[Path] = None) -> bool:
     when the cache holds a value from before the stop and a later one.
     """
     path = Path(path)
+    project_root = path.parents[3] if len(path.parents) > 3 else None
+    if project_root is None or not guard(project_root, path):
+        return False
     try:
         text = path.read_text(encoding="utf-8")
     except OSError:

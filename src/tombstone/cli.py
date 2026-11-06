@@ -487,7 +487,11 @@ def _log_hook_error(stdin: dict, message: str) -> None:
             return
         from . import tombstones
 
+        from .safepath import guard
+
         sidecar = project / tombstones.TOMBSTONE_DIR
+        if not guard(project, sidecar / "errors.log"):
+            return
         sidecar.mkdir(parents=True, exist_ok=True)
         stamp = datetime.now(timezone.utc).isoformat()
         with (sidecar / "errors.log").open("a", encoding="utf-8") as handle:
@@ -670,6 +674,8 @@ def merge_mcp_settings(path: Path, python: str, project: Path) -> str:
     """
     import json
 
+    if not is_safe_target(project, path):
+        return f"{REFUSED} {path}"
     entry = build_mcp_entry(python, project)
     if not path.exists():
         path.parent.mkdir(parents=True, exist_ok=True)
@@ -792,8 +798,16 @@ def _json_text(data: object) -> str:
     return json.dumps(data, indent=2, ensure_ascii=False) + "\n"
 
 
-def _write_if_absent(path: Path, text: str) -> str:
-    """Create ``path`` only when absent (R9.4). Returns the printed line."""
+from .safepath import REFUSED, is_safe_target  # noqa: E402
+
+
+def _write_if_absent(path: Path, text: str, project: Optional[Path] = None) -> str:
+    """Create ``path`` only when absent (R9.4). Returns the printed line.
+
+    With ``project`` the path must pass ``is_safe_target`` first.
+    """
+    if project is not None and not is_safe_target(project, path):
+        return f"{REFUSED} {path}"
     if path.exists():
         return f"exists, left unchanged {path}"
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -876,8 +890,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     lines: list[str] = []
     recorded: dict[str, str] = {}
 
-    def create(path: Path, text: str, key: str) -> None:
-        line = _write_if_absent(path, text)
+    def create(path: Path, text: str, key: str, guard: bool = True) -> None:
+        line = _write_if_absent(path, text, project if guard else None)
         lines.append(line)
         if line.startswith("created"):
             recorded[key] = _sha_text(text)
@@ -922,7 +936,7 @@ def cmd_init(args: argparse.Namespace) -> int:
             unit_path = home / ".config" / "systemd" / "user" / f"tombstone-{uid_name}.service"
             text = build_systemd_unit(executable, project)
             load = ["systemctl", "--user", "enable", "--now", unit_path.name]
-        create(unit_path, text, "unit")
+        create(unit_path, text, "unit", guard=False)
         load_text = " ".join(shlex.quote(p) for p in load)
         code, detail = _run_load_command(load)
         if code == 0:
@@ -950,7 +964,8 @@ def cmd_init(args: argparse.Namespace) -> int:
     else:
         lines.append("  V2 (legacy):   run `tombstone init --v2` to write .kiro/agents/tombstone.json")
     print("\n".join(lines))
-    return 1 if failed else 0
+    refused = any(line.startswith(REFUSED) for line in lines)
+    return 1 if failed or refused else 0
 
 
 # --- install record and uninstall (task 10.4) --------------------------------
@@ -979,13 +994,26 @@ def _sha_entry(entry: dict) -> str:
     return _sha_text(json.dumps(entry, sort_keys=True))
 
 
-def _load_installed(project: Path) -> dict[str, str]:
-    """The ``files`` map of ``installed.json``; {} when missing or broken."""
+def _state_dir() -> Path:
+    """User state dir for Tombstone (XDG_STATE_HOME honoured)."""
+    import os
+
+    base = os.environ.get("XDG_STATE_HOME")
+    root = Path(base) if base and Path(base).is_absolute() \
+        else Path.home() / ".local" / "state"
+    return root / "tombstone"
+
+
+def install_record_path(project: Path) -> Path:
+    """Install record kept outside the repo, keyed by the init unit id."""
+    return _state_dir() / "installs" / f"{unit_id(project)}.json"
+
+
+def _read_files_map(path: Path) -> dict[str, str]:
     import json
 
     try:
-        data = json.loads((project / INSTALLED_FILE).read_text(encoding="utf-8"))
-        files = data.get("files")
+        files = json.loads(path.read_text(encoding="utf-8")).get("files")
     except (OSError, ValueError, AttributeError):
         return {}
     if not isinstance(files, dict):
@@ -993,8 +1021,17 @@ def _load_installed(project: Path) -> dict[str, str]:
     return {str(k): str(v) for k, v in files.items()}
 
 
+def _load_installed(project: Path) -> dict[str, str]:
+    """The trusted ``files`` map from the record outside the repo; {} if none.
+
+    The in-repo ``.kiro/tombstone/installed.json`` (older versions) can be
+    forged by a cloned repository, so it is never read for decisions.
+    """
+    return _read_files_map(install_record_path(project))
+
+
 def _save_installed(project: Path, files: dict[str, str]) -> None:
-    path = project / INSTALLED_FILE
+    path = install_record_path(project)
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(_json_text({"version": 1, "files": files}), encoding="utf-8")
 
@@ -1033,7 +1070,7 @@ def uninstall(project: Path, home: Path, purge: bool = False,
     today. Changed files are kept unless ``force``. Safe to run twice.
     """
     import json
-    import shutil
+    import os
 
     project = Path(project).resolve()
     executable = find_executable()
@@ -1044,7 +1081,11 @@ def uninstall(project: Path, home: Path, purge: bool = False,
     def expected(key: str, text: Optional[str]) -> Optional[str]:
         return recorded.get(key) or (_sha_text(text) if text is not None else None)
 
-    def remove(path: Path, key: str, text: Optional[str]) -> None:
+    def remove(path: Path, key: str, text: Optional[str],
+               guard: bool = True) -> None:
+        if guard and not is_safe_target(project, path):
+            lines.append(f"{REFUSED} {path}")
+            return
         if not path.exists():
             lines.append(f"not found {path}")
             gone.add(key)
@@ -1070,7 +1111,7 @@ def uninstall(project: Path, home: Path, purge: bool = False,
                          f"({' '.join(unload)}); the unit may not have been loaded")
         text = (build_launchd_plist(executable, project, f"com.tombstone.{unit_id(project)}")
                 if sys.platform == "darwin" else build_systemd_unit(executable, project))
-        remove(unit_path, "unit", text)
+        remove(unit_path, "unit", text, guard=False)
     else:
         lines.append(f"not found {unit_path}")
         gone.add("unit")
@@ -1080,7 +1121,8 @@ def uninstall(project: Path, home: Path, purge: bool = False,
     builders = build_v3_hook_files(executable, project)
     names = set(builders)
     try:
-        names.update(p.name for p in hooks_dir.glob("tombstone-*.json"))
+        if is_safe_target(project, hooks_dir):
+            names.update(p.name for p in hooks_dir.glob("tombstone-*.json"))
     except OSError:
         pass
     for name in sorted(names):
@@ -1095,11 +1137,16 @@ def uninstall(project: Path, home: Path, purge: bool = False,
 
     # 3. the tombstone entry of mcp.json, nothing else.
     mcp_path = project / ".kiro" / "settings" / "mcp.json"
-    try:
-        data = json.loads(mcp_path.read_text(encoding="utf-8")) if mcp_path.exists() else None
-    except (OSError, ValueError):
-        lines.append(f"kept {mcp_path} (not valid JSON, remove the tombstone server by hand)")
+    mcp_safe = is_safe_target(project, mcp_path)
+    if not mcp_safe:
+        lines.append(f"{REFUSED} {mcp_path}")
         data = False
+    else:
+        try:
+            data = json.loads(mcp_path.read_text(encoding="utf-8")) if mcp_path.exists() else None
+        except (OSError, ValueError):
+            lines.append(f"kept {mcp_path} (not valid JSON, remove the tombstone server by hand)")
+            data = False
     servers = data.get("mcpServers") if isinstance(data, dict) else None
     if data is None:
         lines.append(f"not found {mcp_path}")
@@ -1139,25 +1186,80 @@ def uninstall(project: Path, home: Path, purge: bool = False,
     lines.append(f"kept {ledger} (user data, never removed)" if ledger.exists()
                  else f"not found {ledger}")
     if purge:
-        if sidecar.exists():
-            shutil.rmtree(sidecar, ignore_errors=True)
-            lines.append(f"removed {sidecar}")
+        if not is_safe_target(project, sidecar):
+            lines.append(f"{REFUSED} {sidecar}")
+        elif sidecar.exists():
+            lines.extend(_purge_tree(project, sidecar))
         else:
             lines.append(f"not found {sidecar}")
     else:
         for item in (sidecar / "autopsy", sidecar / "graveyard.html"):
-            if item.exists():
+            if is_safe_target(project, item) and item.exists():
                 lines.append(f"kept {item} (user data, --purge removes it)")
-        # installed.json: drop entries of removed files, delete when empty.
-        if (project / INSTALLED_FILE).exists():
-            left = {k: v for k, v in recorded.items() if k not in gone}
+        # legacy in-repo installed.json: never trusted, remove when safe.
+        legacy = project / INSTALLED_FILE
+        if is_safe_target(project, legacy):
             try:
-                if left:
-                    _save_installed(project, left)
-                else:
-                    (project / INSTALLED_FILE).unlink()
+                legacy.unlink()
             except OSError:
                 pass
+        elif os.path.lexists(legacy) or sidecar.is_symlink() \
+                or (project / ".kiro").is_symlink():
+            lines.append(f"{REFUSED} {legacy}")
+    # outside install record: drop entries of removed files, delete when empty.
+    record = install_record_path(project)
+    if record.exists():
+        left = {k: v for k, v in recorded.items() if k not in gone}
+        try:
+            if left:
+                _save_installed(project, left)
+            else:
+                record.unlink()
+        except OSError:
+            pass
+    return lines
+
+
+def _purge_tree(project: Path, root: Path) -> list[str]:
+    """Delete regular files and empty dirs under ``root`` (``--purge``).
+
+    Never follows or removes a symlink and never calls rmtree. Anything that
+    fails ``is_safe_target`` is reported as refused and left alone.
+    """
+    import os
+    import stat
+
+    lines: list[str] = []
+    for current, dirnames, filenames in os.walk(root, topdown=False,
+                                                followlinks=False):
+        here = Path(current)
+        for name in filenames:
+            path = here / name
+            try:
+                regular = stat.S_ISREG(os.lstat(path).st_mode)
+            except OSError:
+                continue
+            if not regular or not is_safe_target(project, path):
+                lines.append(f"{REFUSED} {path}")
+                continue
+            try:
+                path.unlink()
+            except OSError:
+                pass
+        for name in dirnames:
+            path = here / name
+            if path.is_symlink() or not is_safe_target(project, path):
+                lines.append(f"{REFUSED} {path}")
+                continue
+            try:
+                path.rmdir()
+            except OSError:
+                pass
+    try:
+        root.rmdir()
+        lines.append(f"removed {root}")
+    except OSError:
+        lines.append(f"kept {root} (not empty)")
     return lines
 
 
@@ -1168,10 +1270,11 @@ def cmd_uninstall(args: argparse.Namespace) -> int:
     if not project.is_dir():
         print(f"tombstone uninstall: not a directory: {project}", file=sys.stderr)
         return 1
-    for line in uninstall(project, Path.home(), purge=bool(args.purge),
-                          force=bool(args.force)):
+    lines = uninstall(project, Path.home(), purge=bool(args.purge),
+                      force=bool(args.force))
+    for line in lines:
         print(line)
-    return 0
+    return 1 if any(line.startswith(REFUSED) for line in lines) else 0
 
 
 # --- Power folder (task 10.3) -----------------------------------------------
