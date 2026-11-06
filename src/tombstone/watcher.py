@@ -300,40 +300,14 @@ def detect_change(project: Path, now: datetime, home: Optional[Path] = None) -> 
 
 POLL_SECONDS = 2.0
 PULSE_SECONDS = 60
-# Like the request price window: keep at least this many units of closed turns.
-UNIT_WINDOW_UNITS = 50
-UNIT_TURNS_KEPT = 200
+# Calibration lives in tombstones.py so the hooks and the watcher share it.
+UNIT_WINDOW_UNITS = tombstones.UNIT_WINDOW_UNITS
+UNIT_TURNS_KEPT = tombstones.UNIT_TURNS_KEPT
+update_unit_window = tombstones.update_unit_window
 
 
 def _round_credits(value: float) -> float:
     return round(float(value), 6)
-
-
-def update_unit_window(state: dict, units: int, cost: float) -> dict:
-    """Fold one closed, priced turn into the unit calibration of ``state``.
-
-    ``units`` is the assistant event count of the turn, counted exactly as it
-    is counted while the turn is open. ``unit_window`` is a list of
-    ``[units, cost]``, newest last; oldest entries are dropped while the rest
-    still total at least ``UNIT_WINDOW_UNITS``. ``avg_unit_price`` is the
-    summed actual cost over the summed units. Returns the mutated state.
-    """
-    if not isinstance(units, int) or units <= 0 or not isinstance(cost, (int, float)):
-        return state
-    window = state.get("unit_window")
-    if not isinstance(window, list):
-        window = []
-    window.append([units, _round_credits(cost)])
-    total = sum(item[0] for item in window)
-    while len(window) > 1 and total - window[0][0] >= UNIT_WINDOW_UNITS:
-        total -= window[0][0]
-        window.pop(0)
-    sum_units = sum(item[0] for item in window)
-    sum_cost = sum(item[1] for item in window)
-    state["unit_window"] = window
-    if sum_units > 0:
-        state["avg_unit_price"] = round(sum_cost / sum_units, 6)
-    return state
 
 
 def unit_price(state: dict, engine: Optional[str], default_request_price: float
@@ -590,14 +564,8 @@ def poll_once(project: Path, cfg, now: datetime,
                 state["v3_project_hash"] = cached
         observe_change(state, fingerprint, now)
 
-        seen = state.get("unit_turns")
-        seen = seen if isinstance(seen, list) else []
         for turn_id, units, cost in fresh:
-            if turn_id in seen:
-                continue
-            update_unit_window(state, units, cost)
-            seen.append(turn_id)
-        state["unit_turns"] = seen[-UNIT_TURNS_KEPT:]
+            tombstones.fold_unit_turn(state, turn_id, units, cost)
 
         turn = state.get("turn")
         if not isinstance(turn, dict):

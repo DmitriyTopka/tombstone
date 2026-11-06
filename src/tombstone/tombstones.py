@@ -1193,6 +1193,83 @@ def update_price_window(state: dict, requests: Optional[int],
     return state
 
 
+# --- V3 unit calibration (R4.1), shared by the watcher and the hooks -------
+
+# Like the request price window: keep at least this many units of closed turns.
+UNIT_WINDOW_UNITS = 50
+UNIT_TURNS_KEPT = 200
+
+
+def update_unit_window(state: dict, units: int, cost: float) -> dict:
+    """Fold one closed, priced turn into the unit calibration of ``state``.
+
+    ``units`` is the assistant event count of the turn, counted exactly as it
+    is counted while the turn is open. ``unit_window`` is a list of
+    ``[units, cost]``, newest last; oldest entries are dropped while the rest
+    still total at least ``UNIT_WINDOW_UNITS``. ``avg_unit_price`` is the
+    summed actual cost over the summed units. Returns the mutated state.
+    """
+    if not isinstance(units, int) or units <= 0 or not isinstance(cost, (int, float)):
+        return state
+    window = state.get("unit_window")
+    if not isinstance(window, list):
+        window = []
+    window.append([units, _round_credits(cost)])
+    total = sum(item[0] for item in window)
+    while len(window) > 1 and total - window[0][0] >= UNIT_WINDOW_UNITS:
+        total -= window[0][0]
+        window.pop(0)
+    sum_units = sum(item[0] for item in window)
+    sum_cost = sum(item[1] for item in window)
+    state["unit_window"] = window
+    if sum_units > 0:
+        state["avg_unit_price"] = round(sum_cost / sum_units, 6)
+    return state
+
+
+def fold_unit_turn(state: dict, turn_id: str, units: int, cost: float) -> bool:
+    """Fold a closed V3 turn into the unit calibration once per ``turn_id``.
+
+    The dedupe list ``state.unit_turns`` is shared by the watcher and the
+    hooks, so a turn seen by both is counted once. Returns True when the turn
+    was folded, False when it was already known or not usable.
+    """
+    seen = state.get("unit_turns")
+    seen = seen if isinstance(seen, list) else []
+    folded = False
+    if turn_id not in seen and isinstance(units, int) and units > 0 \
+            and isinstance(cost, (int, float)):
+        update_unit_window(state, units, cost)
+        seen.append(turn_id)
+        folded = True
+    state["unit_turns"] = seen[-UNIT_TURNS_KEPT:]
+    return folded
+
+
+def closed_turn_units(session_path, turn) -> int:
+    """Unit count (assistant events) of a closed V3 turn, 0 when unknown."""
+    from . import sessions
+
+    if session_path is None or getattr(turn, "engine", None) != "v3":
+        return 0
+    try:
+        return sessions.assistant_counts(Path(session_path)).get(turn.turn_id, 0)
+    except Exception:  # noqa: BLE001 - calibration is a nicety
+        return 0
+
+
+def fold_priced_turn(state: dict, turn, session_path=None) -> dict:
+    """Fold a closed, priced turn into the price window and, for V3, the units."""
+    update_price_window(state, turn.requests, turn.cost)
+    if session_path is not None and isinstance(turn.cost, (int, float)):
+        seen = state.get("unit_turns")
+        if not (isinstance(seen, list) and turn.turn_id in seen):
+            units = closed_turn_units(session_path, turn)
+            if units > 0:
+                fold_unit_turn(state, turn.turn_id, units, float(turn.cost))
+    return state
+
+
 def _avg_price(state: dict, config_default: float) -> float:
     """The average request price from state, or the config default."""
     value = state.get("avg_request_price") if isinstance(state, dict) else None
@@ -1386,7 +1463,7 @@ def on_turn_end(project: Path, stdin: dict, *,
         # The cost was already on disk: fold the priced turn into the window.
         update_json(
             state_path,
-            lambda s: update_price_window(s, turn.requests, turn.cost),
+            lambda s: fold_priced_turn(s, turn, session_path),
             default={"version": 1},
         )
         _settle_autopsy(project, kiro_home)
@@ -1491,18 +1568,19 @@ def reconcile_log(project: Path, message: str) -> None:
         pass
 
 
-def _fill_turn(project: Path, turn) -> Optional[dict]:
+def _fill_turn(project: Path, turn, session_path=None) -> Optional[dict]:
     """Write a priced turn into its record and fold it into the price window.
 
     Shared by the reconcile child and the safety net. ``turn`` must be closed
     with a cost. ``requests`` comes from the turn's ``requestIds`` (the
-    session parser), not from the open-turn estimate stored at Stop.
+    session parser), not from the open-turn estimate stored at Stop. With a
+    ``session_path`` a V3 turn also calibrates the unit price (R4.1).
     """
     record = _apply_reconciled_turn(project, turn)
     if record is not None and isinstance(turn.requests, int):
         update_json(
             project / TOMBSTONE_DIR / "state.json",
-            lambda s: update_price_window(s, turn.requests, turn.cost),
+            lambda s: fold_priced_turn(s, turn, session_path),
             default={"version": 1},
         )
     return record
@@ -1583,7 +1661,7 @@ def reconcile_pending(project: Path, *, kiro_home: Optional[Path] = None,
                 for turn in sessions.parse_session(path).turns:
                     if turn.turn_id == turn_id:
                         if turn.state == "closed" and turn.cost is not None \
-                                and _fill_turn(project, turn) is not None:
+                                and _fill_turn(project, turn, path) is not None:
                             filled += 1
                             # One fill updates every record of a split turn.
                             done.add((session_id, turn_id))
@@ -1654,7 +1732,7 @@ def reconcile_turn(project: Path, session_id: Optional[str], turn_id: str,
                     break
 
         if turn is not None and turn.state == "closed" and turn.cost is not None:
-            record = _fill_turn(project, turn)
+            record = _fill_turn(project, turn, session_path)
             if record is not None:
                 reconcile_log(project, f"filled turn {turn_id} actual "
                                        f"{_round_credits(turn.cost)} requests "

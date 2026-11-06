@@ -1,0 +1,25 @@
+{
+  "session_id": "00000000-0000-4000-8000-0000000ten00",
+  "cwd": "/workspace/project0",
+  "created_at": "2026-11-03T12:00:00.000000Z",
+  "updated_at": "2026-11-03T12:02:00.000000Z",
+  "title": "hand-made 10-request turn for the estimate accuracy check",
+  "session_state": {
+    "version": "v1",
+    "agent_name": "kiro_default",
+    "conversation_metadata": {
+      "user_turn_metadatas": [
+        {
+          "total_request_count": 10,
+          "metering_usage": [
+            {"unit": "credit", "unitPlural": "credits", "value": 0.52}
+          ],
+          "model": "auto",
+          "end_timestamp": "2026-11-03T12:02:00.000000Z",
+          "turn_duration": {"secs": 100, "nanos": 0},
+          "end_reason": "UserTurnEnd"
+        }
+      ]
+    }
+  }
+}

@@ -1050,6 +1050,66 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/7c38aed5-384e-4605-af4e-6285f9ddab17",
+      "task_id": "unknown",
+      "name": "Execute task 11.4 from .kiro/specs/tombstone/tasks.md, following design.md and",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 7.6757,
+      "actual": 3.4271,
+      "minutes": 1.823,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_c00b2d4e-532b-4d83-a12a-1615e6041090",
+          "turn_id": "7c38aed5-384e-4605-af4e-6285f9ddab17",
+          "requests": 15,
+          "estimate": 7.6757,
+          "actual": 3.4271,
+          "minutes": 1.823,
+          "start": "2026-11-06T14:46:38.646000Z",
+          "end": "2026-11-06T14:48:28.027000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/1e67c7d2-3010-454d-a608-34cd36ee186f",
+      "task_id": "unknown",
+      "name": "Bug fix for R4.1 (part of task 11.4).",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 25,
+      "estimate": 7.8695,
+      "actual": 5.5411,
+      "minutes": 2.429,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_74ea6dc9-d684-41eb-a379-3a81706a2421",
+          "turn_id": "1e67c7d2-3010-454d-a608-34cd36ee186f",
+          "requests": 25,
+          "estimate": 7.8695,
+          "actual": 5.5411,
+          "minutes": 2.429,
+          "start": "2026-11-06T14:49:23.882000Z",
+          "end": "2026-11-06T14:51:49.620000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

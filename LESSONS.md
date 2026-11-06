@@ -78,3 +78,12 @@ Rule: test logs live outside the project. The steering file for users can say th
 ## 2026-11-06 E3 Refusal text is not in messages.jsonl
 Got: the blocked tool shows as `tool_result` with `"content": "{}", "success": false`; the `TOMBSTONE:` text reached the agent (it quoted it) but is not stored.
 Rule: the autopsy takes the refusal text from the STOP file, not from the session.
+
+## 2026-11-06 E3 A feature that only the daemon feeds is off in hooks-only mode
+Expected: the open-turn estimate calibrates itself after a few turns.
+Got: the calibration ran only in the watcher; with the service removed it never ran, and every estimate was about twice the actual.
+Rule: anything the hooks read must also be fed by the hooks. Test every feature with the watcher off.
+
+## 2026-11-06 E3 A silent end of a Kiro run can be server throttling
+Got: one 11.4 run ended after a tool call with no summary and no files; the next run printed ModelThrottleError. 
+Rule: a run with no summary is a failed run, not a finished one. Read the log tail before trusting the tick.

@@ -2,7 +2,7 @@
 
 The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/) already exists. Tasks follow the order: session parser and `tombstone cost`, tombstone writer, caps, graveyard, watcher, stop, autopsy, MCP, init and Power, tests. Behavior and data formats are in design.md.
 
-- [ ] 1. Session parser for V3 and V2
+- [x] 1. Session parser for V3 and V2
   - One parser, format detected per session, read only, never raises on bad data.
   - _Requirements: R1.1, R1.2, R1.3, R1.5, R1.7, R10.1_
 
@@ -24,7 +24,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - Output is one line per turn (engine, model, requests, cost, start, end) and a total. Numbers have at least three decimals and carry `actual` or `est.`. Unpriced turns print the reason. Check by hand: the V3 fixture prints 0.390 credits and 5 requests.
   - _Requirements: R1.3, R1.6, R4.4_
 
-- [ ] 3. Tombstone writer
+- [x] 3. Tombstone writer
   - Records in `tombstones.json`, written by the Stop hook with the task id from the three-step rule.
   - _Requirements: R1.4, R2.1, R2.2, R2.3, R2.4, R2.5, R4.2, R4.3_
 
@@ -44,7 +44,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Add `tombstone hook prompt` (`UserPromptSubmit`): store the first 8 words of the prompt with home paths stripped in `state.turn.prompt_name` and reset `state.turn.checked`. Change `resolve_task` to STDIN id, then boxes checked in the turn, then `unknown` named after the prompt; remove the first unchecked fallback. The Stop hook writes one record per checked box with an equal share, and one `unknown` record per turn otherwise.
     - _Requirements: R2.3, R2.4_
 
-- [ ] 4. Caps and budget math
+- [x] 4. Caps and budget math
   - `tombstone.toml`, similar-task median, and the gate that blocks a new task before it starts.
   - _Requirements: R3.1, R3.2, R3.3, R3.4, R3.5, R3.6, R11.5_
 
@@ -60,7 +60,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - `render_graveyard` in `tombstones.py` returns one HTML string with inline CSS and JS (sortable table, filter box, outcome badges, `est.` or `actual` on every number) and no external resource of any kind. `tombstone graveyard [--out FILE]` writes it to `.kiro/tombstone/graveyard.html`.
   - _Requirements: R2.6, R4.4_
 
-- [ ] 6. Watcher
+- [x] 6. Watcher
   - One process per project, polling every 2 seconds. The decision logic is a pure function.
   - _Requirements: R4.1, R5.1, R5.2, R5.3, R5.4, R5.5, R5.6, R5.7_
 
@@ -72,7 +72,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Add `evaluate` (pulse in the last 60 s, quiet clock starting at the later of the last change and the turn start, stall, over-cap on the task running estimate, no stall when files change, one event per turn), `poll_once` with the estimate as requests times average price, and `tombstone watch` running the loop every 2 seconds with errors logged and the loop kept alive. Raise events into `stop.begin_stop`.
     - _Requirements: R4.1, R5.1, R5.2, R5.3, R5.5, R5.7_
 
-- [ ] 7. Stop in two steps
+- [x] 7. Stop in two steps
   - STOP file, blocking hook, notification, and the kill step.
   - _Requirements: R5.5, R6.1, R6.2, R6.3, R6.4, R6.5, R6.6, R6.7_
 
@@ -92,7 +92,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Add `begin_stop(event)`: write STOP, notify, call the autopsy, store the `stop` entry in state, write the `killed` record. Wire `maybe_kill` into the watcher loop.
     - _Requirements: R5.5, R6.1, R6.3, R6.7_
 
-- [ ] 8. Autopsy
+- [x] 8. Autopsy
   - Markdown receipt with the evidence, no home path in it.
   - _Requirements: R7.1, R7.2, R7.3, R7.4_
 
@@ -104,7 +104,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Add `append_actual`, guarded by `state.autopsy_pending` so it appends once, called by the watcher and by the Stop hook when the closing turn has a cost.
     - _Requirements: R7.3, R4.2_
 
-- [ ] 9. MCP get_budget
+- [x] 9. MCP get_budget
   - One tool, no model call, plan balance from a cached local probe.
   - _Requirements: R8.1, R8.2, R8.3, R8.4, R8.5, R11.4_
 
@@ -116,7 +116,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - In `mcp_server.py` add `budget()` (similar median with count and basis, spec cap and remaining, plan balance with age in minutes) and `serve()` registering exactly one tool `get_budget(task_name=None)` on stdio. Add `tombstone mcp`.
     - _Requirements: R8.1, R8.2, R8.4, R8.5_
 
-- [ ] 10. Init and Power
+- [x] 10. Init and Power
   - One command prepares a project, a Power folder ships the same files.
   - _Requirements: R9.1, R9.2, R9.3, R9.4, R9.5, R9.6, R9.7, R9.8, R10.2, R10.3, R10.4, R11.1, R11.3_
 
@@ -136,7 +136,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Record the sha256 of each file `init` creates in `.kiro/tombstone/installed.json`. Add `tombstone uninstall [--purge] [--force] [--project DIR]`: unload and delete this project's watcher unit, delete the init files, remove only the `tombstone` entry from `.kiro/settings/mcp.json`, keep changed files unless `--force`, keep user data unless `--purge` (never `tombstones.json`), print one line per file. Safe to run twice and works without `installed.json`. Tests use `tmp_path`, a fake HOME and a mocked unit loader.
     - _Requirements: R9.6, R9.7, R9.8_
 
-- [ ] 11. Tests
+- [x] 11. Tests
   - Fixtures are already in place from task 1. Tests run with `pytest` and need no Kiro install.
   - _Requirements: R1.1, R1.2, R1.5, R2.4, R2.5, R3.3, R3.4, R3.6, R4.1, R4.2, R5.2, R5.3, R5.4, R5.7, R6.2, R6.3, R6.4, R7.3, R7.4, R8.1, R8.4, R9.4, R11.1, R11.2, R11.3, R11.4, R11.5_
 
@@ -152,6 +152,6 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - `budget()` with and without similar tasks and with the balance missing, tool list equals `["get_budget"]`, `init` run twice leaves files unchanged, `power/` files equal builder output.
     - _Requirements: R8.1, R8.4, R9.4_
 
-  - [ ] 11.4 Latency, zero-credit and accuracy checks
+  - [x] 11.4 Latency, zero-credit and accuracy checks
     - Median of five `tombstone hook pre-tool` subprocess runs under 200 ms without a STOP file. Static checks: no prompt-type hook, no `model` key, no model, agent or paid-API call, no network module imports, no em or en dash in any text file. Estimate within 30% of actual on the 10-request fixture. Record the manual "no extra metered request" check in `KIRO_LOG.md`.
     - _Requirements: R4.2, R11.1, R11.2, R11.3, R11.4, R11.5_
