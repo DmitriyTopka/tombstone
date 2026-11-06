@@ -160,7 +160,8 @@ def test_spawn_is_fully_detached(tmp_path, monkeypatch):
 def test_spawn_returns_fast(tmp_path):
     project = _project(tmp_path)
     started = time.perf_counter()
-    tb.spawn_reconcile(project, "sess_none", "t1", kiro_home=tmp_path / "nohome")
+    tb.spawn_reconcile(project, "sess_none", "t1", kiro_home=tmp_path / "nohome",
+                       timeout_s=1)
     assert time.perf_counter() - started < 0.2
 
 

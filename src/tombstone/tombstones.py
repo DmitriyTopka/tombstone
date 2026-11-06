@@ -891,6 +891,42 @@ def refresh_snapshot(state: dict, project: Path, spec: str,
     return state
 
 
+def sync_checked_at_stop(state: dict, project: Path) -> dict:
+    """Stop-time diff of every spec's tasks.md against the snapshot.
+
+    The post-tool hook only sees tools whose input names tasks.md. A box
+    flipped by a shell command (``sed -i``) is invisible to it. At Stop this
+    diff is the authority: for each spec with a snapshot, every id that went
+    from unchecked to checked is added to ``state.turn.checked`` (never twice),
+    and the snapshot is refreshed. A spec with no snapshot yet only gets a
+    baseline, nothing is counted. Returns the mutated state.
+    """
+    project = Path(project)
+    turn = state.get("turn")
+    if not isinstance(turn, dict):
+        turn = {}
+        state["turn"] = turn
+    snapshots = state.get("tasks_snapshot")
+    if not isinstance(snapshots, dict):
+        snapshots = {}
+        state["tasks_snapshot"] = snapshots
+    checked = turn.get("checked")
+    if not isinstance(checked, list):
+        checked = []
+
+    for spec in _list_specs(project):
+        current = _snapshot_for(project, spec)
+        previous = snapshots.get(spec)
+        if isinstance(previous, dict):
+            for task_id, is_checked in current.items():
+                if is_checked and previous.get(task_id) is False \
+                        and task_id not in checked:
+                    checked.append(task_id)
+        snapshots[spec] = current
+    turn["checked"] = checked
+    return state
+
+
 # --- record building and the Stop hook (task 3.3) --------------------------
 
 
@@ -1205,6 +1241,16 @@ def on_turn_end(project: Path, stdin: dict, *,
         now = datetime.now(timezone.utc)
 
     state_path = project / TOMBSTONE_DIR / "state.json"
+    # The Stop diff is the authority for checked ids (shell edits are missed
+    # by the post-tool hook). Persist it so the next turn does not see them.
+    try:
+        update_json(
+            state_path,
+            lambda s: sync_checked_at_stop(s, project),
+            default={"version": 1},
+        )
+    except Exception:  # fail open: fall back to what the post-tool hook saw
+        pass
     state, _valid = _read_json(state_path)
     if state is None:
         state = {}
@@ -1303,7 +1349,8 @@ def on_turn_end(project: Path, stdin: dict, *,
 
 def spawn_reconcile(project: Path, session_id: Optional[str],
                     turn_id: Optional[str],
-                    kiro_home: Optional[Path] = None) -> None:
+                    kiro_home: Optional[Path] = None,
+                    timeout_s: Optional[float] = None) -> None:
     """Start a detached ``tombstone hook reconcile`` child (Bug 1).
 
     The child polls the session every 0.5 s for up to 30 s and fills ``actual``
@@ -1324,6 +1371,9 @@ def spawn_reconcile(project: Path, session_id: Optional[str],
     ]
     if kiro_home is not None:
         args += ["--kiro-home", str(Path(kiro_home).resolve())]
+    if timeout_s is not None:
+        # Tests pass a short value so no child polls for the default 30 s.
+        args += ["--timeout", str(float(timeout_s))]
 
     # The child's stdout and stderr go to reconcile.log so a crash before it
     # can log anything (an import error, a bad interpreter) is still visible.

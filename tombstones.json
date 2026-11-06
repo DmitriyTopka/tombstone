@@ -210,6 +210,246 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/6.1",
+      "task_id": "6.1",
+      "name": "State file and project change detection",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 17,
+      "estimate": 8.5812,
+      "actual": 4.2142,
+      "minutes": 1.9076,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_200bdc65-931c-4bc5-903f-50de93fae243",
+          "turn_id": "0f17a189-9a16-4471-9c8b-f8ee96519728",
+          "requests": 17,
+          "estimate": 8.5812,
+          "actual": 4.2142,
+          "minutes": 1.9076,
+          "start": "2026-11-06T08:40:32.331000Z",
+          "end": "2026-11-06T08:42:26.785000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/28ff66b0-fa81-48c9-82e0-53411e1abaa9",
+      "task_id": "unknown",
+      "name": "Execute task 6.2 from .kiro/specs/tombstone/tasks.md, following design.md and",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 9.2894,
+      "actual": 7.3715,
+      "minutes": 3.6784,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_168f770f-b615-41d6-9940-f9e2b65a0233",
+          "turn_id": "28ff66b0-fa81-48c9-82e0-53411e1abaa9",
+          "requests": 18,
+          "estimate": 9.2894,
+          "actual": 7.3715,
+          "minutes": 3.6784,
+          "start": "2026-11-06T08:42:41.372000Z",
+          "end": "2026-11-06T08:46:22.073000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/6.2",
+      "task_id": "6.2",
+      "name": "Evaluate and the poll loop",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 11,
+      "estimate": 2.6625,
+      "actual": 1.2621,
+      "minutes": 0.5029,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_b53cf3a0-05cf-4b0e-a8ea-de69ff1285bc",
+          "turn_id": "b60895e3-28e2-45ce-b2cb-50d6d8db5f7f",
+          "requests": 11,
+          "estimate": 5.3249,
+          "actual": 2.5242,
+          "minutes": 1.0057,
+          "start": "2026-11-06T08:46:35.646000Z",
+          "end": "2026-11-06T08:47:35.987000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/7.1",
+      "task_id": "7.1",
+      "name": "STOP file, blocking and resume",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 11,
+      "estimate": 2.6625,
+      "actual": 1.2621,
+      "minutes": 0.5029,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_b53cf3a0-05cf-4b0e-a8ea-de69ff1285bc",
+          "turn_id": "b60895e3-28e2-45ce-b2cb-50d6d8db5f7f",
+          "requests": 11,
+          "estimate": 5.3249,
+          "actual": 2.5242,
+          "minutes": 1.0057,
+          "start": "2026-11-06T08:46:35.646000Z",
+          "end": "2026-11-06T08:47:35.987000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/7.2",
+      "task_id": "7.2",
+      "name": "Notification and terminal line",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 3.77,
+      "actual": 1.4274,
+      "minutes": 0.7141,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_fa0f5293-1e82-4340-acbc-193d1afc81eb",
+          "turn_id": "427e72d2-0516-4344-9929-ebcb236b3cae",
+          "requests": 9,
+          "estimate": 3.77,
+          "actual": 1.4274,
+          "minutes": 0.7141,
+          "start": "2026-11-06T08:47:43.786000Z",
+          "end": "2026-11-06T08:48:26.633000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/ac0a9f13-cd29-426d-bfd3-dd1f83665964",
+      "task_id": "unknown",
+      "name": "Bug fix from the live run of task",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 12,
+      "estimate": 5.0849,
+      "actual": 2.4821,
+      "minutes": 1.1997,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_1490d5c5-e253-47a6-86ad-48bcbce672c5",
+          "turn_id": "ac0a9f13-cd29-426d-bfd3-dd1f83665964",
+          "requests": 12,
+          "estimate": 5.0849,
+          "actual": 2.4821,
+          "minutes": 1.1997,
+          "start": "2026-11-06T08:48:54.096000Z",
+          "end": "2026-11-06T08:50:06.080000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/7.3",
+      "task_id": "7.3",
+      "name": "Process lookup and kill",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 17,
+      "estimate": 7.7309,
+      "actual": 4.6529,
+      "minutes": 2.968,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_97e22171-2324-4f04-81ca-0e09ee331bb7",
+          "turn_id": "a3985132-9143-477f-bb07-a8fda03065bc",
+          "requests": 17,
+          "estimate": 7.7309,
+          "actual": 4.6529,
+          "minutes": 2.968,
+          "start": "2026-11-06T08:50:50.016000Z",
+          "end": "2026-11-06T08:53:48.094000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/7.4",
+      "task_id": "7.4",
+      "name": "Stop sequence orchestration",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 8.5403,
+      "actual": 5.4435,
+      "minutes": 2.2866,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_6e592f79-1311-4af7-92cf-cf99fe512fe9",
+          "turn_id": "b30e561b-1b88-4399-bda8-b374e33ca60f",
+          "requests": 18,
+          "estimate": 8.5403,
+          "actual": 5.4435,
+          "minutes": 2.2866,
+          "start": "2026-11-06T08:53:59.585000Z",
+          "end": "2026-11-06T08:56:16.781000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

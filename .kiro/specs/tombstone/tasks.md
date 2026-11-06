@@ -64,11 +64,11 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - One process per project, polling every 2 seconds. The decision logic is a pure function.
   - _Requirements: R4.1, R5.1, R5.2, R5.3, R5.4, R5.5, R5.6, R5.7_
 
-  - [ ] 6.1 State file and project change detection
+  - [x] 6.1 State file and project change detection
     - Add state read/update through `update_json` with the fields from design.md, `~` in stored paths, and the change detector: `git status --porcelain=v1 -z` plus mtime and size of the listed files, a tree walk fallback without git, ignoring `.kiro/tombstone/`, `.git/` and `tombstones.json`.
     - _Requirements: R5.4, R5.6_
 
-  - [ ] 6.2 Evaluate and the poll loop
+  - [x] 6.2 Evaluate and the poll loop
     - Add `evaluate` (pulse in the last 60 s, quiet clock starting at the later of the last change and the turn start, stall, over-cap on the task running estimate, no stall when files change, one event per turn), `poll_once` with the estimate as requests times average price, and `tombstone watch` running the loop every 2 seconds with errors logged and the loop kept alive. Raise events into `stop.begin_stop`.
     - _Requirements: R4.1, R5.1, R5.2, R5.3, R5.5, R5.7_
 
@@ -76,19 +76,19 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - STOP file, blocking hook, notification, and the kill step.
   - _Requirements: R5.5, R6.1, R6.2, R6.3, R6.4, R6.5, R6.6, R6.7_
 
-  - [ ] 7.1 STOP file, blocking and resume
+  - [x] 7.1 STOP file, blocking and resume
     - In `stop.py` add `write_stop` (reason, message, task id, estimate, requests at stop, time), the STOP check as the first step of `tombstone hook pre-tool` (one-line stderr, exit 2, generic message when the file is unreadable), and `tombstone resume`.
     - _Requirements: R6.1, R6.2, R6.6_
 
-  - [ ] 7.2 Notification and terminal line
+  - [x] 7.2 Notification and terminal line
     - Add `notify` (macOS `osascript` with the text passed as an argument, Linux `notify-send`) and the terminal line, with failures logged and ignored. No network call.
     - _Requirements: R6.7_
 
-  - [ ] 7.3 Process lookup and kill
+  - [x] 7.3 Process lookup and kill
     - First record the real process tree of a running V3 session (`ps -Ao pid,ppid,command`) in LESSONS.md. Then add `find_project_processes` (Linux `/proc`, macOS `ps` and `lsof`, only the `kiro-cli` process and its children whose working directory is the project) and `maybe_kill`: after the grace and with a growing request count send SIGTERM, then SIGKILL after 5 seconds. No match means skip, warn in state and autopsy, kill nothing else. Never touch project files.
     - _Requirements: R6.3, R6.4, R6.5_
 
-  - [ ] 7.4 Stop sequence orchestration
+  - [x] 7.4 Stop sequence orchestration
     - Add `begin_stop(event)`: write STOP, notify, call the autopsy, store the `stop` entry in state, write the `killed` record. Wire `maybe_kill` into the watcher loop.
     - _Requirements: R5.5, R6.1, R6.3, R6.7_
 

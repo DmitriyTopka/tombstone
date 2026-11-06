@@ -170,6 +170,8 @@ A task line matches `^\s*- \[( |x|X|-)\]\*?\s+(\d+(?:\.\d+)*)\.?\s+(.+)$`. Lines
    A task id counts as checked in a turn only if the previous snapshot held it as unchecked, or, with no snapshot, its line flipped from `[ ]` to `[x]` inside one edit (the id must be present and unchecked in `oldStr`). An id that is new in the file is never "checked now": it just enters the snapshot. The live run of task 4.2 hit this: task 3.4 had been added as `- [x] 3.4` in an earlier turn, the snapshot did not know it, so the 4.2 turn was split 50/50 between 3.4 and 4.2.
 
    `state.turn.checked` is reset when a new turn begins (a change in `state.turn.turn_id`, set by the post-tool, UserPromptSubmit and session-start hooks) so a task completed in one turn never leaks into the next.
+
+   **Stop diff is the authority.** The post-tool path only sees tools whose input names `tasks.md`, so a box flipped by a shell command (the live run of task 6.2 used `sed -i` through `execute_bash`) is invisible to it. The 6.2 turn was recorded as `unknown` and the next turn saw 6.2 and 7.1 as newly checked and split 50/50. Before building the record, the Stop hook now calls `sync_checked_at_stop`: under the state lock it re-parses the `tasks.md` of every spec, adds each id that went from unchecked to checked since `tasks_snapshot` to `state.turn.checked` (an id already listed is never added twice), and refreshes the snapshot. A spec with no snapshot only gets a baseline. The post-tool path stays as it is for earlier information. The cost is a few small file parses, well under the 200 ms budget.
 3. *Unknown.* `TaskRef(task_id="unknown", ...)`. There is no "first unchecked task" guess: a turn that checks no box and carries no task id is a work turn outside the task list (a fix, a question, a refactor), and a guess would put its cost on a real task. The record id is `unknown/<session turn id>`, so there is one record per turn and it is always written (R2.4). The name is `state.turn.prompt_name`, or the turn start time when no prompt was seen.
 
 *Prompt hook.* `tombstone hook prompt` (V3 `UserPromptSubmit`, STDIN `{"session_id", "hook_event_name", "cwd", "prompt"}`) runs `record_prompt` through the locked store. It resets `state.turn.checked` and stores `state.turn.prompt_name`: the first 8 words of `prompt` after the home directory and any `/Users/<name>` or `/home/<name>` prefix are replaced by `~`. It fails open and does no work beyond one locked state write, so it stays under 200 ms.
@@ -296,7 +298,22 @@ def poll_once(project: Path, cfg: Config, now: datetime, kiro_home: Path) -> Eve
 def run(project: Path) -> None            # the 2 second loop
 ```
 
-`Observation` holds: session path and engine, open-turn requests, jsonl size, project fingerprint.
+`Observation` holds: project, session path, engine and id, the open turn id (None when no turn is open), the open-turn **units**, the jsonl size and `prior_cost` (earlier turns of the same task). The project fingerprint is compared in `poll_once`, which stores `last_project_change` in state before `evaluate` runs. `Event` carries kind, message, detail, task, estimate, units, session and turn ids, and the project path, so `stop.begin_stop(event)` needs nothing else.
+
+**The unit of the open-turn estimate (R4.1).** While a turn is open the watcher counts `assistant` events of that turn. That count is called a *unit*. It overcounts real requests: in session `sess_b2bf8b22` 21 assistant events were counted while the turn was open and 12 `requestIds` were on the closed turn. Pricing units with the per-request average would therefore overestimate. The estimate is:
+
+```
+open-turn estimate (est.) = units * avg_unit_price
+avg_unit_price            = sum(actual cost) / sum(units)   over closed turns of this project
+```
+
+Calibration:
+
+- The unit count of a closed turn is the number of `assistant` events with its `turnId` (`sessions.assistant_counts`), the same rule as for the open turn. It is never `len(requestIds)`.
+- Each closed turn with an `actual` cost and at least one unit is folded once into `state.unit_window` as `[units, actual]`, newest last. The turn id goes into `state.unit_turns` (last 200) so no turn is folded twice. Old entries are dropped while the rest still total at least 50 units, like the request price window.
+- `state.avg_unit_price` is stored next to `state.avg_request_price`. Both are kept: the request average prices closed turns and records (R4.3), the unit average prices only the open turn.
+- Until a V3 calibration exists, the open turn is priced with the per-request average and labeled `est., uncalibrated`. This overcounts and is the only case where the unit and its price disagree. Once one closed turn is folded the label becomes `est., calibrated`. The basis is stored in `state.turn.estimate_basis`.
+- V2 counts real requests (`assistant` lines past the closed total), so the per-request average is the right price there (`est., per request`).
 
 **state.json (R5.6).**
 
@@ -313,6 +330,9 @@ def run(project: Path) -> None            # the 2 second loop
   "last_event": {"kind": "stall", "at": "...", "detail": "..."},
   "avg_request_price": 0.047,
   "price_window": [[14, 0.71], [9, 0.357]],
+  "avg_unit_price": 0.0286,
+  "unit_window": [[21, 0.6], [9, 0.25]],
+  "unit_turns": ["<closed turn id>", "..."],
   "v3_project_hash": "14e984af5081f39b",
   "cli_version": {"installed": "3.0.0", "tested": "3.0.0"},
   "warnings": []
@@ -328,11 +348,15 @@ All paths stored in state use `~` for the home directory. The file is written on
 - `pulse`: the jsonl grew at least once in the last 60 seconds (`last_growth_at`).
 - `quiet_since = max(last_project_change, turn.started_at)`. Starting the clock at the turn start keeps a turn that begins after a long idle period from stalling at once.
 - **Stall** (R5.2): an open turn exists, `pulse` is true, and `now - quiet_since > quiet_window`.
-- **Over-cap** (R5.3): `estimate > task_cap`, where `estimate = open-turn requests * avg_request_price` plus the actual or estimated cost of earlier turns of the same task. For a task on its first turn this is exactly the turn estimate of R5.3; for a continued task it keeps "cap per task" meaningful.
+- **Over-cap** (R5.3): `estimate > task_cap`, where `estimate = open-turn units * avg_unit_price` (see the unit above) plus the actual or estimated cost of earlier turns of the same task. For a task on its first turn this is exactly the turn estimate of R5.3; for a continued task it keeps "cap per task" meaningful.
 - If the pulse grows and project files change, `quiet_since` moves forward and no stall can be raised (R5.7).
 - An event is raised once per turn. After the event, `evaluate` returns nothing for that turn.
 
-**Loop.** Every 2 seconds: `poll_once`, then if an event comes back, call `stop.begin_stop`. The loop also calls `reconcile_pending` and, when a turn closes, appends the actual cost to a waiting autopsy. A crash in one poll is caught, logged to `errors.log`, and the loop continues. The watcher warns on start if the installed CLI version differs from the tested one (R10.4).
+**`state.turn` fields written by the watcher.** `watch_turn_id` (the open turn the watcher tracks, None when none is open), `started_at`, `jsonl_size`, `last_growth_at` (set to the turn start when the turn is first seen, then to `now` whenever the jsonl grows), `requests` (the units), `estimate`, `estimate_basis` and `event_raised`. The hooks own `turn_id`, `checked` and `prompt_name` in the same dict, and the watcher leaves them alone.
+
+**`poll_once`.** Reads the session and the project outside the lock, then does one locked state write: session, project change, calibration of newly closed turns, open-turn tracking, estimate, then `evaluate`. An event sets `turn.event_raised` and `last_event` in the same write, so it is raised once per turn.
+
+**Loop.** Every 2 seconds: `poll_once`, then if an event comes back, call `stop.begin_stop`. Until task 7.4 adds `begin_stop`, the event is only logged to `errors.log`. The loop also calls `reconcile_pending` and, when a turn closes, appends the actual cost to a waiting autopsy. A crash in one poll is caught, logged to `errors.log`, and the loop continues. The watcher warns on start if the installed CLI version differs from the tested one (R10.4).
 
 ### `stop` (STOP file, hook gate, notification, kill)
 
@@ -515,6 +539,6 @@ Credits are stored as floats rounded to 4 decimals and shown with at least 3. Un
 
 1. **Subprocess whitelist.** Resolved 05.11 by the project owner: the steering now allows `kiro-cli --version`, `ps`, `lsof`, and `launchctl` / `systemctl --user` from `init` only. `init` loads the unit itself and also prints the command.
 2. **STDIN shapes.** The V3 `PreTaskExecution` STDIN and the exact V2 `.jsonl` line shape are [UNKNOWN]. The design is tolerant, and the fixtures decide the final field names.
-3. **Request counting for an open turn** (V3 `assistant` events, V2 jsonl lines) is a [HYPOTHESIS] until compared with closed turns.
+3. **Request counting for an open turn** (V3 `assistant` events, V2 jsonl lines) is a [HYPOTHESIS] until compared with closed turns. Measured on V3: the count overcounts requests (21 counted, 12 `requestIds`), so it is a unit, priced by calibration (see watcher), not a request.
 4. **`init` and MCP registration.** R9.2 does not list `.kiro/settings/mcp.json`, so `init` does not write it. The Power ships `mcp.json`; the steering file written by `init` tells the agent to call `get_budget` when it is available.
 5. **`false_positive`** has no setter in the requirements. It stays `null` and is editable by hand.

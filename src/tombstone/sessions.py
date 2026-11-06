@@ -652,6 +652,30 @@ def open_turn_progress(path: Path) -> Optional[Progress]:
     return None
 
 
+def assistant_counts(path: Path) -> dict[str, int]:
+    """Assistant events per turn id of a V3 session (the watcher's unit).
+
+    This is the same count the parser uses for an open turn. On a closed turn
+    it overcounts the real requests (``len(requestIds)``), so the watcher
+    never prices it as a request: it calibrates credits per counted unit from
+    closed turns instead. V2 sessions and unreadable paths give ``{}``.
+    Never raises.
+    """
+    path = Path(path)
+    if detect_format(path) != "v3":
+        return {}
+    root = _v3_root(path) or path
+    counts: dict[str, int] = {}
+    for event in _read_jsonl(root / "messages.jsonl"):
+        payload = event.get("payload")
+        if not isinstance(payload, dict) or payload.get("type") != "assistant":
+            continue
+        turn_id = payload.get("turnId")
+        if isinstance(turn_id, str):
+            counts[turn_id] = counts.get(turn_id, 0) + 1
+    return counts
+
+
 def _v2_closed_requests(json_path: Path) -> int:
     """Sum of ``total_request_count`` over the closed turns of a V2 session."""
     try:

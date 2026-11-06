@@ -348,8 +348,10 @@ def _hook_reconcile(args: argparse.Namespace) -> int:
     except OSError:
         pass
 
+    timeout = getattr(args, "timeout", None)
+    extra = {"timeout_s": float(timeout)} if timeout is not None else {}
     tombstones.reconcile_turn(
-        project, session_id, turn_id, kiro_home=kiro_home
+        project, session_id, turn_id, kiro_home=kiro_home, **extra
     )
     return 0
 
@@ -363,13 +365,20 @@ def _hook_pre_tool(stdin: dict) -> int:
     """``tombstone hook pre-tool``, cap path (R3.3, R3.4, R11.5).
 
     Exits 2 with a one-line reason on stderr when a new task would break the
-    spec budget, else 0. Fails open: any internal error is logged by
-    ``cmd_hook`` and the tool call proceeds. The STOP file check is added in
-    task 7.1. Imports stay lazy so the common path is fast.
+    spec budget, else 0. The STOP file check runs first (R6.2). Fails open:
+    any internal error is logged by ``cmd_hook`` and the tool call proceeds.
+    Imports stay lazy so the common path is fast.
     """
     project = _hook_project_root(stdin)
     if project is None:
         return 0
+
+    from . import stop
+
+    blocked = stop.check_stop(project)
+    if blocked:
+        print(blocked, file=sys.stderr)
+        return 2
 
     from . import caps
 
@@ -488,6 +497,53 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_resume(args: argparse.Namespace) -> int:
+    """``tombstone resume``: delete the STOP file (R6.6)."""
+    project = Path(args.project).expanduser() if getattr(args, "project", None) \
+        else find_project_root()
+    if project is None:
+        print("no project found (no .kiro directory or tombstone.toml above here)",
+              file=sys.stderr)
+        return 1
+
+    from . import stop
+
+    if stop.resume(project):
+        print("tombstone resume: STOP removed, the agent is unblocked")
+    else:
+        print("tombstone resume: no STOP file, nothing to do")
+    return 0
+
+
+# --- tombstone watch --------------------------------------------------------
+
+
+def cmd_watch(args: argparse.Namespace) -> int:
+    """``tombstone watch``: poll the active session every 2 seconds (R5.1).
+
+    Runs until interrupted. Errors in a poll are logged to ``errors.log`` and
+    the loop continues. Spends no credits and makes no network call.
+    """
+    project = Path(args.project).expanduser() if getattr(args, "project", None) \
+        else find_project_root()
+    if project is None:
+        print("no project found (no .kiro directory or tombstone.toml above here)",
+              file=sys.stderr)
+        return 1
+    kiro_home = Path(args.kiro_home).expanduser() if getattr(args, "kiro_home", None) \
+        else None
+
+    from . import watcher
+
+    print(f"tombstone watch: polling {project} every {watcher.POLL_SECONDS:g} s",
+          file=sys.stderr)
+    try:
+        watcher.run(project, kiro_home=kiro_home)
+    except KeyboardInterrupt:
+        return 0
+    return 0
+
+
 # --- argument parser --------------------------------------------------------
 
 
@@ -532,6 +588,8 @@ def build_parser() -> argparse.ArgumentParser:
                       help="project root for the reconcile child")
     hook.add_argument("--kiro-home", default=None,
                       help="override the Kiro home used to resolve the session")
+    hook.add_argument("--timeout", type=float, default=None,
+                      help="reconcile polling limit in seconds (default 30)")
     hook.set_defaults(func=cmd_hook)
 
     graveyard = sub.add_parser("graveyard", help="render the static graveyard page")
@@ -541,7 +599,19 @@ def build_parser() -> argparse.ArgumentParser:
                            help="project root (default: found from the working directory)")
     graveyard.set_defaults(func=cmd_graveyard)
 
-    for name in ("watch", "mcp", "resume", "init"):
+    watch = sub.add_parser("watch", help="run the watcher for one project")
+    watch.add_argument("--project", default=None,
+                       help="project root (default: found from the working directory)")
+    watch.add_argument("--kiro-home", default=None,
+                       help="override the Kiro home used to find the session")
+    watch.set_defaults(func=cmd_watch)
+
+    resume = sub.add_parser("resume", help="remove the STOP file and unblock the agent")
+    resume.add_argument("--project", default=None,
+                        help="project root (default: found from the working directory)")
+    resume.set_defaults(func=cmd_resume)
+
+    for name in ("mcp", "init"):
         placeholder = sub.add_parser(name, help=f"{name} (not implemented yet)")
         placeholder.set_defaults(func=_not_ready(name))
 

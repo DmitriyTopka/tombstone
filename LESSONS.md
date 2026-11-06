@@ -48,3 +48,16 @@ Rule: the task id comes from the `tasks.md` checkbox edit seen in PostToolUse. T
 ## 2026-11-05 E1 The kill target is probably not `kiro-cli`
 Seen: the V3 agent logs come from a Node process (`node:24362`) started by `kiro-cli`.
 Open: record the real process tree before writing the kill step (task 7.3 now says so).
+
+## 2026-11-06 E3 Real process tree of a V3 headless session (measured for task 7.3)
+`ps -Ao pid,ppid,pgid,command` during `kiro-cli chat --no-interactive` running `sleep 20`:
+```
+PID   PPID  PGID  COMMAND
+4529  1     4526  ~/.local/bin/kiro-cli chat --no-interactive -a ...
+4539  4529  4539  ~/Library/Application Support/kiro-cli/node --experimental-wasm-modules .../kiro-cli/kas/3.1.0-.../...
+4556  4539  4556  sleep 20            (the tool the agent runs)
+```
+`lsof -a -p <pid> -d cwd -Fn`: both 4529 and 4539 have the project directory as cwd.
+Facts: the agent is a Node process (KAS 3.1.0) under `kiro-cli`, in its own process group; each tool command gets its own group too. Killing only `kiro-cli` or only its group leaves the Node agent and the running tool alive.
+Rule for the kill step: match `kiro-cli` whose cwd is the project, then walk its descendants by PPID (Node agent, tools), SIGTERM the leaves first and the root last, SIGKILL whatever is left after 5 s.
+Side find: pytest spawn tests leave `tombstone hook reconcile` children polling for up to 30 s after the suite ends (they exit by themselves). Harmless, but tests should pass a short timeout.
