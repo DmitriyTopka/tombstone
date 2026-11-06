@@ -190,3 +190,12 @@ Stall (scratch project, cap 25, quiet_window_minutes 0.4, watcher run by hand): 
 Two fixes from that run (Kiro, 526 tests): the uncalibrated V3 price per unit is now 0.16, measured on 35 turns of this repo (855 units, 135.91 credits); before it fell back to 0.25 and the live estimate was 4.25 against 0.927. The stall message showed "0 min" for a window under a minute; minutes now keep one decimal under 10.
 Kill (cap 0.30, kill_grace_seconds 10), prompt told the agent to keep going after any refusal: with the steering file the agent refused to work around the block and cited the steering rule. With the steering file removed it still stopped at the first refusal (est. 0.33 of 0.30, actual 0.498). The kill step never had to fire. Across burn5, live3, live6 and live7 the agent on `auto` always stopped at the first refused tool. The kill step is covered by tests with a fake process list only.
 `/usage` after: 234.98/4000.
+
+## 2026-11-06 Stage 1 checklist and changelog re-read (plan items 5.4, 5.5)
+Checklist, checked by Claude on the local repo, no Kiro run, 0 credits:
+- License: MIT in `LICENSE`, GitHub detects it as MIT. Pass.
+- `.kiro/` at the repo root and tracked: specs (requirements, design, tasks), steering, three hooks. Only `.kiro/tombstone/` runtime state is ignored. Pass.
+- English: no Cyrillic in tracked files except one test path (`tests/test_cli_builders.py`), which tests a project folder with a non-ASCII name on purpose. No en or em dashes, no user paths, no keys. Pass.
+- Demo link alive: not yet. The repo is private, so the URL in the README and the video works only after it is opened. Open.
+Changelog re-read (kiro.dev/changelog, entries 28 Oct to 5 Nov 2026): no per-task or per-spec credit cap, no budget warning, no automatic stop of a runaway turn. Closest are credit pooling (4 Nov, limits per user, group and profile) and review loops pausing after two rejected passes (28 Oct). Issues #10999, #11477, #7485 and #10848 are still open. The pitch stays as it is.
+The demo project used for the video recording was uninstalled with `tombstone uninstall`; its launchd watcher is gone.
