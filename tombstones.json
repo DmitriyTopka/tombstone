@@ -9,10 +9,10 @@
       "task_type": "other",
       "engine": "v3",
       "model": "auto",
-      "requests": 62,
-      "estimate": 4.8244,
-      "actual": 15.5154,
-      "minutes": 9.7199,
+      "requests": 52,
+      "estimate": 4.545,
+      "actual": 15.1502,
+      "minutes": 9.4939,
       "outcome": "finished",
       "false_positive": null,
       "date": "2026-11-06",
@@ -27,18 +27,6 @@
           "start": "2026-11-05T18:13:44.830000Z",
           "end": "2026-11-05T18:23:14.465000Z",
           "share": 1.0,
-          "unpriced_reason": null
-        },
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
           "unpriced_reason": null
         }
       ]
@@ -1124,276 +1112,6 @@
       ]
     },
     {
-      "id": "tombstone/3",
-      "task_id": "3",
-      "name": "Tombstone writer",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/4",
-      "task_id": "4",
-      "name": "Caps and budget math",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/6",
-      "task_id": "6",
-      "name": "Watcher",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/7",
-      "task_id": "7",
-      "name": "Stop in two steps",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/8",
-      "task_id": "8",
-      "name": "Autopsy",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/9",
-      "task_id": "9",
-      "name": "MCP get_budget",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/10",
-      "task_id": "10",
-      "name": "Init and Power",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/11",
-      "task_id": "11",
-      "name": "Tests",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
-      "id": "tombstone/11.4",
-      "task_id": "11.4",
-      "name": "Latency, zero-credit and accuracy checks",
-      "spec": "tombstone",
-      "task_type": "other",
-      "engine": "v3",
-      "model": "auto",
-      "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
-      "outcome": "finished",
-      "false_positive": null,
-      "date": "2026-11-06",
-      "turns": [
-        {
-          "session_id": "sess_0a486353-b5a0-4e21-a1e5-eca5103888ca",
-          "turn_id": "354d44ec-7c03-45fb-a6ab-ca7228f3a835",
-          "requests": 10,
-          "estimate": 3.0737,
-          "actual": 4.0176,
-          "minutes": 2.4864,
-          "start": "2026-11-06T15:36:05.834000Z",
-          "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
-          "unpriced_reason": null
-        }
-      ]
-    },
-    {
       "id": "tombstone/12.1",
       "task_id": "12.1",
       "name": "Server-rendered headstones and plots",
@@ -1402,9 +1120,9 @@
       "engine": "v3",
       "model": "auto",
       "requests": 10,
-      "estimate": 0.2794,
-      "actual": 0.3652,
-      "minutes": 0.226,
+      "estimate": 3.0737,
+      "actual": 4.0176,
+      "minutes": 2.4864,
       "outcome": "finished",
       "false_positive": null,
       "date": "2026-11-06",
@@ -1418,7 +1136,7 @@
           "minutes": 2.4864,
           "start": "2026-11-06T15:36:05.834000Z",
           "end": "2026-11-06T15:38:35.016000Z",
-          "share": 0.0909,
+          "share": 1.0,
           "unpriced_reason": null
         }
       ]
