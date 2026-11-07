@@ -174,6 +174,7 @@ def test_cli_graveyard_no_project(tmp_path, monkeypatch, capsys):
 
 
 def _strip_script(page: str) -> str:
+    page = page.split("<main>", 1)[-1]  # the header strip repeats names
     return re.sub(r"<script>.*?</script>", "", page, flags=re.S)
 
 
@@ -235,23 +236,85 @@ def _lede(page: str) -> str:
     return re.search(r'<p class="lede" id="lede">(.*?)</p>', page).group(1)
 
 
-def test_lede_empty_graveyard():
-    assert _lede(render_graveyard([])) == (
-        "Nothing is buried here yet. Finish a spec task and its stone appears.")
+V3_LEDE = ("Each stone is one spec task Kiro finished, as tall as its price. "
+           "Open a stone for the estimate, the requests and the time.")
 
 
-def test_lede_only_stopped_singular_and_plural():
-    one = render_graveyard([_record(outcome="killed")])
-    assert _lede(one) == "No task has finished yet. The breaker stopped 1 turn."
-    two = render_graveyard([_record(outcome="killed"), _record(id="spec/2", outcome="blocked")])
-    assert _lede(two) == "No task has finished yet. The breaker stopped 2 turns."
+def _h1(page: str) -> str:
+    return re.search(r"<h1>(.*?)</h1>", page).group(1)
 
 
-def test_lede_one_finished():
+def _strip(page: str) -> dict:
+    block = re.search(r'<dl class="proof">(.*?)</dl>', page, re.S)
+    assert block, "no proof strip"
+    return {dt: (dd, cls.strip()) for cls, dt, dd in re.findall(
+        r"<div([^>]*)><dt>(.*?)</dt><dd>(.*?)</dd></div>", block.group(1))}
+
+
+def test_v3_header_copy_title_and_hills():
     page = render_graveyard([_record(actual=0.5)])
-    assert _lede(page) == "1 task is buried here. It cost 0.500 credits actual."
+    assert '<p class="kicker">Tombstone, the graveyard of its own build</p>' in page
+    assert _lede(page) == V3_LEDE
+    assert "<title>The Graveyard, 0.50 credits</title>" in page
+    assert '<svg class="hills"' in page and 'class="stars"' in page
+    assert "--night:#060912" in page
 
 
-def test_lede_many_finished_keeps_current_sentence():
-    page = render_graveyard([_record(actual=0.5), _record(id="spec/2", task_id="2", actual=0.25)])
-    assert _lede(page) == "2 tasks are buried here. Together they cost 0.750 credits actual."
+def test_v3_headline_total_is_sum_of_stone_costs():
+    records = [_record(actual=0.5), _record(id="b", task_id="2", actual=None, estimate=1.25),
+               _record(id="c", task_id="3", actual=None, estimate=None)]
+    page = render_graveyard(records)
+    shown = sum(float(c) for c in re.findall(r'<span class="cost">([\d.]+)</span>', page))
+    assert _h1(page) == f"{shown:.2f} credits are buried here."
+    assert _h1(page) == "1.75 credits are buried here."
+    assert "<title>The Graveyard, 1.75 credits</title>" in page
+
+
+def test_v3_proof_strip_figures():
+    page = render_graveyard([
+        _record(id="a", task_id="1", name="Big One", actual=4.0, requests=10),
+        _record(id="b", task_id="2", name="small", actual=1.0, requests=5),
+        _record(id="c", task_id="3", name="mid", actual=2.0, requests=7),
+        _record(id="d", task_id="4", name="est", actual=None, estimate=3.0, requests=None),
+    ])
+    strip = _strip(page)
+    assert strip["graves"][0] == "4"
+    assert strip["the most expensive: big one"][0] == "4.00"
+    assert strip["credits for a median grave"][0] == "2.50"
+    assert strip["model requests behind them"][0] == "22"
+    assert "stopped by the breaker" not in strip
+
+
+def test_v3_stopped_figure_only_with_stopped_records_and_is_red():
+    page = render_graveyard([_record(), _record(id="b", task_id="2", outcome="killed"),
+                             _record(id="c", task_id="3", outcome="blocked")])
+    assert _strip(page)["stopped by the breaker"] == ("2", "class=\"red\"")
+    assert 'class="red"' not in render_graveyard([_record()])
+
+
+def test_v3_empty_has_no_strip():
+    page = render_graveyard([])
+    assert _h1(page) == "Nothing is buried here yet."
+    assert "proof" in page  # the css rule only
+    assert "<dl class=\"proof\"" not in page
+    assert "No tombstones yet" in page
+    assert "<title>The Graveyard, 0.00 credits</title>" in page
+
+
+def test_v3_header_escapes_names():
+    page = render_graveyard([_record(name="<i>x</i>", actual=1.0)])
+    assert "<i>x</i>" not in page.split("<main>")[0]
+    assert "the most expensive: &lt;i&gt;x&lt;/i&gt;" in page
+
+
+def test_v3_mobile_rule_keeps_stone_text_readable():
+    page = render_graveyard([_record()])
+    mobile = page[page.index("@media (max-width:640px)"):page.index("</style>")]
+    assert ".stone .tid,.stone .unit,.unmarked .stone .tid{font-size:14px}" in mobile
+
+
+def test_v3_mobile_block_has_no_small_px_font():
+    page = render_graveyard([_record()])
+    mobile = page[page.index("@media (max-width:640px)"):page.index("</style>")]
+    sizes = [int(n) for n in re.findall(r"font-size:(\d+)px", mobile)]
+    assert sizes and min(sizes) >= 14

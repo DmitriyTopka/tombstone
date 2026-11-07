@@ -199,3 +199,8 @@ Checklist, checked by Claude on the local repo, no Kiro run, 0 credits:
 - Demo link alive: not yet. The repo is private, so the URL in the README and the video works only after it is opened. Open.
 Changelog re-read (kiro.dev/changelog, entries 28 Oct to 5 Nov 2026): no per-task or per-spec credit cap, no budget warning, no automatic stop of a runaway turn. Closest are credit pooling (4 Nov, limits per user, group and profile) and review loops pausing after two rejected passes (28 Oct). Issues #10999, #11477, #7485 and #10848 are still open. The pitch stays as it is.
 The demo project used for the video recording was uninstalled with `tombstone uninstall`; its launchd watcher is gone.
+
+## 2026-11-07 Task 13, graveyard v3 (design approved by Dima)
+Claude restyled the real `tombstone graveyard` output into a mockup (`.kiro/specs/tombstone/graveyard_v3_mockup.html`): a night scene with inline SVG hills, the total as the headline, a strip of computed figures, moonlit granite, unmarked graves as low slabs, red only on stopped records. Added R2.8 and task 13. Kiro: 13.1 16 requests 4.221 credits (stylesheet and header ported, figures computed from the records), 13.2 7 requests 0.924 (one missing test, the rest came with 13.1). 530 tests.
+Checked by hand: the rendered `<style>` equals the mockup's byte for byte; on this repo the headline is the sum of the stones (159.15 before 13.2 landed); with six stopped records from the test projects the strip shows "6 stopped by the breaker" in red; an empty project reads "Nothing is buried here yet." with no strip. Mockup checked at 1920, 1440 and 375 px (no horizontal scroll, headstone text 14 px or more).
+`/usage` after: 244.17/4000.

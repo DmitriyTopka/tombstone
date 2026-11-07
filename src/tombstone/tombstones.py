@@ -1868,125 +1868,176 @@ def _log_reconcile_timeout(project: Path, session_id: Optional[str],
 
 _GRAVEYARD_CSS = """
 :root{
-  --sky-top:#070b14;--sky-low:#121a2a;--hill:#0b1018;--hill-edge:#1a2433;
-  --granite:#7b7f88;--granite-hi:#a3a7ae;--granite-lo:#4a4e57;--cut:#2b2e35;
-  --bone:#e8e4d8;--muted:#9aa3b0;--moss:#5f7f5a;--ember:#ff3b3b;--lantern:#e3b26a;
+  --night:#060912;--dusk:#101a2c;--earth:#0a0e15;--earth-hi:#121925;
+  --granite:#858a93;--granite-hi:#b9bdc3;--granite-lo:#4b5059;--cut:#22252b;
+  --bone:#ece7da;--muted:#9aa3b0;--moss:#56704f;--ember:#ff3b3b;--lantern:#e3b26a;
   --serif:"Iowan Old Style","Palatino Linotype",Palatino,"Book Antiqua",Georgia,serif;
   --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --grain:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 .55 0'/></filter><rect width='160' height='160' filter='url(%23n)'/></svg>");
 }
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--hill);color:var(--bone);font-family:var(--serif);
+body{background:var(--earth);color:var(--bone);font-family:var(--serif);
   font-variant-numeric:lining-nums tabular-nums;line-height:1.5;overflow-x:hidden}
 a{color:var(--lantern)}
-:focus-visible{outline:2px solid var(--lantern);outline-offset:3px}
-.sky{position:relative;overflow:hidden;padding:72px 24px 120px;
-  background:radial-gradient(ellipse 60% 50% at 78% 18%,rgba(180,195,220,.10),transparent 60%),
-             linear-gradient(var(--sky-top),var(--sky-low) 85%,var(--hill))}
-.moon{position:absolute;right:12%;top:56px;width:110px;height:110px;border-radius:50%;
-  background:radial-gradient(circle at 38% 36%,#f4f1e6,#cfd2c9 58%,#a9ada6 100%);
-  box-shadow:0 0 60px 18px rgba(220,225,235,.12)}
+:focus-visible{outline:2px solid var(--lantern);outline-offset:4px}
+
+/* the scene */
+.sky{position:relative;overflow:hidden;padding:7vh 6vw 150px;
+  background:
+    radial-gradient(ellipse 38% 42% at 80% 20%,rgba(190,205,230,.16),transparent 70%),
+    linear-gradient(var(--night) 0%,var(--dusk) 78%,#141f33 100%)}
+.stars{position:absolute;inset:0 0 40% 0;opacity:.7;
+  background-image:
+    radial-gradient(1px 1px at 12% 18%,#fff,transparent),radial-gradient(1px 1px at 27% 8%,#dfe6f5,transparent),
+    radial-gradient(1px 1px at 44% 26%,#fff,transparent),radial-gradient(1.5px 1.5px at 58% 12%,#e8eefc,transparent),
+    radial-gradient(1px 1px at 66% 34%,#cfd8ea,transparent),radial-gradient(1px 1px at 91% 44%,#fff,transparent),
+    radial-gradient(1px 1px at 7% 52%,#cfd8ea,transparent),radial-gradient(1px 1px at 36% 46%,#fff,transparent),
+    radial-gradient(1.5px 1.5px at 73% 6%,#fff,transparent),radial-gradient(1px 1px at 52% 54%,#dfe6f5,transparent)}
+.moon{position:absolute;right:13vw;top:11vh;width:clamp(76px,9vw,150px);aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(circle at 36% 34%,#fbf8ee,#d8dacf 56%,#aeb2aa 100%);
+  box-shadow:0 0 80px 26px rgba(214,222,238,.13),0 0 220px 90px rgba(150,170,210,.07)}
 .moon::after{content:"";position:absolute;inset:0;border-radius:50%;
   background:radial-gradient(circle at 64% 60%,rgba(0,0,0,.10) 0 8%,transparent 9%),
              radial-gradient(circle at 40% 70%,rgba(0,0,0,.08) 0 6%,transparent 7%),
              radial-gradient(circle at 30% 40%,rgba(0,0,0,.06) 0 10%,transparent 11%)}
-.intro{position:relative;max-width:640px}
-h1{font-weight:400;font-size:clamp(44px,8vw,88px);line-height:1;margin:0 0 20px;letter-spacing:.01em}
-.lede{font-size:clamp(18px,2.2vw,22px);color:var(--bone);margin:0 0 8px;max-width:36em}
-.sub{color:var(--muted);margin:0;font-size:16px;max-width:40em}
-.ground{position:relative;background:var(--hill);padding:0 24px 64px}
-.ground::before{content:"";position:absolute;left:0;right:0;top:-80px;height:81px;
-  background:linear-gradient(var(--hill-edge),var(--hill) 30px);
-  clip-path:polygon(0 70%,12% 52%,28% 64%,46% 40%,63% 58%,80% 44%,100% 62%,100% 100%,0 100%)}
-.field{max-width:1240px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;gap:56px 34px;padding-top:70px}
-.plot{display:flex;flex-direction:column;align-items:stretch;max-width:100%}
-.row{display:flex;align-items:flex-end;gap:12px;padding:0 10px;border-bottom:6px solid var(--moss);
-  background:linear-gradient(to top,rgba(95,127,90,.22),transparent 36px)}
-.plaque{margin-top:10px;font-size:15px;line-height:1.3;max-width:24em}
-.plaque b{font-weight:400;color:var(--bone)}
-.plaque .num{color:var(--muted);margin-right:8px}
+.hills{position:absolute;left:0;right:0;bottom:0;width:100%;height:150px}
+.hills .far{fill:#0d1420}
+.hills .near{fill:var(--earth)}
+.intro{position:relative;max-width:min(1100px,100%)}
+.kicker{margin:0 0 18px;color:var(--muted);font-size:17px;letter-spacing:.02em}
+h1{font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:.98;letter-spacing:-.015em;margin:0 0 22px;max-width:11em;text-wrap:balance;
+  text-shadow:0 2px 30px rgba(0,0,0,.5)}
+.lede{font-size:clamp(17px,1.6vw,21px);color:#c9cfd9;margin:0 0 28px;max-width:34em}
+.proof{display:flex;flex-wrap:wrap;gap:20px 0;margin:0}
+.proof div{display:flex;flex-direction:column-reverse;padding:2px 30px 2px 0;margin-right:30px;
+  border-right:1px solid rgba(236,231,218,.16);max-width:15em}
+.proof div:last-child{border-right:0}
+.proof dd{margin:0;font-size:clamp(28px,2.6vw,40px);line-height:1.05;color:var(--bone)}
+.proof dt{color:var(--muted);font-size:15px;line-height:1.3;margin-top:6px}
+.proof .red dd{color:var(--ember)}
+
+/* the ground */
+.ground{position:relative;margin-top:-70px;padding:0 5vw 90px;
+  background:linear-gradient(var(--earth),#080b11 60%,var(--earth))}
+.field{max-width:1500px;margin:0 auto;display:flex;flex-wrap:wrap;align-items:flex-end;gap:84px 56px;padding-top:0}
+.plot{position:relative;display:flex;flex-direction:column;align-items:stretch;max-width:100%}
+.row{position:relative;display:flex;align-items:flex-end;gap:16px;padding:0 18px 14px}
+.row::after{content:"";position:absolute;left:-8px;right:-8px;bottom:0;height:30px;border-radius:50% 50% 0 0/100% 100% 0 0;z-index:0;
+  background:radial-gradient(ellipse 60% 100% at 50% 100%,rgba(86,112,79,.30),transparent 75%),
+             linear-gradient(#141b26,var(--earth) 80%)}
+.plaque{margin:14px 0 0 18px;font-size:15px;line-height:1.35;max-width:24em}
+.plaque b{font-weight:400;color:var(--bone);font-size:17px}
+.plaque .num{color:var(--lantern);margin-right:10px;opacity:.85}
 .plaque span.sum{display:block;color:var(--muted);font-size:14px}
-.section-note{max-width:1240px;margin:0 auto;color:var(--muted);font-size:15px}
-.section-note h2{font-weight:400;font-size:24px;color:var(--bone);margin:0 0 4px}
+.section-note{margin:40px 0 0;color:var(--muted);font-size:16px;max-width:46em}
+.section-note h2{font-weight:400;font-size:clamp(24px,2.2vw,32px);color:var(--bone);margin:0 0 6px}
 .wide{flex-basis:100%}
-.stone{--h:160px;position:relative;width:calc(var(--h) * .7);height:var(--h);min-width:96px;overflow:visible;
-  appearance:none;border:0;padding:16px 10px 12px;margin:0;cursor:pointer;color:var(--cut);
+.section-note.wide{max-width:none;padding-right:max(0px,calc(100% - 46em))}
+
+/* stones: lit by the moon from the upper right */
+.stone{--h:calc(var(--hh) * 1.08);position:relative;z-index:1;width:calc(var(--h) * .66);height:var(--h);min-width:104px;overflow:visible;
+  appearance:none;border:0;padding:18px 10px 16px;margin:0;cursor:pointer;color:var(--cut);
   font:inherit;text-align:center;display:flex;flex-direction:column;align-items:center;
-  border-radius:48% 48% 6px 6px / 34% 34% 6px 6px;
+  border-radius:50% 50% 5px 5px / 30% 30% 5px 5px;
   background:
-    radial-gradient(ellipse 80% 40% at 30% 12%,rgba(255,255,255,.22),transparent 70%),
-    radial-gradient(circle at 70% 80%,rgba(0,0,0,.18),transparent 55%),
-    linear-gradient(100deg,var(--granite-hi),var(--granite) 45%,var(--granite-lo));
-  box-shadow:inset -6px 0 10px rgba(0,0,0,.25),inset 4px 0 6px rgba(255,255,255,.08),0 10px 14px -8px rgba(0,0,0,.8);
-  transform-origin:bottom center;transition:transform .2s ease}
-.stone::after{content:"";position:absolute;left:-6px;right:-6px;bottom:-6px;height:10px;border-radius:50%;
-  background:radial-gradient(ellipse at center,rgba(95,127,90,.9),rgba(95,127,90,0) 70%)}
-.stone:hover{transform:rotate(-1.2deg)}
-.stone .tid{font-size:13px;letter-spacing:.06em;opacity:.85}
-.stone .cost{font-size:calc(var(--h) * .17);line-height:1.05;margin-top:auto;
-  text-shadow:0 1px 0 rgba(255,255,255,.28),0 -1px 0 rgba(0,0,0,.35)}
-.stone .unit{font-size:12px;opacity:.85}
-.stone .epi{font-size:12px;max-width:100%;overflow-wrap:anywhere;font-style:italic;line-height:1.25;margin:auto 0 0;
-  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;
-  text-shadow:0 1px 0 rgba(255,255,255,.22)}
-.stone .tid,.stone .unit{text-shadow:0 1px 0 rgba(255,255,255,.22)}
-.unmarked .stone{border-radius:14px 14px 4px 4px;filter:brightness(.82) saturate(.7)}
-.stopped .row{flex-wrap:wrap;row-gap:70px;padding-top:60px;border-bottom-color:#4a2a2a;
-  background:linear-gradient(to top,rgba(255,59,59,.12),transparent 50px)}
+    var(--grain),
+    radial-gradient(ellipse 70% 36% at 70% 10%,rgba(255,255,255,.30),transparent 70%),
+    linear-gradient(255deg,var(--granite-hi),var(--granite) 42%,var(--granite-lo) 100%);
+  background-blend-mode:overlay,normal,normal;
+  box-shadow:inset 7px 0 12px rgba(0,0,0,.28),inset -3px 0 5px rgba(255,255,255,.10),0 2px 0 #2b3038;
+  transform-origin:bottom center;transition:transform .25s ease,filter .25s ease}
+.stone::before{content:"";position:absolute;left:-10%;right:-10%;bottom:-8px;height:12px;border-radius:2px;z-index:-1;
+  background:linear-gradient(#5d626b,#3a3e46)}
+.stone::after{content:"";position:absolute;right:62%;bottom:-6px;width:85%;height:16px;border-radius:50%;z-index:-2;
+  background:radial-gradient(ellipse at 70% 50%,rgba(0,0,0,.65),transparent 70%);transform:skewX(40deg)}
+.stone:hover{transform:rotate(-1deg);filter:brightness(1.08)}
+.stone .tid{font-size:13px;letter-spacing:.08em;opacity:.8}
+.stone .cost{font-size:max(22px,calc(var(--h) * .16));line-height:1.02;margin-top:auto;
+  text-shadow:0 1px 0 rgba(255,255,255,.35),0 -1px 0 rgba(0,0,0,.45)}
+.stone .unit{font-size:13px;opacity:.8}
+.stone .epi{font-size:14px;max-width:100%;overflow-wrap:anywhere;line-height:1.22;margin:auto 0 0;
+  display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.stone .tid,.stone .unit,.stone .epi{text-shadow:0 1px 0 rgba(255,255,255,.28)}
+
+/* unmarked graves: low slabs in the fog, the name lives on the card */
+.unmarked .row{flex-wrap:wrap;row-gap:46px}
+.unmarked .stone{--h:calc(var(--hh) * .62);width:calc(var(--hh) * .5);min-width:92px;border-radius:10px 10px 3px 3px;
+  padding:12px 8px 10px;filter:brightness(.72) saturate(.6)}
+.unmarked .stone:hover{filter:brightness(.9) saturate(.7)}
+.unmarked .stone .epi,.unmarked .stone .unit{display:none}
+.unmarked .stone .tid{font-size:12px}
+
+/* stopped by the breaker: the only red on the page */
+.stopped .row{flex-wrap:wrap;row-gap:80px;padding-top:80px}
+.stopped .row::after{background:radial-gradient(ellipse 60% 100% at 50% 100%,rgba(255,59,59,.20),transparent 75%),
+             linear-gradient(#1a1418,var(--earth) 80%)}
 .stopped .stone{background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M22 0 L18 22 L27 38 L14 64 L20 92 L10 140' fill='none' stroke='%231c1d22' stroke-width='2.2'/><path d='M18 22 L8 28 M27 38 L36 46' fill='none' stroke='%231c1d22' stroke-width='1.4'/></svg>") center/100% 100% no-repeat,
-    radial-gradient(ellipse 80% 40% at 30% 12%,rgba(255,255,255,.18),transparent 70%),
-    linear-gradient(100deg,#8d8a8a,#6c6a6c 45%,#45434a)}
-.stopped .stone::after{background:radial-gradient(ellipse at center,rgba(255,59,59,.85),rgba(255,59,59,0) 70%);height:14px;bottom:-8px}
-.stopped .stone .cost{color:#3a1010}
-.ghost{position:absolute;left:50%;top:-58px;width:46px;height:70px;margin-left:-23px;pointer-events:none;
+    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M30 0 L25 24 L35 40 L21 66 L28 94 L16 140' fill='none' stroke='%23140e10' stroke-width='2.4'/><path d='M25 24 L13 30 M35 40 L46 49 M28 94 L40 104' fill='none' stroke='%23140e10' stroke-width='1.4'/></svg>") center/100% 100% no-repeat,
+    var(--grain),
+    radial-gradient(ellipse 70% 36% at 70% 10%,rgba(255,255,255,.22),transparent 70%),
+    linear-gradient(255deg,#9a9596,#6e6a6d 42%,#433f46);
+  background-blend-mode:normal,overlay,normal,normal}
+.stopped .stone::before{background:linear-gradient(#5a3a3c,#2c1c1f);box-shadow:0 0 22px 4px rgba(255,59,59,.35)}
+.stopped .stone .cost{color:#4a0d0d}
+.ghost{position:absolute;left:50%;top:-64px;width:48px;height:74px;margin-left:-24px;pointer-events:none;
   border-radius:50% 50% 30% 30%;
   background:radial-gradient(ellipse at 50% 35%,rgba(230,235,245,.55),rgba(230,235,245,.08) 60%,transparent 72%);
   filter:blur(3px)}
 .ghost::after{content:"";position:absolute;left:30%;right:30%;top:42%;height:18%;border-radius:50%;
   background:radial-gradient(circle,rgba(255,59,59,.65),transparent 70%)}
+
+/* one orchestrated moment: the fog lifts once on load */
+.fog{position:fixed;inset:0;pointer-events:none;z-index:5;
+  background:radial-gradient(ellipse 80% 34% at 30% 76%,rgba(200,210,225,.24),transparent 70%),
+             radial-gradient(ellipse 70% 28% at 72% 88%,rgba(200,210,225,.18),transparent 70%)}
 @media (prefers-reduced-motion:no-preference){
   .ghost{animation:drift 7s ease-in-out infinite}
   @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
-  .fog{animation:clear 2.8s ease-out .3s forwards}
-  @keyframes clear{to{opacity:0;transform:translateX(18%)}}
+  .fog{animation:clear 3.2s ease-out .4s forwards}
+  @keyframes clear{to{opacity:0;transform:translateX(16%)}}
 }
-.fog{position:fixed;inset:0;pointer-events:none;z-index:5;
-  background:radial-gradient(ellipse 70% 30% at 30% 70%,rgba(200,210,225,.20),transparent 70%),
-             radial-gradient(ellipse 60% 25% at 70% 85%,rgba(200,210,225,.16),transparent 70%)}
 @media (prefers-reduced-motion:reduce){.fog{display:none}.stone{transition:none}.stone:hover{transform:none}}
-dialog{max-width:420px;width:calc(100% - 32px);border:0;padding:24px 26px;border-radius:4px;
-  background:#e9e3d2;color:#1e1c18;font-family:var(--serif);box-shadow:0 30px 60px rgba(0,0,0,.6)}
-dialog::backdrop{background:rgba(3,5,10,.7)}
-dialog h3{font-weight:400;font-size:22px;margin:0 0 4px;line-height:1.25}
+
+/* the card and the register */
+dialog{max-width:440px;width:calc(100% - 32px);border:0;padding:26px 28px;border-radius:3px;
+  background:#ebe5d4 var(--grain);background-blend-mode:multiply;color:#1e1c18;font-family:var(--serif);box-shadow:0 30px 70px rgba(0,0,0,.7)}
+dialog::backdrop{background:rgba(3,5,10,.74)}
+dialog h3{font-weight:400;font-size:24px;margin:0 0 4px;line-height:1.2}
 dialog .meta{color:#5b574d;margin:0 0 16px;font-size:15px}
 dialog dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0 0 18px}
 dialog dt{color:#5b574d}
 dialog dd{margin:0;text-align:right}
-dialog .gap{font-size:14px;color:#5b574d;margin:0 0 18px}
-dialog button{font:inherit;font-size:15px;padding:8px 16px;border:1px solid #1e1c18;background:transparent;border-radius:3px;cursor:pointer}
-.register{max-width:1180px;margin:0 auto;padding:8px 24px 72px}
-.register h2{font-weight:400;font-size:26px;margin:0 0 6px}
+dialog .gap{font-size:15px;color:#3d392f;margin:0 0 18px;border-left:2px solid #b49a6a;padding-left:10px}
+dialog button{font:inherit;font-size:15px;padding:8px 18px;border:1px solid #1e1c18;background:transparent;border-radius:2px;cursor:pointer}
+.register{max-width:1240px;margin:0 auto;padding:30px 5vw 80px;border-top:1px solid #1a2230}
+.register h2{font-weight:400;font-size:clamp(26px,2.4vw,34px);margin:0 0 6px}
 .register p{color:var(--muted);margin:0 0 16px}
-.controls{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px;font-family:var(--sans);font-size:14px}
-.controls input{font:inherit;padding:8px 10px;background:#101722;color:var(--bone);border:1px solid #2a3546;border-radius:3px;min-width:220px;max-width:100%}
+.controls{display:flex;flex-wrap:wrap;gap:10px;margin:0 0 14px;font-family:var(--sans);font-size:14px;color:var(--muted)}
+.controls input{font:inherit;padding:9px 11px;background:#0f1520;color:var(--bone);border:1px solid #2a3546;border-radius:2px;min-width:220px;max-width:100%}
 .tablewrap{overflow-x:auto}
 table{border-collapse:collapse;width:100%;font-size:15px}
-th,td{padding:8px 10px;border-bottom:1px solid #1d2635;text-align:left;white-space:nowrap}
+th,td{padding:9px 10px;border-bottom:1px solid #18202d;text-align:left;white-space:nowrap}
 td.name{white-space:normal;min-width:220px}
 th button{font:inherit;color:var(--muted);background:none;border:0;padding:0;cursor:pointer}
 th button[aria-sort]{color:var(--bone)}
 td.n,th.n{text-align:right}
 tr.killed td{color:#ffb3b3}
 tr[hidden]{display:none}
-footer{max-width:1180px;margin:0 auto;padding:0 24px 48px;color:var(--muted);font-size:14px}
+footer{max-width:1240px;margin:0 auto;padding:0 5vw 56px;color:var(--muted);font-size:14px}
+
 @media (max-width:640px){
-  .sky{padding:48px 16px 100px}
+  .sky{padding:56px 16px 150px;min-height:0}
+  .hills{height:140px}
+  .moon{right:16px;top:28px}
+  .kicker{font-size:15px;max-width:15em}
+  .proof div{border-right:0;margin-right:0;padding-right:22px;flex-basis:50%}
   .ground,.register,footer{padding-left:16px;padding-right:16px}
-  .moon{width:70px;height:70px;top:32px;right:16px}
-  .stone{min-width:84px;--h:calc(var(--hh) * .82) !important}
-  .row{flex-wrap:wrap;row-gap:30px}
-  .field{gap:44px 20px}
+  .field{gap:60px 20px}
+  .row{flex-wrap:wrap;row-gap:40px;gap:14px;padding:0 6px 14px}
+  .stone{--h:calc(var(--hh) * .9);min-width:120px}
+  .unmarked .stone{min-width:96px}
+  .stone .tid,.stone .unit,.unmarked .stone .tid{font-size:14px}
 }
 """.strip()
 
@@ -2196,6 +2247,77 @@ def _g_register_row(record: dict) -> str:
     )
 
 
+_GRAVEYARD_LEDE = ("Each stone is one spec task Kiro finished, as tall as its price. "
+                   "Open a stone for the estimate, the requests and the time.")
+
+_GRAVEYARD_HILLS = (
+    '<svg class="hills" viewBox="0 0 1600 220" preserveAspectRatio="none" aria-hidden="true">\n'
+    '<path class="far" d="M0 120 C180 70 330 92 470 104 C640 118 760 46 930 58 '
+    'C1110 70 1220 112 1380 96 C1480 86 1550 70 1600 76 L1600 220 L0 220 Z"/>\n'
+    '<path class="near" d="M0 170 C140 140 300 150 460 160 C640 172 780 128 980 132 '
+    'C1160 136 1300 168 1460 158 C1530 154 1570 148 1600 150 L1600 220 L0 220 Z"/>\n'
+    "</svg>\n"
+)
+
+
+def _g_median(values: list) -> float:
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    if len(ordered) % 2:
+        return ordered[mid]
+    return (ordered[mid - 1] + ordered[mid]) / 2
+
+
+def _g_header(rows: list) -> dict:
+    """The scene header (task 13.1): title, headline and proof strip.
+
+    Every figure is computed from the records. ``total`` is the sum of the
+    cost each stone shows (an unpriced stone adds nothing). Costs print with
+    two decimals and are a mix of actual and est. prices, as on the stones.
+    Returns ``{"title": str, "html": str}``; ``html`` is already escaped.
+    """
+    esc = functools.partial(html.escape, quote=True)
+    priced = [(c, r) for r in rows for c in [_g_cost(r)[0]] if c is not None]
+    total = sum(c for c, _ in priced)
+    title = f"The Graveyard, {total:.2f} credits"
+    if rows:
+        headline = f"{total:.2f} credits are buried here."
+    else:
+        headline = "Nothing is buried here yet."
+
+    strip = ""
+    if rows:
+        items = [("", "graves", str(len(rows)))]
+        if priced:
+            top_cost, top = max(priced, key=lambda p: p[0])
+            top_name = _g_str(top, "name", "(unnamed)").lower()
+            items.append(("", f"the most expensive: {top_name}", f"{top_cost:.2f}"))
+            items.append(("", "credits for a median grave",
+                          f"{_g_median([c for c, _ in priced]):.2f}"))
+        requests = 0
+        for r in rows:
+            n = r.get("requests")
+            if isinstance(n, int) and not isinstance(n, bool):
+                requests += n
+        items.append(("", "model requests behind them", str(requests)))
+        n_stopped = sum(1 for r in rows if r.get("outcome") != "finished")
+        if n_stopped:
+            items.append((' class="red"', "stopped by the breaker", str(n_stopped)))
+        strip = '<dl class="proof">' + "".join(
+            f"<div{cls}><dt>{esc(label)}</dt><dd>{esc(value)}</dd></div>"
+            for cls, label, value in items) + "</dl>\n"
+
+    markup = (
+        '<header class="sky">\n<div class="stars" aria-hidden="true"></div>\n'
+        '<div class="moon" aria-hidden="true"></div>\n<div class="intro">\n'
+        '<p class="kicker">Tombstone, the graveyard of its own build</p>\n'
+        f"<h1>{esc(headline)}</h1>\n"
+        f'<p class="lede" id="lede">{esc(_GRAVEYARD_LEDE)}</p>\n'
+        f"{strip}</div>\n{_GRAVEYARD_HILLS}</header>\n"
+    )
+    return {"title": title, "html": markup}
+
+
 def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
     """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
 
@@ -2260,31 +2382,17 @@ def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
 
     register_rows = sorted(
         rows, key=lambda r: (_g_num(r.get("actual")) is None, -(_g_num(r.get("actual")) or 0.0)))
-    if not finished and not stopped:
-        lede = "Nothing is buried here yet. Finish a spec task and its stone appears."
-    elif not finished:
-        n_stopped = len(stopped)
-        lede = (f"No task has finished yet. The breaker stopped {n_stopped} "
-                f"{'turn' if n_stopped == 1 else 'turns'}.")
-    elif len(finished) == 1:
-        lede = f"1 task is buried here. It cost {_g_sum_label(finished)}."
-    else:
-        lede = (f"{len(finished)} tasks are buried here. Together they cost "
-                f"{_g_sum_label(finished)}.")
+    header = _g_header(rows)
 
     return (
         "<!doctype html>\n"
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
-        "<title>The Graveyard</title>\n"
+        f"<title>{esc(header['title'])}</title>\n"
         f"<style>\n{_GRAVEYARD_CSS}\n</style>\n</head>\n<body>\n"
         '<div class="fog" aria-hidden="true"></div>\n'
-        '<header class="sky">\n<div class="moon" aria-hidden="true"></div>\n'
-        '<div class="intro">\n<h1>The Graveyard</h1>\n'
-        f'<p class="lede" id="lede">{esc(lede)}</p>\n'
-        '<p class="sub">Each stone is one spec task Kiro finished. The taller the stone, '
-        "the more it cost. Open a stone for the estimate, the requests and the time.</p>\n"
-        "</div>\n</header>\n<main>\n"
+        f"{header['html']}"
+        "<main>\n"
         f'<section class="ground" id="ground" aria-label="Graves by task">'
         f'<div class="field">{"".join(parts)}</div></section>\n'
         '<section class="register" aria-labelledby="regh">\n'

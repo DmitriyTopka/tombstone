@@ -169,3 +169,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Update `tests/test_graveyard.py` for the new structure and add: plot grouping and names from a tasks.md fixture, unknown records in Unmarked graves, killed and blocked records in the stopped row, height grows with cost, headstones present with JS disabled (in the HTML source), reduced-motion rule present, dialog markup, no external resource, no em or en dash.
     - _Requirements: R2.6, R2.7_
 
+- [x] 13. Graveyard v3 (scene and proof strip)
+  - Design approved by Dima on 2026-11-07.
+  - Reference design: `.kiro/specs/tombstone/graveyard_v3_mockup.html`. It is the real output of `render_graveyard` on this repo with two changes: the whole `<style>` block and the `<header class="sky">` block. Stones, plots, register, card and script are unchanged. Port those two blocks into `render_graveyard`; the figures in the header must be computed from the records, not copied.
+  - _Requirements: R2.6, R2.7, R2.8_
+
+  - [x] 13.1 New stylesheet and header in render_graveyard
+    - Replace the page CSS with the mockup CSS (the grain SVG data URI keeps its xmlns). Header: kicker "Tombstone, the graveyard of its own build", headline "<total> credits are buried here." where total is the sum of the cost each stone shows, the lede line from the mockup, and a `<dl class="proof">` strip: graves; most expensive cost with "the most expensive: <name in lower case>"; median cost "credits for a median grave"; total requests "model requests behind them"; and only when stopped records exist "<n> stopped by the breaker" with class `red`. Two decimals for costs. The `<title>` becomes "The Graveyard, <total> credits". With no records, the headline reads "Nothing is buried here yet." and there is no strip. Keep the existing empty-state copy below.
+    - _Requirements: R2.7, R2.8_
+
+  - [x] 13.2 Graveyard v3 tests
+    - In `tests/test_graveyard.py`: headline total equals the sum of stone costs; strip figures for a fixture (graves, most expensive, median, requests); the stopped figure is present only when a stopped record exists and carries class `red`; empty records give "Nothing is buried here yet." and no strip; the hills SVG is inline; the 375 px rule keeps headstone text at 14 px or more (check the CSS source); no external resource; no em or en dash.
+    - _Requirements: R2.7, R2.8_

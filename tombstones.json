@@ -1260,6 +1260,66 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/13.1",
+      "task_id": "13.1",
+      "name": "New stylesheet and header in render_graveyard",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 6.0162,
+      "actual": 4.2213,
+      "minutes": 1.861,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_e3514c87-130e-4e2c-99b6-10da4a119ae3",
+          "turn_id": "5b0cd451-0070-4518-aca7-e534276c931c",
+          "requests": 16,
+          "estimate": 6.0162,
+          "actual": 4.2213,
+          "minutes": 1.861,
+          "start": "2026-11-07T08:28:34.419000Z",
+          "end": "2026-11-07T08:30:26.080000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/13.2",
+      "task_id": "13.2",
+      "name": "Graveyard v3 tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 7,
+      "estimate": 2.6154,
+      "actual": 0.9244,
+      "minutes": 0.6352,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_6fa3e058-e5ff-4862-a8ad-501265222ae5",
+          "turn_id": "eebc58e8-3146-47a9-b172-119f952f2018",
+          "requests": 7,
+          "estimate": 2.6154,
+          "actual": 0.9244,
+          "minutes": 0.6352,
+          "start": "2026-11-07T08:30:51.376000Z",
+          "end": "2026-11-07T08:31:29.487000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
