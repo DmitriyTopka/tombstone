@@ -52,7 +52,7 @@ def test_include_is_repeatable_first_file_wins(tmp_path, monkeypatch):
     assert cli.main(["graveyard", "--include", str(a), "--include", str(b)]) == 0
     html = page.read_text(encoding="utf-8")
     assert "From A" in html and "From B" not in html and "Only B" in html
-    assert "2 of them are live test runs on scratch projects, kept in a.json, b.json." in html
+    assert "All 2 are live test runs on scratch projects, kept in a.json, b.json." in html
 
 
 def test_missing_and_bad_include_exit_1_without_page(tmp_path, monkeypatch, capsys):
@@ -78,7 +78,7 @@ def test_note_and_kicker_only_with_included_stopped():
 
     live = render_graveyard([_record(), _killed()], None, {"unknown/k1": "live_stops.json"})
     assert KICKER in live
-    assert "1 of them are live test runs on scratch projects, kept in live_stops.json." in live
+    assert "It is a live test run on a scratch project, kept in live_stops.json." in live
 
     # An included finished record changes the kicker but adds no stopped sentence.
     done = render_graveyard([_record()], None, {"spec/1": "x.json"})
@@ -104,7 +104,7 @@ def test_repo_live_stops_render_fifteen_stopped_records(tmp_path, monkeypatch):
     assert cli.main(["graveyard", "--include", str(live)]) == 0
     html = page.read_text(encoding="utf-8")
     assert html.count('data-outcome="killed"') == 15
-    assert "15 of them are live test runs on scratch projects, kept in live_stops.json." in html
+    assert "All 15 are live test runs on scratch projects, kept in live_stops.json." in html
     assert KICKER in html
     assert "15 stopped by the breaker" in re.sub(r"<[^>]+>", " ", html).replace("\n", " ") or \
         "<dt>stopped by the breaker</dt><dd>15</dd>" in html

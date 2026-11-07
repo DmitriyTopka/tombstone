@@ -1380,6 +1380,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/15.1",
+      "task_id": "15.1",
+      "name": "Shapes, cracks, spacing and copy in render_graveyard",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 4.206,
+      "actual": 3.0947,
+      "minutes": 1.6516,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_43d3bfb4-791f-4fca-9a60-e31029b93ae1",
+          "turn_id": "8aee7bc0-9732-4b83-920e-7763c8181f77",
+          "requests": 13,
+          "estimate": 4.206,
+          "actual": 3.0947,
+          "minutes": 1.6516,
+          "start": "2026-11-07T08:46:59.260000Z",
+          "end": "2026-11-07T08:48:38.358000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/15.2",
+      "task_id": "15.2",
+      "name": "Tests for v4",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 5.9453,
+      "actual": 3.3325,
+      "minutes": 1.9036,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_1722444f-913d-4021-91e7-a5c317b41ad2",
+          "turn_id": "838d4c0c-7614-4629-82e8-0747b7ea001d",
+          "requests": 18,
+          "estimate": 5.9453,
+          "actual": 3.3325,
+          "minutes": 1.9036,
+          "start": "2026-11-07T08:48:41.124000Z",
+          "end": "2026-11-07T08:50:35.340000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/15.3",
+      "task_id": "15.3",
+      "name": "Neighbours never match, one-stop copy",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 6,
+      "estimate": 1.7757,
+      "actual": 1.2126,
+      "minutes": 0.6881,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_4a95cc11-1caf-4b4e-bf2a-5d9b6ebff4ae",
+          "turn_id": "2d3eb9c0-99f0-4f69-a1cb-450894f036b7",
+          "requests": 6,
+          "estimate": 1.7757,
+          "actual": 1.2126,
+          "minutes": 0.6881,
+          "start": "2026-11-07T08:51:07.506000Z",
+          "end": "2026-11-07T08:51:48.790000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

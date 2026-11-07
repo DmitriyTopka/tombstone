@@ -194,3 +194,20 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 14.2 Tests for live stops
     - CLI: include merges records, duplicate id skipped and project record wins, missing file exits 1 without writing, bad JSON exits 1. Render: note sentence and kicker appear only with included stopped records; "killed" never shows as visible text in card meta or register cells, "stopped" does; project tombstones.json is unchanged after a run with includes. A test that renders this repo with `live_stops.json` shows 15 stopped records.
     - _Requirements: R2.9_
+
+- [x] 15. Graveyard v4 (headstone shapes, cracks, spacing)
+  - Design approved by Dima on 2026-11-07.
+  - Reference: `.kiro/specs/tombstone/graveyard_v4_mockup.html`, made from the real v3 output with `--include live_stops.json` by `.kiro/specs/tombstone/graveyard_v4_changes.py`. Read the script: its docstring lists the five changes, and its CSS block and shape and crack rules are what to port. Port them into `render_graveyard` and `_g_stone`; do not post-process HTML with regular expressions in the product.
+  - _Requirements: R2.6, R2.7, R2.8, R2.9, R2.10_
+
+  - [x] 15.1 Shapes, cracks, spacing and copy in render_graveyard
+    - Shape per headstone: `SHAPES[(index in row + zlib.crc32(row key)) % 5]` with row key the plot number, "unmarked" or "stopped"; a cross under 170 px becomes a slab. Class `stone shape-<name>`, and for stopped headstones also `crack-<(index * 3 + 1) % 4>`. Remove the ghost span and its CSS. Add the v4 CSS. One fix over the mockup: in the mockup the red base glow of stopped slab, gothic, shoulder and cross stones is cut by their clip-path; make the glow show the same on every shape, for example by widening the plinth band in the clip-path and drawing the glow inside it. Copy: the lede and the "All N are live test runs" note as in the mockup ("N of them" stays when only some stopped stones are included).
+    - _Requirements: R2.10_
+
+  - [x] 15.2 Tests for v4
+    - Neighbours in every row have different shape classes and stopped neighbours different crack classes; a headstone under 170 px is never a cross; no ghost markup or CSS; the shape and crack classes are stable for the same records; the lede and note copy; the stopped row CSS caps a line at 8 headstones and keeps a gap of at least 80 px; no external resource; no em or en dash.
+    - _Requirements: R2.10_
+
+  - [x] 15.3 Neighbours never match, one-stop copy
+    - When a cross under 170 px falls back, pick the first of slab, arch, gothic, shoulder that differs from both neighbours in the row (the row is known in render_graveyard, pass it in). Make the 15.2 neighbour test cover stones under 170 px too. Note copy for one included stop: "It is a live test run on a scratch project, kept in <file>." Keep "All N are" for N of 2 or more when all are included, "N of them are" otherwise.
+    - _Requirements: R2.10_

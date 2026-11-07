@@ -70,7 +70,7 @@ def test_stopped_row_and_unmarked_row():
     finished = page.index("Finished tasks")
     assert stopped < finished
     assert page.index("hello there") > page.index("Unmarked graves")
-    assert page.count('class="ghost"') == 2
+    assert 'class="ghost"' not in page
 
 
 def test_plot_names_and_grouping():
@@ -221,7 +221,7 @@ def test_killed_and_blocked_in_stopped_row_not_in_plots():
     assert stopped < page.index("was killed") < finished
     assert stopped < page.index("was blocked") < finished
     assert page.index("fine") > finished
-    assert page.count('class="ghost"') == 2
+    assert 'class="ghost"' not in page
 
 
 def test_headstones_present_without_javascript():
@@ -236,7 +236,8 @@ def _lede(page: str) -> str:
     return re.search(r'<p class="lede" id="lede">(.*?)</p>', page).group(1)
 
 
-V3_LEDE = ("Each stone is one spec task Kiro finished, as tall as its price. "
+V3_LEDE = ("Each stone is a spec task Kiro finished or a turn the breaker stopped, "
+           "as tall as its price. "
            "Open a stone for the estimate, the requests and the time.")
 
 

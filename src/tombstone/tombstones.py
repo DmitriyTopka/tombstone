@@ -23,6 +23,7 @@ import json
 import math
 import os
 import re
+import zlib
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -1973,27 +1974,18 @@ h1{font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:.98;letter-spaci
 .stopped .row::after{background:radial-gradient(ellipse 60% 100% at 50% 100%,rgba(255,59,59,.20),transparent 75%),
              linear-gradient(#1a1418,var(--earth) 80%)}
 .stopped .stone{background:
-    url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 140' preserveAspectRatio='none'><path d='M30 0 L25 24 L35 40 L21 66 L28 94 L16 140' fill='none' stroke='%23140e10' stroke-width='2.4'/><path d='M25 24 L13 30 M35 40 L46 49 M28 94 L40 104' fill='none' stroke='%23140e10' stroke-width='1.4'/></svg>") center/100% 100% no-repeat,
     var(--grain),
     radial-gradient(ellipse 70% 36% at 70% 10%,rgba(255,255,255,.22),transparent 70%),
     linear-gradient(255deg,#9a9596,#6e6a6d 42%,#433f46);
   background-blend-mode:normal,overlay,normal,normal}
 .stopped .stone::before{background:linear-gradient(#5a3a3c,#2c1c1f);box-shadow:0 0 22px 4px rgba(255,59,59,.35)}
 .stopped .stone .cost{color:#4a0d0d}
-.ghost{position:absolute;left:50%;top:-64px;width:48px;height:74px;margin-left:-24px;pointer-events:none;
-  border-radius:50% 50% 30% 30%;
-  background:radial-gradient(ellipse at 50% 35%,rgba(230,235,245,.55),rgba(230,235,245,.08) 60%,transparent 72%);
-  filter:blur(3px)}
-.ghost::after{content:"";position:absolute;left:30%;right:30%;top:42%;height:18%;border-radius:50%;
-  background:radial-gradient(circle,rgba(255,59,59,.65),transparent 70%)}
 
 /* one orchestrated moment: the fog lifts once on load */
 .fog{position:fixed;inset:0;pointer-events:none;z-index:5;
   background:radial-gradient(ellipse 80% 34% at 30% 76%,rgba(200,210,225,.24),transparent 70%),
              radial-gradient(ellipse 70% 28% at 72% 88%,rgba(200,210,225,.18),transparent 70%)}
 @media (prefers-reduced-motion:no-preference){
-  .ghost{animation:drift 7s ease-in-out infinite}
-  @keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
   .fog{animation:clear 3.2s ease-out .4s forwards}
   @keyframes clear{to{opacity:0;transform:translateX(16%)}}
 }
@@ -2040,6 +2032,67 @@ footer{max-width:1240px;margin:0 auto;padding:0 5vw 56px;color:var(--muted);font
   .stone .tid,.stone .unit,.unmarked .stone .tid{font-size:14px}
 }
 """.strip()
+
+# R2.10: five headstone shapes, four cracks for stopped stones. The plinth
+# band (--band) sits below the stone inside every clip-path so the plinth is
+# not cut; stopped stones get a wider and deeper band so their red base glow
+# shows the same on every shape.
+_G_SHAPES = ("arch", "slab", "cross", "gothic", "shoulder")
+
+_G_CRACKS = (
+    "M30 0 L25 24 L35 40 L21 66 L28 94 L16 140|M25 24 L13 30 M35 40 L46 49 M28 94 L40 104",
+    "M72 0 L66 18 L74 36 L60 58 L66 80 L52 104 L58 140|M66 18 L80 22 M60 58 L48 62 M52 104 L40 112",
+    "M0 52 L18 56 L30 48 L46 60 L58 54 L74 66 L100 62|M30 48 L28 36 M58 54 L62 42 M74 66 L78 80",
+    "M48 0 L52 20 L44 34 L56 52|M56 52 L70 74 L64 96 L80 140|M56 52 L38 76 L44 98 L26 140",
+)
+
+
+def _g_crack_css() -> str:
+    rules = []
+    for k, spec in enumerate(_G_CRACKS):
+        main, *rest = spec.split("|")
+        paths = f"<path d='{main}' fill='none' stroke='%23140e10' stroke-width='2.4'/>"
+        for extra in rest:
+            paths += f"<path d='{extra}' fill='none' stroke='%23140e10' stroke-width='1.4'/>"
+        url = ("url(\"data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' "
+               f"viewBox='0 0 100 140' preserveAspectRatio='none'>{paths}</svg>\") "
+               "center/100% 100% no-repeat")
+        rules.append(
+            f".stopped .stone.crack-{k}{{background:{url},var(--grain),"
+            "radial-gradient(ellipse 70% 36% at 70% 10%,rgba(255,255,255,.22),transparent 70%),"
+            "linear-gradient(255deg,#9a9596,#6e6a6d 42%,#433f46);"
+            "background-blend-mode:normal,overlay,normal,normal}")
+    return "\n".join(rules)
+
+
+_GRAVEYARD_CSS_V4 = """
+/* v4: more room, at most eight stopped stones in a line */
+.field{max-width:1700px;gap:96px 72px}
+.row{gap:44px}
+.stopped .row{gap:84px 96px;max-width:1660px;padding-top:40px}
+.unmarked .row{gap:46px 40px}
+/* v4: five headstone shapes; height still is the price */
+.stone{--band:112% 100%,112% calc(100% + 14px),-12% calc(100% + 14px),-12% 100%}
+.stopped .stone{--band:150% 100%,150% calc(100% + 40px),-50% calc(100% + 40px),-50% 100%}
+.stone.shape-arch{border-radius:50% 50% 5px 5px / 30% 30% 5px 5px}
+.stone.shape-slab{border-radius:3px;clip-path:polygon(7% 0,93% 0,100% 5%,100% 100%,var(--band),0 100%,0 5%)}
+.stone.shape-gothic{border-radius:0 0 4px 4px;padding-top:30px;
+  clip-path:polygon(0 24%,14% 9%,32% 2%,50% 0,68% 2%,86% 9%,100% 24%,100% 100%,var(--band),0 100%)}
+.stone.shape-shoulder{border-radius:3px 3px 4px 4px;padding-top:24px;
+  clip-path:polygon(0 12%,12% 12%,16% 4%,30% 0,70% 0,84% 4%,88% 12%,100% 12%,100% 100%,var(--band),0 100%)}
+.stone.shape-cross{width:calc(var(--h) * .72);border-radius:0;padding-top:calc(var(--h) * .47);
+  clip-path:polygon(40% 0,60% 0,60% 12%,80% 12%,80% 27%,60% 27%,60% 44%,96% 44%,100% 47%,100% 100%,var(--band),0 100%,0 47%,4% 44%,40% 44%,40% 27%,20% 27%,20% 12%,40% 12%)}
+.stone.shape-cross .tid{order:0}
+.stone.shape-cross .epi{display:none}
+.unmarked .stone.shape-gothic,.unmarked .stone.shape-shoulder{padding-top:16px}
+.unmarked .stone.shape-cross{padding-top:calc(var(--h) * .47)}
+@media (max-width:640px){
+  .row{gap:28px}
+  .stopped .row{gap:56px 40px}
+}
+""".strip()
+
+_GRAVEYARD_CSS = _GRAVEYARD_CSS + "\n" + _g_crack_css() + "\n" + _GRAVEYARD_CSS_V4
 
 # Detail card, register sort and register filter only. The headstones
 # themselves are plain HTML and need no script.
@@ -2161,8 +2214,40 @@ def _g_outcome_text(outcome: str) -> str:
     return "stopped" if outcome == "killed" else outcome
 
 
-def _g_stone(record: dict, peak: float) -> str:
-    """One headstone as a ``<button>`` with plain text inside. Everything escaped."""
+_G_FALLBACK_SHAPES = ("slab", "arch", "gothic", "shoulder")
+
+
+def _g_row_shapes(records: list, peak: float, row_key: str) -> list:
+    """Shape names for one row, left to right (R2.10).
+
+    The shape cycle gives distinct raw neighbours. A cross under 170 px falls
+    back to the first of slab, arch, gothic, shoulder that differs from the
+    stone before it (final) and the stone after it (raw, or, when that one
+    also falls back, it will adapt to this one).
+    """
+    salt = zlib.crc32(row_key.encode("utf-8"))
+    raw = [_G_SHAPES[(i + salt) % len(_G_SHAPES)] for i in range(len(records))]
+    short = [raw[i] == "cross" and _g_height(_g_cost(r)[0], peak) < 170
+             for i, r in enumerate(records)]
+    out: list = []
+    for i, shape in enumerate(raw):
+        if short[i]:
+            avoid = {out[-1]} if out else set()
+            if i + 1 < len(raw) and not short[i + 1]:
+                avoid.add(raw[i + 1])
+            shape = next(c for c in _G_FALLBACK_SHAPES if c not in avoid)
+        out.append(shape)
+    return out
+
+
+def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
+             shape: Optional[str] = None) -> str:
+    """One headstone as a ``<button>`` with plain text inside. Everything escaped.
+
+    ``index`` is the position in its row and ``row_key`` the plot number,
+    "unmarked" or "stopped" (R2.10): together they pick the shape and, for a
+    stopped stone, the crack, so neighbours never share either.
+    """
     esc = functools.partial(html.escape, quote=True)
     cost, label = _g_cost(record)
     task_id = _g_task_id(record)
@@ -2195,9 +2280,15 @@ def _g_stone(record: dict, peak: float) -> str:
 
     unit = f"credits {label}"
     aria = f"{tid}, {_g_credits(cost)} credits {label}, {name}"
-    ghost = '<span class="ghost" aria-hidden="true"></span>' if outcome != "finished" else ""
+    if shape is None:
+        shape = _G_SHAPES[(index + zlib.crc32(row_key.encode("utf-8"))) % len(_G_SHAPES)]
+        if shape == "cross" and height < 170:
+            shape = "slab"
+    cls = f"stone shape-{shape}"
+    if outcome != "finished":
+        cls += f" crack-{(index * 3 + 1) % 4}"
     return (
-        f'<button type="button" class="stone" style="--hh:{height}px;--h:{height}px" '
+        f'<button type="button" class="{cls}" style="--hh:{height}px;--h:{height}px" '
         f'aria-label="{esc(aria)}" data-title="{esc(name)}" data-meta="{esc(meta)}" '
         f'data-actual="{esc(_g_credits(actual) + " credits actual" if actual is not None else "n/a, actual pending")}" '
         f'data-estimate="{esc(_g_credits(estimate) + " credits est." if estimate is not None else "n/a")}" '
@@ -2206,7 +2297,7 @@ def _g_stone(record: dict, peak: float) -> str:
         f'data-model="{esc(_g_str(record, "model", "n/a"))}" '
         f'data-engine="{esc(_g_str(record, "engine", "n/a"))}" '
         f'data-gap="{esc(gap)}">'
-        f'{ghost}<span class="tid">{esc(tid)}</span>'
+        f'<span class="tid">{esc(tid)}</span>'
         f'<span class="cost">{esc(_g_credits(cost))}</span>'
         f'<span class="unit">{esc(unit)}</span>'
         f'<span class="epi">{esc(name)}</span></button>'
@@ -2253,7 +2344,8 @@ def _g_register_row(record: dict) -> str:
     )
 
 
-_GRAVEYARD_LEDE = ("Each stone is one spec task Kiro finished, as tall as its price. "
+_GRAVEYARD_LEDE = ("Each stone is a spec task Kiro finished or a turn the breaker stopped, "
+                   "as tall as its price. "
                    "Open a stone for the estimate, the requests and the time.")
 
 _GRAVEYARD_HILLS = (
@@ -2363,8 +2455,12 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             name = str(included[r.get("id")])
             if name not in files:
                 files.append(name)
-        live_note = (f" {len(live)} of them are live test runs on scratch projects, "
-                     f"kept in {esc(', '.join(files))}.")
+        kept = esc(", ".join(files))
+        if len(live) == 1 and len(stopped) == 1:
+            live_note = f" It is a live test run on a scratch project, kept in {kept}."
+        else:
+            lead = f"All {len(live)}" if len(live) == len(stopped) else f"{len(live)} of them"
+            live_note = f" {lead} are live test runs on scratch projects, kept in {kept}."
     on_page = any(r.get("id") in included for r in rows)
 
     parts: list[str] = []
@@ -2375,7 +2471,9 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             "The next tool call was refused and the agent stopped. "
             f"The cost is what Kiro charged before it did.{live_note}</div>"
             '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
-            + "".join(_g_stone(r, peak) for r in stopped) + "</div></div>"
+            + "".join(_g_stone(r, peak, i, "stopped", sh) for i, (r, sh)
+                      in enumerate(zip(stopped, _g_row_shapes(stopped, peak, "stopped"))))
+            + "</div></div>"
             '<div class="section-note wide"><h2>Finished tasks</h2>'
             "Grouped by the top-level task in tasks.md.</div>"
         )
@@ -2389,7 +2487,8 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         n = len(members)
         parts.append(
             '<div class="plot"><div class="row">'
-            + "".join(_g_stone(r, peak) for r in members)
+            + "".join(_g_stone(r, peak, i, key, sh) for i, (r, sh)
+                      in enumerate(zip(members, _g_row_shapes(members, peak, key))))
             + f'</div><div class="plaque"><span class="num">{esc(key)}</span><b>{esc(title)}</b>'
             f'<span class="sum">{n} {"grave" if n == 1 else "graves"}, '
             f"{esc(_g_sum_label(members))}</span></div></div>"
@@ -2402,7 +2501,9 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             "Tombstone does not guess their task, so each is named by the first words of its "
             f"prompt. {esc(_g_sum_label(unmarked))}.</div>"
             '<div class="plot unmarked wide"><div class="row" style="flex-wrap:wrap;row-gap:40px">'
-            + "".join(_g_stone(r, peak) for r in unmarked) + "</div></div>"
+            + "".join(_g_stone(r, peak, i, "unmarked", sh) for i, (r, sh)
+                      in enumerate(zip(unmarked, _g_row_shapes(unmarked, peak, "unmarked"))))
+            + "</div></div>"
         )
 
     if not rows:
