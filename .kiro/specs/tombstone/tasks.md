@@ -181,3 +181,16 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 13.2 Graveyard v3 tests
     - In `tests/test_graveyard.py`: headline total equals the sum of stone costs; strip figures for a fixture (graves, most expensive, median, requests); the stopped figure is present only when a stopped record exists and carries class `red`; empty records give "Nothing is buried here yet." and no strip; the hills SVG is inline; the 375 px rule keeps headstone text at 14 px or more (check the CSS source); no external resource; no em or en dash.
     - _Requirements: R2.7, R2.8_
+
+- [x] 14. Live stops on the graveyard
+  - Approved by Dima on 2026-11-07.
+  - `live_stops.json` at the repo root holds the 15 real stopped turns from the live tests (burn2, burn5, live1 to live7) and the video recording, copied unchanged from those scratch projects with one extra field, `source`. Do not edit it.
+  - _Requirements: R2.6, R2.7, R2.8, R2.9_
+
+  - [x] 14.1 `--include` for `tombstone graveyard`
+    - Repeatable `--include FILE`. Load with the same reader as tombstones.json, merge by id (project records win), pass to `render_graveyard` with which records came from which include. Stopped row note adds one sentence when included stopped records exist: "<n> of them are live test runs on scratch projects, kept in <file name>." Kicker as R2.9 when any included record is on the page. Outcome `killed` reads "stopped" in the card meta and the register cell (the `data-outcome` attribute and sort keep the raw value). Missing or bad include file: plain message, exit 1, no page written.
+    - _Requirements: R2.9_
+
+  - [x] 14.2 Tests for live stops
+    - CLI: include merges records, duplicate id skipped and project record wins, missing file exits 1 without writing, bad JSON exits 1. Render: note sentence and kicker appear only with included stopped records; "killed" never shows as visible text in card meta or register cells, "stopped" does; project tombstones.json is unchanged after a run with includes. A test that renders this repo with `live_stops.json` shows 15 stopped records.
+    - _Requirements: R2.9_

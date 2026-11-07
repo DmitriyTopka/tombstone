@@ -2156,6 +2156,11 @@ def _g_task_sort(task_id: str) -> list:
     return [(0, int(p), "") if p.isdigit() else (1, 0, p) for p in re.split(r"[.]", task_id)]
 
 
+def _g_outcome_text(outcome: str) -> str:
+    """The outcome as a person reads it: the breaker's ``killed`` reads "stopped"."""
+    return "stopped" if outcome == "killed" else outcome
+
+
 def _g_stone(record: dict, peak: float) -> str:
     """One headstone as a ``<button>`` with plain text inside. Everything escaped."""
     esc = functools.partial(html.escape, quote=True)
@@ -2174,7 +2179,8 @@ def _g_stone(record: dict, peak: float) -> str:
     source = _g_str(record, "source")
     height = _g_height(cost, peak)
 
-    meta = f"{'No task' if task_id == 'unknown' else 'Task ' + task_id}, {outcome}"
+    meta = (f"{'No task' if task_id == 'unknown' else 'Task ' + task_id}, "
+            f"{_g_outcome_text(outcome)}")
     if date:
         meta += f", {date}"
     if source:
@@ -2243,7 +2249,7 @@ def _g_register_row(record: dict) -> str:
         f"<td class=\"n\">{esc(_g_credits(estimate) + ' est.' if estimate is not None else 'n/a')}</td>"
         f"<td class=\"n\">{esc(f'{requests} {basis}' if requests is not None else 'n/a')}</td>"
         f"<td class=\"n\">{esc(f'{minutes:.1f} {basis}' if minutes is not None else 'n/a')}</td>"
-        f"<td>{esc(outcome)}</td><td>{esc(date)}</td></tr>"
+        f"<td>{esc(_g_outcome_text(outcome))}</td><td>{esc(date)}</td></tr>"
     )
 
 
@@ -2268,7 +2274,11 @@ def _g_median(values: list) -> float:
     return (ordered[mid - 1] + ordered[mid]) / 2
 
 
-def _g_header(rows: list) -> dict:
+_GRAVEYARD_KICKER = "Tombstone, the graveyard of its own build"
+_GRAVEYARD_KICKER_LIVE = "Tombstone, the graveyard of its own build and its live tests"
+
+
+def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER) -> dict:
     """The scene header (task 13.1): title, headline and proof strip.
 
     Every figure is computed from the records. ``total`` is the sum of the
@@ -2310,7 +2320,7 @@ def _g_header(rows: list) -> dict:
     markup = (
         '<header class="sky">\n<div class="stars" aria-hidden="true"></div>\n'
         '<div class="moon" aria-hidden="true"></div>\n<div class="intro">\n'
-        '<p class="kicker">Tombstone, the graveyard of its own build</p>\n'
+        f'<p class="kicker">{esc(kicker)}</p>\n'
         f"<h1>{esc(headline)}</h1>\n"
         f'<p class="lede" id="lede">{esc(_GRAVEYARD_LEDE)}</p>\n'
         f"{strip}</div>\n{_GRAVEYARD_HILLS}</header>\n"
@@ -2318,7 +2328,8 @@ def _g_header(rows: list) -> dict:
     return {"title": title, "html": markup}
 
 
-def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
+def render_graveyard(records: list, plots: Optional[dict] = None,
+                     included: Optional[dict] = None) -> str:
     """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
 
     Headstones, plots, the stopped row, unmarked graves and the register are
@@ -2327,6 +2338,10 @@ def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
     ``plots`` maps a top-level task number (as text) to its name from
     ``tasks.md``; a missing number reads "Task N". No external resource; the
     SVG data URI keeps its xmlns. Every record field is HTML escaped.
+
+    ``included`` maps a record id to the file name it was read from with
+    ``--include`` (R2.9). When any stopped record is in it, the stopped row
+    note names the file and the kicker mentions the live tests.
     """
     esc = functools.partial(html.escape, quote=True)
     plots = plots if isinstance(plots, dict) else {}
@@ -2339,13 +2354,26 @@ def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
     known = [r for r in finished if _g_task_id(r) != "unknown"]
     unmarked = [r for r in finished if _g_task_id(r) == "unknown"]
 
+    included = included if isinstance(included, dict) else {}
+    live = [r for r in stopped if r.get("id") in included]
+    live_note = ""
+    if live:
+        files = []
+        for r in live:
+            name = str(included[r.get("id")])
+            if name not in files:
+                files.append(name)
+        live_note = (f" {len(live)} of them are live test runs on scratch projects, "
+                     f"kept in {esc(', '.join(files))}.")
+    on_page = any(r.get("id") in included for r in rows)
+
     parts: list[str] = []
     if stopped:
         parts.append(
             '<div class="section-note wide stopped-note"><h2>Stopped by the breaker</h2>'
             "These turns went over their cap or were blocked before they started. "
             "The next tool call was refused and the agent stopped. "
-            "The cost is what Kiro charged before it did.</div>"
+            f"The cost is what Kiro charged before it did.{live_note}</div>"
             '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
             + "".join(_g_stone(r, peak) for r in stopped) + "</div></div>"
             '<div class="section-note wide"><h2>Finished tasks</h2>'
@@ -2382,7 +2410,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None) -> str:
 
     register_rows = sorted(
         rows, key=lambda r: (_g_num(r.get("actual")) is None, -(_g_num(r.get("actual")) or 0.0)))
-    header = _g_header(rows)
+    header = _g_header(rows, _GRAVEYARD_KICKER_LIVE if on_page else _GRAVEYARD_KICKER)
 
     return (
         "<!doctype html>\n"
@@ -2454,15 +2482,61 @@ def read_plot_names(project: Path) -> dict:
     return names
 
 
-def write_graveyard(project: Path, out: Optional[Path] = None) -> Path:
+class IncludeError(Exception):
+    """An ``--include`` file is missing, unreadable or not a tombstones file."""
+
+
+def load_includes(paths: list) -> list:
+    """Read each ``--include`` file as a tombstones file (R2.9).
+
+    Uses the same reader as ``tombstones.json`` but strictly: a missing,
+    unreadable or malformed file raises ``IncludeError`` with a plain message.
+    Returns ``[(file name, [records])]`` in the order given.
+    """
+    loaded = []
+    for raw in paths or []:
+        path = Path(raw).expanduser()
+        if not path.is_file():
+            raise IncludeError(f"include file not found: {path}")
+        value, valid = _read_json(path)
+        if not valid or value is None or not isinstance(value.get("tombstones"), list):
+            raise IncludeError(f"include file is not a tombstones file: {path}")
+        loaded.append((path.name, [r for r in value["tombstones"] if isinstance(r, dict)]))
+    return loaded
+
+
+def merge_includes(records: list, loaded: list) -> tuple:
+    """Merge included records by id; the project record wins (R2.9).
+
+    Returns ``(records, included)`` where ``included`` maps the id of each
+    added record to the name of the file it came from.
+    """
+    merged = list(records)
+    seen = {r.get("id") for r in merged if isinstance(r, dict)}
+    included: dict = {}
+    for name, items in loaded:
+        for record in items:
+            rid = record.get("id")
+            if rid in seen:
+                continue
+            seen.add(rid)
+            merged.append(record)
+            included[rid] = name
+    return merged, included
+
+
+def write_graveyard(project: Path, out: Optional[Path] = None,
+                    includes: Optional[list] = None) -> Path:
     """Render ``tombstones.json`` of ``project`` and write the page.
 
     Default target is ``.kiro/tombstone/graveyard.html``. Reads the store
-    without modifying it. Returns the path written.
+    without modifying it. ``includes`` is the result of ``load_includes``.
+    Returns the path written.
     """
     project = Path(project)
     store = load_tombstones(project / "tombstones.json")
-    page = render_graveyard(store.get("tombstones") or [], read_plot_names(project))
+    records, included = merge_includes(store.get("tombstones") or [], includes or [])
+    page = render_graveyard(records, read_plot_names(project), included)
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
     if out is None and not guard(project, target):

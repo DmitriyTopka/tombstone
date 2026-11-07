@@ -1320,6 +1320,66 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/14.1",
+      "task_id": "14.1",
+      "name": "`--include` for `tombstone graveyard`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 12,
+      "estimate": 3.619,
+      "actual": 2.5013,
+      "minutes": 1.454,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_116f0639-5f3f-4356-8e34-68edf0135c6d",
+          "turn_id": "0ac1c1fd-b229-4a16-85af-57df8833ad57",
+          "requests": 12,
+          "estimate": 3.619,
+          "actual": 2.5013,
+          "minutes": 1.454,
+          "start": "2026-11-07T08:37:32.020000Z",
+          "end": "2026-11-07T08:38:59.258000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/14.2",
+      "task_id": "14.2",
+      "name": "Tests for live stops",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 7,
+      "estimate": 2.0493,
+      "actual": 0.9365,
+      "minutes": 0.5042,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-07",
+      "turns": [
+        {
+          "session_id": "sess_092e8d12-1c3d-4867-bf91-307d5f0de96c",
+          "turn_id": "6691b6ce-f7f7-44a4-a640-b80b8eb3e0b6",
+          "requests": 7,
+          "estimate": 2.0493,
+          "actual": 0.9365,
+          "minutes": 0.5042,
+          "start": "2026-11-07T08:39:03.068000Z",
+          "end": "2026-11-07T08:39:33.323000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

@@ -541,17 +541,24 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
               file=sys.stderr)
         return 1
 
-    _reconcile_pending_quietly(project)
-
     from . import tombstones
+
+    try:
+        loaded = tombstones.load_includes(getattr(args, "include", None) or [])
+    except tombstones.IncludeError as exc:
+        print(f"tombstone graveyard: {exc}", file=sys.stderr)
+        return 1
+
+    _reconcile_pending_quietly(project)
 
     out = Path(args.out) if args.out else None
     try:
-        target = tombstones.write_graveyard(project, out)
+        target = tombstones.write_graveyard(project, out, loaded)
     except OSError as exc:
         print(f"tombstone graveyard: could not write: {exc}", file=sys.stderr)
         return 1
-    count = len(tombstones.load_tombstones(project / "tombstones.json")["tombstones"])
+    own = tombstones.load_tombstones(project / "tombstones.json")["tombstones"]
+    count = len(tombstones.merge_includes(own, loaded)[0])
     print(f"graveyard written: {target} ({count} tombstones)")
     return 0
 
@@ -1456,6 +1463,8 @@ def build_parser() -> argparse.ArgumentParser:
     graveyard = sub.add_parser("graveyard", help="render the static graveyard page")
     graveyard.add_argument("--out", default=None,
                            help="output file (default .kiro/tombstone/graveyard.html)")
+    graveyard.add_argument("--include", action="append", default=[], metavar="FILE",
+                           help="add the records of another tombstones file (repeatable)")
     graveyard.add_argument("--project", default=None,
                            help="project root (default: found from the working directory)")
     graveyard.set_defaults(func=cmd_graveyard)

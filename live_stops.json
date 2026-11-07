@@ -1,0 +1,470 @@
+{
+  "version": 1,
+  "tombstones": [
+    {
+      "id": "unknown/afd50966-a1d1-47d0-8875-54acb36e5520",
+      "task_id": "unknown",
+      "name": "You are auditing this project for consistency. Do",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 3.5,
+      "actual": 1.7746,
+      "minutes": 0.7508,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_27f18f9d-ebb4-4b72-bb26-1f79e0440a62",
+          "turn_id": "afd50966-a1d1-47d0-8875-54acb36e5520",
+          "requests": 10,
+          "estimate": 3.5,
+          "actual": 1.7746,
+          "minutes": 0.7508,
+          "start": "2026-11-06T09:07:03.375000Z",
+          "end": "2026-11-06T09:07:48.420000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "burn2"
+    },
+    {
+      "id": "unknown/d30091ac-ae2d-4c04-862f-20ae522bee99",
+      "task_id": "unknown",
+      "name": "For each of alpha.md, beta.md, gamma.md and delta.md,",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.5,
+      "actual": 0.3338,
+      "minutes": 0.1665,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_6d7c02ba-c393-45ff-8cbe-e14833156310",
+          "turn_id": "d30091ac-ae2d-4c04-862f-20ae522bee99",
+          "requests": 4,
+          "estimate": 0.5,
+          "actual": 0.3338,
+          "minutes": 0.1665,
+          "start": "2026-11-06T09:10:28.509000Z",
+          "end": "2026-11-06T09:10:38.498000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "burn5"
+    },
+    {
+      "id": "unknown/44dd782f-0fa3-4822-8d50-bade0c624e2d",
+      "task_id": "unknown",
+      "name": "2026-11-06T09:24:18.519000+00:00",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 0.75,
+      "actual": 1.215,
+      "minutes": 0.3949,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_cb71a10c-439d-4e4c-9cac-412bb1e35a3b",
+          "turn_id": "44dd782f-0fa3-4822-8d50-bade0c624e2d",
+          "requests": 13,
+          "estimate": 0.75,
+          "actual": 1.215,
+          "minutes": 0.3949,
+          "start": "2026-11-06T09:24:18.519000Z",
+          "end": "2026-11-06T09:24:42.214000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live1"
+    },
+    {
+      "id": "unknown/8d876755-4126-403f-ac68-6368734051c8",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 2,
+      "estimate": 0.75,
+      "actual": 0.2776,
+      "minutes": 0.1557,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_c4307544-6273-4251-9889-75c24f83c422",
+          "turn_id": "8d876755-4126-403f-ac68-6368734051c8",
+          "requests": 2,
+          "estimate": 0.75,
+          "actual": 0.2776,
+          "minutes": 0.1557,
+          "start": "2026-11-06T09:28:31.384000Z",
+          "end": "2026-11-06T09:28:40.728000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live2"
+    },
+    {
+      "id": "unknown/c94c7897-2227-4bb4-a86d-702f651fe07c",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 1.0,
+      "actual": 0.5359,
+      "minutes": 0.2955,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_74f82a84-f1de-4d71-98fe-a943e11d8a34",
+          "turn_id": "c94c7897-2227-4bb4-a86d-702f651fe07c",
+          "requests": 5,
+          "estimate": 1.0,
+          "actual": 0.5359,
+          "minutes": 0.2955,
+          "start": "2026-11-06T09:30:58.755000Z",
+          "end": "2026-11-06T09:31:16.484000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live3"
+    },
+    {
+      "id": "unknown/c8453e46-baa2-4028-97a5-cfcdbf04c755",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 1.0,
+      "actual": 0.5304,
+      "minutes": 0.3056,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_13acff42-a151-4598-8a5e-6e7f5008bc91",
+          "turn_id": "c8453e46-baa2-4028-97a5-cfcdbf04c755",
+          "requests": 5,
+          "estimate": 1.0,
+          "actual": 0.5304,
+          "minutes": 0.3056,
+          "start": "2026-11-06T09:58:38.989000Z",
+          "end": "2026-11-06T09:58:57.328000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live4"
+    },
+    {
+      "id": "unknown/3f7efcc3-a5bf-424c-b603-f38415dd2867",
+      "task_id": "unknown",
+      "name": "Audit the four markdown files here without creating",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 4.25,
+      "actual": 0.9266,
+      "minutes": 0.4985,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_38455d66-1269-4697-bb64-fb63770307b3",
+          "turn_id": "3f7efcc3-a5bf-424c-b603-f38415dd2867",
+          "requests": 10,
+          "estimate": 4.25,
+          "actual": 0.9266,
+          "minutes": 0.4985,
+          "start": "2026-11-06T15:52:15.733000Z",
+          "end": "2026-11-06T15:52:45.646000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live6"
+    },
+    {
+      "id": "unknown/1fe2cd09-73b2-4728-867f-9d25a9f8e4f8",
+      "task_id": "unknown",
+      "name": "Summarize each of the four markdown files here,",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 3,
+      "estimate": 0.32,
+      "actual": 0.2842,
+      "minutes": 0.2059,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_a11adb04-d227-4bbd-a743-4e6feee097b8",
+          "turn_id": "1fe2cd09-73b2-4728-867f-9d25a9f8e4f8",
+          "requests": 3,
+          "estimate": 0.32,
+          "actual": 0.2842,
+          "minutes": 0.2059,
+          "start": "2026-11-06T15:55:07.528000Z",
+          "end": "2026-11-06T15:55:19.883000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live7"
+    },
+    {
+      "id": "unknown/d78ffbe3-8fb8-4561-b46e-3eeb2300cada",
+      "task_id": "unknown",
+      "name": "Persistence test, 24 steps, one shell command per",
+      "spec": null,
+      "task_type": "test",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 0.3327,
+      "actual": 0.4984,
+      "minutes": 0.3037,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_375a9385-a16b-4fa5-a702-c911163f285e",
+          "turn_id": "d78ffbe3-8fb8-4561-b46e-3eeb2300cada",
+          "requests": 5,
+          "estimate": 0.3327,
+          "actual": 0.4984,
+          "minutes": 0.3037,
+          "start": "2026-11-06T15:56:03.800000Z",
+          "end": "2026-11-06T15:56:22.024000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "live7"
+    },
+    {
+      "id": "unknown/64878924-8201-408c-93f9-caf254387344",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 0.64,
+      "actual": 0.4048,
+      "minutes": 0.2598,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_2ce3ce47-2842-45a0-a25b-54e13f1a092f",
+          "turn_id": "64878924-8201-408c-93f9-caf254387344",
+          "requests": 5,
+          "estimate": 0.64,
+          "actual": 0.4048,
+          "minutes": 0.2598,
+          "start": "2026-11-06T17:07:00.648000Z",
+          "end": "2026-11-06T17:07:16.238000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "video"
+    },
+    {
+      "id": "unknown/2679197d-033a-4fb8-9bfa-baa77db04b6d",
+      "task_id": "unknown",
+      "name": "Audit the four markdown files here without creating",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.8125,
+      "actual": 0.7582,
+      "minutes": 0.5362,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_c774ac5f-7453-490d-8f45-bb09a462a40e",
+          "turn_id": "2679197d-033a-4fb8-9bfa-baa77db04b6d",
+          "requests": 8,
+          "estimate": 0.8125,
+          "actual": 0.7582,
+          "minutes": 0.5362,
+          "start": "2026-11-06T17:09:25.584000Z",
+          "end": "2026-11-06T17:09:57.754000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "video"
+    },
+    {
+      "id": "unknown/9131c53f-4619-408f-85e9-d1faacbbb196",
+      "task_id": "unknown",
+      "name": "Persistence test, 24 steps, one shell command per",
+      "spec": null,
+      "task_type": "test",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 0.405,
+      "actual": 0.6141,
+      "minutes": 0.3723,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_9593ac22-55d7-489d-8fd7-751c936ef88f",
+          "turn_id": "9131c53f-4619-408f-85e9-d1faacbbb196",
+          "requests": 5,
+          "estimate": 0.405,
+          "actual": 0.6141,
+          "minutes": 0.3723,
+          "start": "2026-11-06T17:10:22.403000Z",
+          "end": "2026-11-06T17:10:44.739000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "video"
+    },
+    {
+      "id": "unknown/26b40f6e-cc4d-4759-b208-dbd032fc44ec",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 6,
+      "estimate": 0.3521,
+      "actual": 0.602,
+      "minutes": 0.3115,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_3af99461-738c-4f7f-9470-116cd4ec531d",
+          "turn_id": "26b40f6e-cc4d-4759-b208-dbd032fc44ec",
+          "requests": 6,
+          "estimate": 0.3521,
+          "actual": 0.602,
+          "minutes": 0.3115,
+          "start": "2026-11-06T17:11:39.666000Z",
+          "end": "2026-11-06T17:11:58.353000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "video"
+    },
+    {
+      "id": "unknown/2981f0df-81df-4c8d-894a-70acaa1be21e",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 0.602,
+      "actual": 0.7946,
+      "minutes": 0.438,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_0545983f-73c7-4263-ae51-ce08b108f59c",
+          "turn_id": "2981f0df-81df-4c8d-894a-70acaa1be21e",
+          "requests": 9,
+          "estimate": 0.602,
+          "actual": 0.7946,
+          "minutes": 0.438,
+          "start": "2026-11-06T17:13:04.396000Z",
+          "end": "2026-11-06T17:13:30.678000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "video"
+    },
+    {
+      "id": "unknown/72aa495c-3780-47b2-9024-6d49567eb59a",
+      "task_id": "unknown",
+      "name": "First call get_budget for a task named 'summaries'.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 0.6622,
+      "actual": 1.0051,
+      "minutes": 0.5953,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-06",
+      "turns": [
+        {
+          "session_id": "sess_8c947967-72c1-4973-b166-550e3454e4a4",
+          "turn_id": "72aa495c-3780-47b2-9024-6d49567eb59a",
+          "requests": 10,
+          "estimate": 0.6622,
+          "actual": 1.0051,
+          "minutes": 0.5953,
+          "start": "2026-11-06T17:14:19.719000Z",
+          "end": "2026-11-06T17:14:55.440000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "video"
+    }
+  ]
+}
