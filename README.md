@@ -139,7 +139,7 @@ The Kiro IDE as a second source, a watcher for agents running on a server, and a
 
 ## Honest comparison
 
-Most neighbors answer "how much is left" or "did the agent really do it". Kiro itself now shows what a session has spent (CLI 3.1.0). Tombstone turns spend into a price per spec task, stops the task when it passes its cap and leaves a receipt. Tombstone answers "what did this task cost, and stop it when it costs too much". Checked on GitHub on 6 November 2026.
+Most neighbors answer "how much is left" or "did the agent really do it". Since CLI 3.1.0, Kiro itself shows what a session has spent. Tombstone answers a different question: "what did this task cost, and stop it when it costs too much". Checked on GitHub and the Kiro changelog on 7 November 2026.
 
 | | What it answers | Cost per spec task | Cap per task | Stops the agent | Receipt |
 |---|---|---|---|---|---|
