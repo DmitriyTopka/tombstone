@@ -139,11 +139,12 @@ The Kiro IDE as a second source, a watcher for agents running on a server, and a
 
 ## Honest comparison
 
-Most neighbors answer "how much is left" or "did the agent really do it". Tombstone answers "what did this task cost, and stop it when it costs too much". Checked on GitHub on 6 November 2026.
+Most neighbors answer "how much is left" or "did the agent really do it". Kiro itself now shows what a session has spent (CLI 3.1.0). Tombstone turns spend into a price per spec task, stops the task when it passes its cap and leaves a receipt. Tombstone answers "what did this task cost, and stop it when it costs too much". Checked on GitHub on 6 November 2026.
 
 | | What it answers | Cost per spec task | Cap per task | Stops the agent | Receipt |
 |---|---|---|---|---|---|
 | [Kiro credit pooling](https://kiro.dev/changelog/general/credit-pooling/) (Enterprise, 4 Nov 2026) | Shared credits with usage limits per user, group and profile | no | no, the limit is per person or group | not per task (what happens at the limit is not described) | no |
+| [Kiro CLI 3.1.0 session credits](https://kiro.dev/changelog/cli/3-1/) (5 Nov 2026) | What this session has spent so far, in `/usage` and an optional status line segment | no, per session (per step in the workflow monitor) | no | no | no |
 | [StefanSuess/Bobert](https://github.com/StefanSuess/Bobert) | Will my credits last until the reset | no | no, daily budget and warnings | no | no |
 | [vokako/kirocrew-usage-lens](https://github.com/vokako/kirocrew-usage-lens) | Where credits go, by model, agent, job and session | no, per session | no | no | no |
 | [ChowRex/kiro-credit-usage-web](https://github.com/ChowRex/kiro-credit-usage-web) | Monthly credits per account for an admin | no | no | no | no |
