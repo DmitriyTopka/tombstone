@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-session-start","description":"Tombstone: remember the session id","trigger":"SessionStart","action":{"type":"command","command":".venv/bin/tombstone hook session-start","timeout":10}}]}

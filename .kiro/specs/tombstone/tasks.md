@@ -224,10 +224,10 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Update the existing tests to the new path. New tests: migration moves an old `.kiro/tombstone/` with its files; both present leaves the old one; a symlinked old sidecar is not followed; no code path writes under `.kiro/tombstone/`; uninstall --purge removes `.tombstone/`.
     - _Requirements: R12.1, R12.2_
 
-- [ ] 17. Full dogfood hook set in this repo
+- [x] 17. Full dogfood hook set in this repo
   - Approved by Dima on 2026-11-09.
   - _Requirements: R12.4_
 
-  - [ ] 17.1 Seven hooks and MCP in `.kiro/`
+  - [x] 17.1 Seven hooks and MCP in `.kiro/`
     - Add to `.kiro/hooks/` the four missing V3 hooks from `power/hooks/v3/` (pre-tool, session-start, task-pre, task-post), in the same style as the three already there: command `.venv/bin/tombstone hook <name>`, timeout 10. Add `.kiro/settings/mcp.json` that starts `.venv/bin/tombstone mcp` for this project. Add `tombstone.toml` at the repo root with `spec_cap = 600` so the brake never blocks normal build tasks, keep the other keys at their defaults. A test checks that `.kiro/hooks/` holds one hook per trigger that init writes for V3 and that no file under `.kiro/` is matched by the repo `.gitignore`.
     - _Requirements: R12.4_

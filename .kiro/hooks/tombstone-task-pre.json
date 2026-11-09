@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-task-pre","description":"Tombstone: store the task id when a spec task starts","trigger":"PreTaskExecution","action":{"type":"command","command":".venv/bin/tombstone hook task-pre","timeout":10}}]}

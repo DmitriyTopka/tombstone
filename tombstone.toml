@@ -1,0 +1,21 @@
+# Tombstone configuration. All numbers are credits unless stated.
+
+[caps]
+# Hard cap per task and per spec, in credits.
+task = 40
+# Raised from the default 300 so the brake never blocks normal build tasks.
+spec = 600
+
+[stall]
+# Minutes of model calls with no project file change before a stall is declared.
+quiet_window_minutes = 10
+
+[budget]
+# Estimated price of one request (measured on Kiro CLI 3.0.0). Used for est. only.
+avg_request_price = 0.25
+# Warn when the plan balance is below this many credits.
+min_plan_balance = 0
+
+[stop]
+# Seconds between the STOP file and killing the agent process.
+kill_grace_seconds = 30

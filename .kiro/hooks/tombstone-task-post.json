@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-task-post","description":"Tombstone: note that a spec task ended","trigger":"PostTaskExecution","action":{"type":"command","command":".venv/bin/tombstone hook task-post","timeout":10}}]}

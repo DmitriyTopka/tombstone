@@ -1,0 +1,1 @@
+{"version":"v1","hooks":[{"name":"tombstone-pre-tool","description":"Tombstone: block tools when the STOP file exists or a cap is breached","trigger":"PreToolUse","action":{"type":"command","command":".venv/bin/tombstone hook pre-tool","timeout":10}}]}

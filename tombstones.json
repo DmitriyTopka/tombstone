@@ -1560,6 +1560,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "unknown/960ab677-ce7e-44c4-99ea-acead1db40b6",
+      "task_id": "unknown",
+      "name": "Execute task 17 from .kiro/specs/tombstone/tasks.md (subtask 17.1), following",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 2.9215,
+      "actual": 1.8167,
+      "minutes": 0.6421,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-09",
+      "turns": [
+        {
+          "session_id": "sess_8b806e5c-8472-408c-9135-71f24d3e2fb8",
+          "turn_id": "960ab677-ce7e-44c4-99ea-acead1db40b6",
+          "requests": 10,
+          "estimate": 2.9215,
+          "actual": 1.8167,
+          "minutes": 0.6421,
+          "start": "2026-11-09T19:42:08.769000Z",
+          "end": "2026-11-09T19:42:47.292000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/17",
+      "task_id": "17",
+      "name": "Full dogfood hook set in this repo",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 0.8728,
+      "actual": 0.4292,
+      "minutes": 0.2655,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-09",
+      "turns": [
+        {
+          "session_id": "sess_7c827a6f-ee12-4408-b202-779f4b7c8eb6",
+          "turn_id": "ba55d5aa-2c5d-4115-bdde-e0224999a150",
+          "requests": 5,
+          "estimate": 1.7456,
+          "actual": 0.8584,
+          "minutes": 0.531,
+          "start": "2026-11-09T19:43:19.701000Z",
+          "end": "2026-11-09T19:43:51.563000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/17.1",
+      "task_id": "17.1",
+      "name": "Seven hooks and MCP in `.kiro/`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 5,
+      "estimate": 0.8728,
+      "actual": 0.4292,
+      "minutes": 0.2655,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-09",
+      "turns": [
+        {
+          "session_id": "sess_7c827a6f-ee12-4408-b202-779f4b7c8eb6",
+          "turn_id": "ba55d5aa-2c5d-4115-bdde-e0224999a150",
+          "requests": 5,
+          "estimate": 1.7456,
+          "actual": 0.8584,
+          "minutes": 0.531,
+          "start": "2026-11-09T19:43:19.701000Z",
+          "end": "2026-11-09T19:43:51.563000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
