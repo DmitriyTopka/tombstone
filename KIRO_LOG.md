@@ -214,3 +214,10 @@ Checked by hand: with `--include live_stops.json` the page shows 61 stones, "15 
 Dima: the stones stood too close, all looked alike, and the glow over stopped stones read as candles. Claude made a v4 mockup on the real page (`.kiro/specs/tombstone/graveyard_v4_mockup.html`, changes in `graveyard_v4_changes.py`): five headstone shapes (arch, slab, cross, gothic, shoulder), four crack patterns on stopped stones, no ghost, stopped stones in lines of at most 8 with about one stone of space between them. Added R2.10 and task 15. Kiro: 15.1 port, 15.2 tests, 15.3 a short cross no longer falls back to the same shape as a neighbour, and the note reads right for one included stop. Kiro also fixed the mockup's flaw where the clip-path cut the red base glow on non-arch shapes. 550 tests.
 Checked by hand on this repo with `live_stops.json`: 64 stones, no two neighbours share a shape, 15 stopped in lines of 8 and 7, the glow is the same on every shape.
 `/usage` after: 254.99/4000.
+
+## 2026-11-09 Tasks 16 and 17, /.kiro fully tracked (win-protocol review)
+A review of the submission against the Kiroween rules found `.kiro/tombstone/` in `.gitignore`. The rules say "Do NOT add the /.kiro directory or sub-folders to your .gitignore". Added Requirement 12 and tasks 16 and 17.
+Task 16 (Kiro): runtime state moved to `.tombstone/` behind one constant in `sidecar.py`, a one-time guarded migration of an old `.kiro/tombstone/`, `init` advises ignoring `.tombstone/`. 10 new tests, 560 in all. The tests moved this repo's own sidecar through the migration code.
+Task 17 (Kiro): this repo now runs all seven V3 hooks from `.kiro/hooks/` (the brake included) and the MCP server from `.kiro/settings/mcp.json`, with `spec = 600` in `tombstone.toml`. Kiro was denied writing `.kiro/settings/`, so a human created `mcp.json` with the line Kiro proposed. A test checks the hook set, the MCP entry and that `git check-ignore` matches nothing under `.kiro/`. 563 tests.
+The 17.1 test turn itself ran with the `PreToolUse` brake armed and was not blocked. `get_budget` over stdio from this repo: spec spent 181.01 of 600.
+`/usage` after: 266.08/4000.
