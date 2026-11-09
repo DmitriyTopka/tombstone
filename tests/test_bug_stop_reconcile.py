@@ -56,7 +56,7 @@ TASKS_MD = """# Implementation Plan
 
 
 def _project(tmp_path: Path) -> Path:
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
     specs = tmp_path / ".kiro" / "specs" / "tombstone"
     specs.mkdir(parents=True)
     (specs / "tasks.md").write_text(TASKS_MD, encoding="utf-8")

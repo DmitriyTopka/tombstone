@@ -48,7 +48,7 @@ def test_notify_missing_binary_logged_and_ignored(monkeypatch, tmp_path):
     monkeypatch.setattr(subprocess, "run", _Recorder(exc=FileNotFoundError("nope")))
     monkeypatch.setattr(sys, "platform", "linux")
     assert stop.notify("hello", tmp_path) is False
-    log = (tmp_path / ".kiro" / "tombstone" / "errors.log").read_text()
+    log = (tmp_path / ".tombstone" / "errors.log").read_text()
     assert "notify failed" in log
 
 
@@ -56,7 +56,7 @@ def test_notify_nonzero_exit_logged(monkeypatch, tmp_path):
     monkeypatch.setattr(subprocess, "run", _Recorder(returncode=1))
     monkeypatch.setattr(sys, "platform", "darwin")
     assert stop.notify("hello", tmp_path) is False
-    assert "exit 1" in (tmp_path / ".kiro" / "tombstone" / "errors.log").read_text()
+    assert "exit 1" in (tmp_path / ".tombstone" / "errors.log").read_text()
 
 
 def test_notify_unsupported_platform_runs_nothing(monkeypatch, tmp_path):
@@ -82,7 +82,7 @@ def test_terminal_line_failure_logged(tmp_path):
             pass
 
     assert stop.terminal_line("x", tmp_path, stream=Broken()) is False
-    assert "terminal line failed" in (tmp_path / ".kiro" / "tombstone" / "errors.log").read_text()
+    assert "terminal line failed" in (tmp_path / ".tombstone" / "errors.log").read_text()
 
 
 def test_announce_never_raises(monkeypatch, tmp_path, capsys):

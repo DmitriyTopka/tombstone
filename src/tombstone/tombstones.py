@@ -29,6 +29,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Callable, Optional
 
+from .sidecar import SIDECAR, migrate as migrate_sidecar
 from .safepath import (
     append_nofollow,
     guard,
@@ -38,25 +39,29 @@ from .safepath import (
 )
 
 # Directory that holds the lock files, pending queues and the error log.
-TOMBSTONE_DIR = Path(".kiro") / "tombstone"
+TOMBSTONE_DIR = SIDECAR
 
 TOMBSTONES_VERSION = 1
 
 
 def _tombstone_dir(path: Path) -> Path:
-    """Return the ``.kiro/tombstone`` directory for a target file.
+    """Return the ``.tombstone`` directory for a target file.
 
     ``tombstones.json`` lives at the repo root, while ``state.json`` and the
-    usage cache live in ``.kiro/tombstone``. The lock, pending and log files
-    all live in ``.kiro/tombstone`` next to the state so they stay out of the
-    committed data. We walk up from the target until we find a ``.kiro``
-    directory, falling back to the target's own parent.
+    usage cache live in ``.tombstone``. The lock, pending and log files
+    all live in ``.tombstone`` next to the state so they stay out of the
+    committed data. We walk up from the target until we find a ``.tombstone``
+    directory (moving an old ``.kiro/tombstone`` there first, R12.2),
+    falling back to the target's own parent.
     """
     path = Path(path)
-    if path.parent.name == "tombstone" and path.parent.parent.name == ".kiro":
+    if path.parent.name == SIDECAR.name:
+        migrate_sidecar(path.parent.parent)
         return path.parent
     for parent in path.parents:
         candidate = parent / TOMBSTONE_DIR
+        if not candidate.is_dir():
+            migrate_sidecar(parent)
         if candidate.is_dir():
             return candidate
     # No project marker yet: place sidecar files beside the target.
@@ -64,11 +69,11 @@ def _tombstone_dir(path: Path) -> Path:
 
 
 def _project_of_sidecar(sidecar: Path) -> Path:
-    """The project root for a sidecar directory (its grandparent when it is
-    ``.kiro/tombstone``, else the directory itself)."""
+    """The project root for a sidecar directory (its parent when it is
+    ``.tombstone``, else the directory itself)."""
     sidecar = Path(sidecar)
-    if sidecar.name == "tombstone" and sidecar.parent.name == ".kiro":
-        return sidecar.parent.parent
+    if sidecar.name == SIDECAR.name:
+        return sidecar.parent
     return sidecar
 
 
@@ -191,7 +196,7 @@ def update_json(
     """Read, transform and atomically write a JSON object under a file lock.
 
     Takes an exclusive ``fcntl.flock`` on ``<name>.lock`` inside
-    ``.kiro/tombstone``, reads the current value (or ``default`` when the file
+    ``.tombstone``, reads the current value (or ``default`` when the file
     is absent), applies ``fn``, writes a temp file in the same directory,
     ``fsync`` it, then ``os.replace`` so readers never see a partial file
     (R2.5).
@@ -208,12 +213,12 @@ def update_json(
     """
     path = Path(path)
     sidecar = _tombstone_dir(path)
-    project = (sidecar.parent.parent if sidecar.name == "tombstone"
-               and sidecar.parent.name == ".kiro" else path.parent)
+    project = (sidecar.parent if sidecar.name == SIDECAR.name
+               else path.parent)
     lock_path = sidecar / f"{path.name}.lock"
     if not (guard(project, sidecar) and guard(project, path)
             and guard(project, lock_path)):
-        # Symlinked .kiro or state path: write nothing, report the intent.
+        # Symlinked sidecar or state path: write nothing, report the intent.
         return fn(json.loads(json.dumps(default)))
     sidecar = _sidecar_dir(path)
     try:
@@ -1578,7 +1583,7 @@ def spawn_reconcile(project: Path, session_id: Optional[str],
                 pass
 
 
-# Child log inside .kiro/tombstone/. One line per start, fill and timeout.
+# Child log inside .tombstone/. One line per start, fill and timeout.
 RECONCILE_LOG = "reconcile.log"
 
 
@@ -2630,7 +2635,7 @@ def write_graveyard(project: Path, out: Optional[Path] = None,
                     includes: Optional[list] = None) -> Path:
     """Render ``tombstones.json`` of ``project`` and write the page.
 
-    Default target is ``.kiro/tombstone/graveyard.html``. Reads the store
+    Default target is ``.tombstone/graveyard.html``. Reads the store
     without modifying it. ``includes`` is the result of ``load_includes``.
     Returns the path written.
     """

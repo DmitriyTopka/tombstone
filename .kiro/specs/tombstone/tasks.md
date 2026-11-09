@@ -211,3 +211,23 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 15.3 Neighbours never match, one-stop copy
     - When a cross under 170 px falls back, pick the first of slab, arch, gothic, shoulder that differs from both neighbours in the row (the row is known in render_graveyard, pass it in). Make the 15.2 neighbour test cover stones under 170 px too. Note copy for one included stop: "It is a live test run on a scratch project, kept in <file>." Keep "All N are" for N of 2 or more when all are included, "N of them are" otherwise.
     - _Requirements: R2.10_
+
+- [x] 16. Runtime state outside /.kiro
+  - Approved by Dima on 2026-11-09. Reason: the Kiroween rules disqualify a submission that puts /.kiro or its sub-folders in .gitignore, and this repo has `.kiro/tombstone/` there.
+  - _Requirements: R12.1, R12.2, R12.3_
+
+  - [x] 16.1 Move the sidecar to `.tombstone/`
+    - One constant for the sidecar path, used by stop, autopsy, tombstones, caps, watcher, cli (installed.json, uninstall, graveyard default out). The watcher ignores `.tombstone/` instead of `.kiro/tombstone/`. One-time migration as R12.2, using the existing O_NOFOLLOW and atomic helpers; if both directories exist, use `.tombstone/` and leave the old one alone. Steering text, docstrings, `--purge` and init output name `.tombstone/`. If init touches .gitignore or prints advice about it, it names `.tombstone/`.
+    - _Requirements: R12.1, R12.2, R12.3_
+
+  - [x] 16.2 Tests
+    - Update the existing tests to the new path. New tests: migration moves an old `.kiro/tombstone/` with its files; both present leaves the old one; a symlinked old sidecar is not followed; no code path writes under `.kiro/tombstone/`; uninstall --purge removes `.tombstone/`.
+    - _Requirements: R12.1, R12.2_
+
+- [ ] 17. Full dogfood hook set in this repo
+  - Approved by Dima on 2026-11-09.
+  - _Requirements: R12.4_
+
+  - [ ] 17.1 Seven hooks and MCP in `.kiro/`
+    - Add to `.kiro/hooks/` the four missing V3 hooks from `power/hooks/v3/` (pre-tool, session-start, task-pre, task-post), in the same style as the three already there: command `.venv/bin/tombstone hook <name>`, timeout 10. Add `.kiro/settings/mcp.json` that starts `.venv/bin/tombstone mcp` for this project. Add `tombstone.toml` at the repo root with `spec_cap = 600` so the brake never blocks normal build tasks, keep the other keys at their defaults. A test checks that `.kiro/hooks/` holds one hook per trigger that init writes for V3 and that no file under `.kiro/` is matched by the repo `.gitignore`.
+    - _Requirements: R12.4_

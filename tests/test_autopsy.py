@@ -52,7 +52,7 @@ def stop_entry(**over) -> dict:
 
 
 def write_usage(project: Path, balance, fetched_at: str) -> None:
-    side = project / ".kiro" / "tombstone"
+    side = project / ".tombstone"
     side.mkdir(parents=True, exist_ok=True)
     (side / "usage.json").write_text(json.dumps(
         {"fetched_at": fetched_at, "balance": balance, "reason": None}), encoding="utf-8")
@@ -79,7 +79,7 @@ def test_write_autopsy_fields_and_path(tmp_path):
     stop.write_stop(project, "over_cap", "TOMBSTONE: task 2.1 over budget. Stop.")
     session = make_session(tmp_path)
     path = autopsy.write_autopsy(project, stop_entry(), session, {}, home=HOME)
-    assert path == project / ".kiro/tombstone/autopsy/2026-11-06_2-1.md"
+    assert path == project / ".tombstone/autopsy/2026-11-06_2-1.md"
     text = path.read_text(encoding="utf-8")
     for needle in ("Task id: 2.1", "Build the parser", "Engine: v3", "Model: auto",
                    "Requests at stop: 40", "(est.): 58.000", "Actual after the turn: pending",
@@ -214,14 +214,14 @@ def make_kiro_home_session(tmp_path: Path, priced: bool):
 
 
 def set_pending(project: Path, path: Path) -> None:
-    side = project / ".kiro" / "tombstone"
+    side = project / ".tombstone"
     side.mkdir(parents=True, exist_ok=True)
     (side / "state.json").write_text(json.dumps({"autopsy_pending": {
         "path": str(path), "turn_id": "t1", "session_id": "sess_abc"}}), encoding="utf-8")
 
 
 def read_pending(project: Path):
-    data = json.loads((project / ".kiro/tombstone/state.json").read_text(encoding="utf-8"))
+    data = json.loads((project / ".tombstone/state.json").read_text(encoding="utf-8"))
     return data.get("autopsy_pending")
 
 
@@ -252,7 +252,7 @@ def test_settle_waits_while_turn_has_no_cost(tmp_path):
 def test_settle_without_pending_does_nothing(tmp_path):
     project = make_project(tmp_path)
     assert autopsy.settle_autopsy(project, kiro_home=tmp_path / "kh", home=HOME) is False
-    assert not (project / ".kiro/tombstone/state.json").exists()
+    assert not (project / ".tombstone/state.json").exists()
 
 
 def test_watcher_loop_settles_autopsy(tmp_path):
@@ -281,7 +281,7 @@ def _assert_refused(project, kiro_home, victim, raw):
     assert autopsy.settle_autopsy(project, kiro_home=kiro_home, home=HOME) is False
     assert victim.read_text(encoding="utf-8") == before
     assert read_pending(project) is None
-    log = (project / ".kiro/tombstone/errors.log").read_text(encoding="utf-8")
+    log = (project / ".tombstone/errors.log").read_text(encoding="utf-8")
     assert log.count("autopsy append refused") == 1
 
 

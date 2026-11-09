@@ -26,6 +26,8 @@ from pathlib import Path
 from statistics import median
 from typing import Literal, Optional
 
+from .sidecar import SIDECAR
+
 
 # --- configuration (R3.1, R3.2) --------------------------------------------
 
@@ -475,7 +477,7 @@ def cached_balance(project: Path) -> Optional[float]:
     import json
 
     try:
-        data = json.loads((Path(project) / ".kiro" / "tombstone" / "usage.json")
+        data = json.loads((Path(project) / SIDECAR / "usage.json")
                           .read_text(encoding="utf-8"))
     except (OSError, ValueError):
         return None
@@ -601,7 +603,7 @@ def plan_balance(project: Path, now: "datetime", refresh: bool) -> Balance:
 
     if now.tzinfo is None:
         now = now.replace(tzinfo=timezone.utc)
-    path = Path(project) / ".kiro" / "tombstone" / "usage.json"
+    path = Path(project) / SIDECAR / "usage.json"
     try:
         cached = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError):

@@ -37,7 +37,7 @@ def test_pre_tool_hook_median_under_200ms(tmp_path):
     project = tmp_path / "proj"
     project.mkdir()
     assert not (project / "STOP").exists()
-    assert not (project / ".kiro" / "tombstone" / "STOP").exists()
+    assert not (project / ".tombstone" / "STOP").exists()
     env = dict(os.environ, XDG_STATE_HOME=str(tmp_path / "state"))
 
     timings = []

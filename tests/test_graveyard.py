@@ -142,7 +142,7 @@ def test_write_graveyard_default_path_from_real_shape(tmp_path):
 
     target = write_graveyard(tmp_path)
 
-    assert target == tmp_path / ".kiro" / "tombstone" / "graveyard.html"
+    assert target == tmp_path / ".tombstone" / "graveyard.html"
     assert "Real one" in target.read_text(encoding="utf-8")
     assert source.read_text(encoding="utf-8") == before
 
@@ -159,7 +159,7 @@ def test_cli_graveyard_default_and_out(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
 
     assert cli.main(["graveyard"]) == 0
-    assert (tmp_path / ".kiro" / "tombstone" / "graveyard.html").is_file()
+    assert (tmp_path / ".tombstone" / "graveyard.html").is_file()
     assert "1 tombstones" in capsys.readouterr().out
 
     custom = tmp_path / "custom.html"

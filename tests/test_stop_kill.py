@@ -56,7 +56,7 @@ def _find(project: Path, rows=ROWS, cwd=None):
 
 
 def _write_state(project: Path, entry: dict) -> Path:
-    path = project / ".kiro" / "tombstone" / "state.json"
+    path = project / ".tombstone" / "state.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"version": 1, "stop": entry}), encoding="utf-8")
     return path
@@ -205,7 +205,7 @@ def _run(project, kernel, *, requests_now=12, offset=40, pids=(4556, 4539, 4529)
 
 
 def _state(project) -> dict:
-    return json.loads((project / ".kiro" / "tombstone" / "state.json").read_text())
+    return json.loads((project / ".tombstone" / "state.json").read_text())
 
 
 def test_sigterm_leaves_first_root_last(tmp_path):
@@ -279,8 +279,9 @@ def test_runs_only_once_per_stop(tmp_path):
 def test_no_stop_entry_means_no_action(tmp_path):
     kernel = FakeKernel([4529])
     assert _run(tmp_path, kernel)["status"] == "no_stop"
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
-    (tmp_path / ".kiro" / "tombstone" / "state.json").write_text('{"version": 1}')
+    (tmp_path / ".kiro").mkdir(exist_ok=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
+    (tmp_path / ".tombstone" / "state.json").write_text('{"version": 1}')
     assert _run(tmp_path, kernel)["status"] == "no_stop"
     assert kernel.sent == []
 
@@ -308,7 +309,7 @@ def test_project_files_are_untouched(tmp_path):
     assert (tmp_path / "keep.txt").read_text() == "data"
     assert (tmp_path / "tombstones.json").read_text() == "{}"
     names = {p.name for p in tmp_path.iterdir()}
-    assert names == {"keep.txt", "tombstones.json", ".kiro"}
+    assert names == {"keep.txt", "tombstones.json", ".tombstone"}
 
 
 def test_spawn_reconcile_passes_a_short_timeout(tmp_path, monkeypatch):

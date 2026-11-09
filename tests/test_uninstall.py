@@ -131,12 +131,12 @@ def test_purge_keeps_tombstones_json(env):
     _init(project)
     ledger = project / "tombstones.json"
     ledger.write_text('{"tombstones": []}', encoding="utf-8")
-    autopsy = project / ".kiro" / "tombstone" / "autopsy"
+    autopsy = project / ".tombstone" / "autopsy"
     autopsy.mkdir(parents=True)
     (autopsy / "a.md").write_text("x", encoding="utf-8")
     cli.main(["uninstall", "--project", str(project)])
     assert (autopsy / "a.md").exists() and (project / "tombstone.toml").exists()
     cli.main(["uninstall", "--project", str(project), "--purge"])
     assert ledger.exists()
-    assert not (project / ".kiro" / "tombstone").exists()
+    assert not (project / ".tombstone").exists()
     assert not (project / "tombstone.toml").exists()

@@ -17,13 +17,13 @@ from tombstone.tombstones import (
 
 
 def _project(tmp_path: Path) -> Path:
-    """A project directory with the .kiro/tombstone sidecar in place."""
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
+    """A project directory with the .tombstone sidecar in place."""
+    (tmp_path / ".tombstone").mkdir(parents=True)
     return tmp_path
 
 
 def _state_path(tmp_path: Path) -> Path:
-    return _project(tmp_path) / ".kiro" / "tombstone" / "state.json"
+    return _project(tmp_path) / ".tombstone" / "state.json"
 
 
 # --- update_json basics ----------------------------------------------------
@@ -46,7 +46,7 @@ def test_reads_existing_then_updates(tmp_path):
 def test_atomic_write_leaves_no_temp_files(tmp_path):
     path = _state_path(tmp_path)
     update_json(path, lambda d: {**d, "n": 1}, default={})
-    sidecar = tmp_path / ".kiro" / "tombstone"
+    sidecar = tmp_path / ".tombstone"
     leftovers = [p.name for p in sidecar.iterdir() if p.suffix == ".tmp"]
     assert leftovers == []
 
@@ -54,7 +54,7 @@ def test_atomic_write_leaves_no_temp_files(tmp_path):
 def test_lock_file_created_in_sidecar(tmp_path):
     path = _state_path(tmp_path)
     update_json(path, lambda d: d, default={})
-    assert (tmp_path / ".kiro" / "tombstone" / "state.json.lock").exists()
+    assert (tmp_path / ".tombstone" / "state.json.lock").exists()
 
 
 # --- invalid-JSON path ------------------------------------------------------
@@ -71,14 +71,14 @@ def test_invalid_json_file_left_untouched_and_queued(tmp_path):
     # The caller still sees the value it meant to write.
     assert result == {"n": 1}
     # The change is queued in pending.jsonl.
-    pending = tmp_path / ".kiro" / "tombstone" / "pending.jsonl"
+    pending = tmp_path / ".tombstone" / "pending.jsonl"
     assert pending.exists()
     lines = [json.loads(ln) for ln in pending.read_text().splitlines() if ln.strip()]
     assert len(lines) == 1
     assert lines[0]["target"] == "state.json"
     assert lines[0]["change"] == {"n": 1}
     # A warning is logged.
-    log = (tmp_path / ".kiro" / "tombstone" / "errors.log").read_text()
+    log = (tmp_path / ".tombstone" / "errors.log").read_text()
     assert "not valid JSON" in log
 
 
@@ -109,7 +109,7 @@ def test_pending_merged_on_next_successful_write(tmp_path):
     ids = {r["id"] for r in store["tombstones"]}
     assert ids == {"a", "b"}
     # The pending queue is drained.
-    pending = tmp_path / ".kiro" / "tombstone" / "pending.jsonl"
+    pending = tmp_path / ".tombstone" / "pending.jsonl"
     assert not pending.exists() or pending.read_text().strip() == ""
 
 

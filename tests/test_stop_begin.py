@@ -110,7 +110,7 @@ def test_autopsy_missing_is_skipped_with_one_line(tmp_path, monkeypatch):
     monkeypatch.delattr(autopsy, "write_autopsy", raising=False)
     project = make_project(tmp_path)
     run_begin(project, make_event(project))
-    log = (project / ".kiro" / "tombstone" / "errors.log").read_text().splitlines()
+    log = (project / ".tombstone" / "errors.log").read_text().splitlines()
     assert sum("autopsy skipped" in line for line in log) == 1
     assert (project / "tombstones.json").exists()
 
@@ -122,7 +122,7 @@ def test_autopsy_called_and_path_stored(tmp_path, monkeypatch):
 
     def fake_autopsy(proj, stop_entry, session, state):
         calls.append(stop_entry["reason"])
-        out = proj / ".kiro" / "tombstone" / "autopsy" / "x.md"
+        out = proj / ".tombstone" / "autopsy" / "x.md"
         out.parent.mkdir(parents=True, exist_ok=True)
         out.write_text("ok", encoding="utf-8")
         return out
@@ -142,7 +142,7 @@ def test_autopsy_failure_does_not_block_record(tmp_path, monkeypatch):
         raise RuntimeError("nope")
 
     run_begin(project, make_event(project), autopsy_fn=bad)
-    assert "autopsy failed" in (project / ".kiro" / "tombstone" / "errors.log").read_text()
+    assert "autopsy failed" in (project / ".tombstone" / "errors.log").read_text()
     assert (project / "tombstones.json").exists()
 
 

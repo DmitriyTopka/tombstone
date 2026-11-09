@@ -15,11 +15,11 @@ TASKS_AGENT = "- [x] 1 Parent\n- [x] 2.1 First\n- [ ] 2.2 Second\n"
 
 
 def _project(tmp_path: Path) -> tuple[Path, Path, Path]:
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
     tasks = tmp_path / ".kiro" / "specs" / "demo" / "tasks.md"
     tasks.parent.mkdir(parents=True)
     tasks.write_text(TASKS_OPEN, encoding="utf-8")
-    return tmp_path, tasks, tmp_path / ".kiro" / "tombstone" / "state.json"
+    return tmp_path, tasks, tmp_path / ".tombstone" / "state.json"
 
 
 def _hook(event: str, payload: dict, monkeypatch) -> int:

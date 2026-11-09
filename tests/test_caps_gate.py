@@ -120,7 +120,7 @@ def _project(tmp_path: Path, tasks: str = None) -> Path:
 def test_run_gate_allows_and_sets_current_task(tmp_path):
     project = _project(tmp_path)
     assert caps.run_gate(project, {}) is None
-    state = json.loads((project / ".kiro/tombstone/state.json").read_text())
+    state = json.loads((project / ".tombstone/state.json").read_text())
     assert state["current_task"] == {"spec": "demo", "task_id": "2"}
 
 
@@ -136,7 +136,7 @@ def test_run_gate_blocks_and_writes_one_cap_record(tmp_path):
     assert len(caps_records) == 1
     assert caps_records[0]["id"] == "demo/2"
     assert caps_records[0]["turns"] == []
-    state_file = project / ".kiro/tombstone/state.json"
+    state_file = project / ".tombstone/state.json"
     assert not state_file.exists() or "current_task" not in json.loads(
         state_file.read_text())
 
@@ -165,7 +165,7 @@ def test_existing_record_is_not_overwritten_by_cap(tmp_path):
 def test_stdin_task_id_is_used(tmp_path):
     project = _project(tmp_path)
     assert caps.run_gate(project, {"task_id": "1"}) is None
-    state = json.loads((project / ".kiro/tombstone/state.json").read_text())
+    state = json.loads((project / ".tombstone/state.json").read_text())
     assert state["current_task"]["task_id"] == "1"
 
 
@@ -186,7 +186,7 @@ def test_hook_pre_tool_exit_codes(tmp_path, monkeypatch, capsys):
     code, out = _run_hook(monkeypatch, capsys, project)
     assert code == 0 and out.err == ""
 
-    (project / ".kiro/tombstone/state.json").unlink()
+    (project / ".tombstone/state.json").unlink()
     (project / "tombstone.toml").write_text("[caps]\nspec = 10\n", encoding="utf-8")
     code, out = _run_hook(monkeypatch, capsys, project)
     assert code == 2
@@ -203,7 +203,7 @@ def test_hook_pre_tool_fails_open(tmp_path, monkeypatch, capsys):
     monkeypatch.setattr(caps, "run_gate", boom)
     code, out = _run_hook(monkeypatch, capsys, project)
     assert code == 0
-    assert "boom" in (project / ".kiro/tombstone/errors.log").read_text()
+    assert "boom" in (project / ".tombstone/errors.log").read_text()
 
 
 def test_hook_pre_tool_empty_stdin_is_ok(monkeypatch, capsys):

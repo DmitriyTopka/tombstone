@@ -1,6 +1,6 @@
-"""Every writer under .kiro/tombstone refuses a symlinked sidecar.
+"""Every writer under .tombstone refuses a symlinked sidecar.
 
-``.kiro/tombstone`` is a symlink to a directory outside the project. Each
+``.tombstone`` is a symlink to a directory outside the project. Each
 writer must write nothing there, print one stderr line, and not raise. All
 paths live under ``tmp_path``.
 """
@@ -26,7 +26,7 @@ def linked(tmp_path):
     outside = tmp_path / "outside"
     (project / ".kiro").mkdir(parents=True)
     outside.mkdir()
-    os.symlink(outside, project / ".kiro" / "tombstone")
+    os.symlink(outside, project / ".tombstone")
     return project, outside
 
 
@@ -89,14 +89,14 @@ def test_hook_error_log(linked, capsys, monkeypatch):
 
 def test_store_warning_log(linked, capsys):
     project, outside = linked
-    tombstones._log_warning(project / ".kiro" / "tombstone", "warn")
+    tombstones._log_warning(project / ".tombstone", "warn")
     assert _empty(outside)
     assert _skipped(capsys)
 
 
 def test_update_json_and_pending(linked, capsys):
     project, outside = linked
-    path = project / ".kiro" / "tombstone" / "state.json"
+    path = project / ".tombstone" / "state.json"
     result = tombstones.update_json(path, lambda d: {**d, "n": 1}, default={})
     assert result == {"n": 1}
     assert _empty(outside)
@@ -144,7 +144,7 @@ def test_autopsy_append(linked, capsys):
     receipt = outside / "autopsy" / "2026-11-06_demo-2-1.md"
     receipt.parent.mkdir()
     receipt.write_text("# receipt\n", encoding="utf-8")
-    seen = project / ".kiro" / "tombstone" / "autopsy" / receipt.name
+    seen = project / ".tombstone" / "autopsy" / receipt.name
     assert autopsy.append_actual(seen, None, HOME) is False
     assert receipt.read_text(encoding="utf-8") == "# receipt\n"
     assert _skipped(capsys)
@@ -171,7 +171,7 @@ def test_hooks_still_exit_zero(linked, monkeypatch, capsys):
 def test_pre_tool_still_exits_two_with_a_real_stop(tmp_path, monkeypatch, capsys):
     (tmp_path / ".kiro").mkdir()
     stop.write_stop(tmp_path, "manual", "TOMBSTONE: stopped. Stop.")
-    assert (tmp_path / ".kiro" / "tombstone" / "STOP").is_file()
+    assert (tmp_path / ".tombstone" / "STOP").is_file()
     monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps({"cwd": str(tmp_path)})))
     assert cli.main(["hook", "pre-tool", "--project", str(tmp_path)]) == 2
     assert "TOMBSTONE: stopped" in capsys.readouterr().err

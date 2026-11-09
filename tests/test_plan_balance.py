@@ -17,7 +17,7 @@ NOW = datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc)
 
 
 def _cache(tmp_path):
-    return tmp_path / ".kiro" / "tombstone" / "usage.json"
+    return tmp_path / ".tombstone" / "usage.json"
 
 
 @pytest.fixture

@@ -6,7 +6,7 @@ Task 6.1 covers the state file and project change detection:
   (locked, atomic). Every path stored in it uses ``~`` for the home directory.
 - The project fingerprint hashes ``(path, mtime_ns, size)`` for the files git
   reports as changed (``git status --porcelain=v1 -z``), or for a tree walk
-  when git is not usable. ``.kiro/tombstone/``, ``.git/`` and
+  when git is not usable. ``.tombstone/``, ``.git/`` and
   ``tombstones.json`` never count as project changes (R5.4).
 - Edits to git-ignored files are not seen when git is available. This is
   accepted and documented in design.md.
@@ -46,7 +46,7 @@ WALK_SKIP_DIRS = frozenset(
 )
 # Files that are Tombstone evidence, not project work.
 IGNORED_FILES = frozenset({"tombstones.json"})
-IGNORED_PREFIXES = (".kiro/tombstone/",)
+IGNORED_PREFIXES = (".tombstone/",)
 
 GIT_TIMEOUT_SECONDS = 5
 

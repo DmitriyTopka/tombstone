@@ -1,6 +1,6 @@
 """Write the Markdown receipt after a stop (R7.1 to R7.4).
 
-The receipt lives in ``.kiro/tombstone/autopsy/<date>_<task>.md``. The home
+The receipt lives in ``.tombstone/autopsy/<date>_<task>.md``. The home
 directory is replaced with ``~`` over the whole document before it is
 written. A killed turn has no ``usage_summary`` in the session, so Kiro never
 writes an actual cost for it: the receipt says so and shows the plan balance
@@ -17,8 +17,8 @@ from pathlib import Path
 from typing import Optional
 
 from .safepath import guard, write_atomic
+from .sidecar import SIDECAR
 
-SIDECAR = Path(".kiro") / "tombstone"
 TOOL_CALLS = 10
 CELL_LIMIT = 200
 ACTUAL_HEADING = "## Actual cost (actual)"
@@ -297,7 +297,7 @@ def settle_autopsy(project, *, kiro_home: Optional[Path] = None,
             from . import stop as stop_module
             stop_module._log_error(
                 project, "autopsy append refused: pending path is not a plain "
-                         ".md receipt inside .kiro/tombstone/autopsy")
+                         ".md receipt inside .tombstone/autopsy")
             watcher.update_state(project, clear, home)
             return False
 
@@ -336,7 +336,7 @@ def append_actual(path, turn, home: Optional[Path] = None) -> bool:
     when the cache holds a value from before the stop and a later one.
     """
     path = Path(path)
-    project_root = path.parents[3] if len(path.parents) > 3 else None
+    project_root = path.parents[2] if len(path.parents) > 2 else None
     if project_root is None or not guard(project_root, path):
         return False
     try:
@@ -357,7 +357,7 @@ def append_actual(path, turn, home: Optional[Path] = None) -> bool:
         lines.append(f"- actual: {NOT_WRITTEN}")
         match = re.search(re.escape(BALANCE_PREFIX) + r"([0-9.]+) credits", text)
         before = float(match.group(1)) if match else None
-        project = path.parents[3] if len(path.parents) > 3 else None
+        project = path.parents[2] if len(path.parents) > 2 else None
         after, fetched = _read_usage(project) if project is not None else (None, None)
         if before is None:
             lines.append("- Plan balance change (est.): unknown (no cached balance from before the stop)")

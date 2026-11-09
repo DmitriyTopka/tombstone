@@ -41,7 +41,7 @@ In our live runs the agent quoted that line and stopped on its own. If it doesn'
 
 **Catches a stall.** If the agent keeps calling the model while no project file changes for 10 minutes, that trips the breaker too. In a live test with a short window, the stall stop came 9 steps into a read-only run, and the agent stopped there.
 
-**Leaves a receipt.** `.kiro/tombstone/autopsy/*.md` lists the task, the model, the estimate at the stop, the refusal text, the last 10 tool calls and, once Kiro reports it, the actual cost. A real one from our test run is shown below in "How it works".
+**Leaves a receipt.** `.tombstone/autopsy/*.md` lists the task, the model, the estimate at the stop, the refusal text, the last 10 tool calls and, once Kiro reports it, the actual cost. A real one from our test run is shown below in "How it works".
 
 **Tells the agent its budget.** One MCP tool, `get_budget`, returns what a similar task cost, what is left in the spec and what is left in your plan.
 
@@ -66,7 +66,7 @@ The `power/` folder carries the same pieces as a Kiro Power (`plugin.json`, `ski
 2. **Estimate while the turn runs.** Kiro gives no price during a turn, so the watcher counts assistant events and multiplies by a price per event calibrated from this project's own closed turns. On our 33 real turns, each estimated only from the turns before it, the median error was 26 percent.
 3. **Reconcile.** After the turn the actual price lands in the tombstone next to the estimate. The `Stop` hook fires before Kiro writes the price, so a small background step fills it in a few seconds later.
 4. **Which task.** A turn belongs to the task whose checkbox it ticked in `tasks.md`. A turn that ticks nothing goes to `unknown`, named by the first eight words of its prompt. Tombstone does not guess.
-5. **Breaker.** A cap breach or a stall writes `.kiro/tombstone/STOP`. The `PreToolUse` hook sees it and exits with code 2, so Kiro refuses the tool and passes the message to the agent.
+5. **Breaker.** A cap breach or a stall writes `.tombstone/STOP`. The `PreToolUse` hook sees it and exits with code 2, so Kiro refuses the tool and passes the message to the agent.
 
 A receipt from a live run (cap 0.60 credits, the agent was asked to work past it):
 
@@ -113,7 +113,7 @@ The price comes after the turn, and the `Stop` hook fires before the price is wr
 
 Pinning a turn to a task without guessing took three rounds. The rule that survived: a checkbox the turn ticked, or `unknown`.
 
-Three rounds of security review found ways a planted symlink in `.kiro/tombstone/` could make Tombstone overwrite a file elsewhere. Every file it writes now opens with `O_NOFOLLOW` and is replaced atomically.
+Three rounds of security review found ways a planted symlink in `.tombstone/` could make Tombstone overwrite a file elsewhere. Every file it writes now opens with `O_NOFOLLOW` and is replaced atomically.
 
 ## Accomplishments
 

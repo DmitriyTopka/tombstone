@@ -34,6 +34,7 @@ DIRECT = {
     "cli.py:uninstall",
     "cli.py:uninstall.remove",
     "cli.py:_purge_tree",
+    "sidecar.py:migrate",
 }
 
 # Helper callers with no project to guard: the install record sits outside

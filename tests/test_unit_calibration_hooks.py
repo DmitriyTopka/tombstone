@@ -50,7 +50,7 @@ def _no_spawn(monkeypatch):
 
 
 def _state(project: Path) -> dict:
-    return json.loads((project / ".kiro" / "tombstone" / "state.json")
+    return json.loads((project / ".tombstone" / "state.json")
                       .read_text(encoding="utf-8"))
 
 
@@ -92,7 +92,7 @@ def test_reconcile_path_also_calibrates(tmp_path):
     tombstones.on_turn_end(project, {"session_id": sid}, kiro_home=kiro_home)
     # Forget the calibration, then let the reconcile child path fill the turn.
     tombstones.update_json(
-        project / ".kiro" / "tombstone" / "state.json",
+        project / ".tombstone" / "state.json",
         lambda s: s.update(unit_window=[], unit_turns=[], avg_unit_price=None) or s,
         default={"version": 1},
     )

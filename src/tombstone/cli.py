@@ -15,6 +15,8 @@ import sys
 from pathlib import Path
 from typing import Optional, Sequence
 
+from .sidecar import LEGACY, SIDECAR, migrate as migrate_sidecar
+
 
 def find_project_root(start: Optional[Path] = None) -> Optional[Path]:
     """Walk up from ``start`` to the first project root, or None.
@@ -531,7 +533,7 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
     """``tombstone graveyard [--out FILE]``: render the static page (R2.6).
 
     Fills records still at ``actual`` null first, then writes the HTML to
-    ``.kiro/tombstone/graveyard.html`` or to ``--out``. Reads
+    ``.tombstone/graveyard.html`` or to ``--out``. Reads
     ``tombstones.json`` without modifying it.
     """
     project = Path(args.project).expanduser() if getattr(args, "project", None) \
@@ -789,7 +791,7 @@ This project runs under Tombstone, a circuit breaker that caps credits per task 
 - Keep the model you were given. Never switch, suggest or request another model to save credits.
 - Prefer one focused edit over re-reading the same files. If you have read a file twice without changing anything, stop and say what is blocking you.
 - If a tool call is refused with a message starting `TOMBSTONE:`, that means stop. Stop immediately. Do not retry the tool, do not try another tool to get around it, do not edit the cap. Quote the message to the human and wait.
-- Do not edit or delete anything in `.kiro/tombstone/`, `tombstone.toml` or `tombstones.json` unless the human asks for it.
+- Do not edit or delete anything in `.tombstone/`, `tombstone.toml` or `tombstones.json` unless the human asks for it.
 
 ## After a task
 
@@ -991,6 +993,9 @@ def cmd_init(args: argparse.Namespace) -> int:
         lines.append(version_warning)
 
     lines.append("")
+    lines.append("Runtime state lives in .tombstone/. Add `.tombstone/` to your .gitignore;")
+    lines.append("do not ignore .kiro/ (Tombstone never writes it there).")
+    lines.append("")
     lines.append("Start Kiro with the hooks active:")
     lines.append("  V3 (default):  kiro-cli chat            hooks in .kiro/hooks are active,")
     lines.append("                                          get_budget comes from .kiro/settings/mcp.json")
@@ -1005,7 +1010,8 @@ def cmd_init(args: argparse.Namespace) -> int:
 
 # --- install record and uninstall (task 10.4) --------------------------------
 
-INSTALLED_FILE = Path(".kiro") / "tombstone" / "installed.json"
+INSTALLED_FILE = SIDECAR / "installed.json"
+LEGACY_INSTALLED_FILE = LEGACY / "installed.json"
 
 
 def _sha_text(text: str) -> str:
@@ -1059,7 +1065,7 @@ def _read_files_map(path: Path) -> dict[str, str]:
 def _load_installed(project: Path) -> dict[str, str]:
     """The trusted ``files`` map from the record outside the repo; {} if none.
 
-    The in-repo ``.kiro/tombstone/installed.json`` (older versions) can be
+    The in-repo ``installed.json`` (``.tombstone/`` or the old ``.kiro/tombstone/``) can be
     forged by a cloned repository, so it is never read for decisions.
     """
     return _read_files_map(install_record_path(project))
@@ -1213,7 +1219,8 @@ def uninstall(project: Path, home: Path, purge: bool = False,
                 gone.add("mcp-entry")
 
     # 4. user data, and --purge.
-    sidecar = project / ".kiro" / "tombstone"
+    migrate_sidecar(project)
+    sidecar = project / SIDECAR
     toml_path = project / "tombstone.toml"
     if purge:
         remove(toml_path, "tombstone.toml", build_default_toml())
@@ -1236,15 +1243,15 @@ def uninstall(project: Path, home: Path, purge: bool = False,
             if is_safe_target(project, item) and item.exists():
                 lines.append(f"kept {item} (user data, --purge removes it)")
         # legacy in-repo installed.json: never trusted, remove when safe.
-        legacy = project / INSTALLED_FILE
-        if is_safe_target(project, legacy):
-            try:
-                legacy.unlink()
-            except OSError:
-                pass
-        elif os.path.lexists(legacy) or sidecar.is_symlink() \
-                or (project / ".kiro").is_symlink():
-            lines.append(f"{REFUSED} {legacy}")
+        for legacy in (project / INSTALLED_FILE, project / LEGACY_INSTALLED_FILE):
+            if is_safe_target(project, legacy):
+                try:
+                    legacy.unlink()
+                except OSError:
+                    pass
+            elif os.path.lexists(legacy) or sidecar.is_symlink() \
+                    or (project / ".kiro").is_symlink():
+                lines.append(f"{REFUSED} {legacy}")
     # outside install record: drop entries of removed files, delete when empty.
     record = install_record_path(project)
     if record.exists():
@@ -1377,7 +1384,7 @@ If `spec.remaining` is lower than `similar.median`, do not start the task. Tell 
 
 ## A TOMBSTONE: refusal
 
-A tool call refused with a message that starts with `TOMBSTONE:` means stop. Do not retry the tool, do not try another tool to get around it, and do not edit the cap or anything in `.kiro/tombstone/`, `tombstone.toml` or `tombstones.json`. Quote the message to the human and wait. The human removes the block with `tombstone resume`.
+A tool call refused with a message that starts with `TOMBSTONE:` means stop. Do not retry the tool, do not try another tool to get around it, and do not edit the cap or anything in `.tombstone/`, `tombstone.toml` or `tombstones.json`. Quote the message to the human and wait. The human removes the block with `tombstone resume`.
 
 ## Hooks are not part of the power
 
@@ -1462,7 +1469,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     graveyard = sub.add_parser("graveyard", help="render the static graveyard page")
     graveyard.add_argument("--out", default=None,
-                           help="output file (default .kiro/tombstone/graveyard.html)")
+                           help="output file (default .tombstone/graveyard.html)")
     graveyard.add_argument("--include", action="append", default=[], metavar="FILE",
                            help="add the records of another tombstones file (repeatable)")
     graveyard.add_argument("--project", default=None,
@@ -1503,7 +1510,7 @@ def build_parser() -> argparse.ArgumentParser:
     uninstall_cmd.add_argument("--project", default=None,
                                help="project root (default: the working directory)")
     uninstall_cmd.add_argument("--purge", action="store_true",
-                               help="also remove .kiro/tombstone/ and tombstone.toml "
+                               help="also remove .tombstone/ and tombstone.toml "
                                     "(tombstones.json is always kept)")
     uninstall_cmd.add_argument("--force", action="store_true",
                                help="remove files even when changed since init")
@@ -1518,7 +1525,25 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     if not getattr(args, "command", None):
         parser.print_help(sys.stderr)
         return 2
+    _migrate_sidecar_quietly(args)
     return args.func(args)
+
+
+def _migrate_sidecar_quietly(args: argparse.Namespace) -> None:
+    """Move an old ``.kiro/tombstone/`` to ``.tombstone/`` once (R12.2).
+
+    Runs before every command that has a project, so the first command that
+    touches state does the move. Never raises.
+    """
+    try:
+        given = getattr(args, "project", None)
+        project = Path(given).expanduser() if given else find_project_root()
+        if project is not None:
+            from .sidecar import migrate
+
+            migrate(project)
+    except (OSError, ValueError):
+        pass
 
 
 if __name__ == "__main__":

@@ -12,7 +12,7 @@ NOW = datetime(2026, 11, 6, 12, 0, tzinfo=timezone.utc)
 
 
 def _write(tmp_path, records, toml=None, usage=None):
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
     specs = tmp_path / ".kiro" / "specs" / "demo"
     specs.mkdir(parents=True)
     (specs / "tasks.md").write_text("- [ ] 1. First task\n", encoding="utf-8")
@@ -21,7 +21,7 @@ def _write(tmp_path, records, toml=None, usage=None):
     if toml is not None:
         (tmp_path / "tombstone.toml").write_text(toml, encoding="utf-8")
     if usage is not None:
-        (tmp_path / ".kiro" / "tombstone" / "usage.json").write_text(
+        (tmp_path / ".tombstone" / "usage.json").write_text(
             json.dumps(usage), encoding="utf-8")
 
 

@@ -14,9 +14,9 @@ from pathlib import Path
 from typing import Optional
 
 from .safepath import append_nofollow, guard, write_atomic
+from .sidecar import SIDECAR
 
 STOP_NAME = "STOP"
-SIDECAR = Path(".kiro") / "tombstone"
 
 # Printed when the STOP file exists but cannot be read or has no message.
 GENERIC_MESSAGE = "TOMBSTONE: stopped. Run tombstone resume."
@@ -47,7 +47,7 @@ def write_stop(
     spec: Optional[str] = None,
     session_id: Optional[str] = None,
 ) -> Path:
-    """Write ``.kiro/tombstone/STOP`` atomically and return its path (R6.1).
+    """Write ``.tombstone/STOP`` atomically and return its path (R6.1).
 
     The file is JSON with the reason, the one-line message, the task id, the
     estimate (est.), the request count at the stop and the time. It lives
@@ -584,7 +584,7 @@ def begin_stop(event, *, project: Optional[Path] = None, kiro_home=None,
     earlier one failed; failures go to ``errors.log``. Step two is left to
     ``maybe_kill`` on later polls. A second event while STOP exists changes
     nothing. Returns the stored ``stop`` entry, or None when STOP was already
-    there. Writes only inside ``.kiro/tombstone/`` and ``tombstones.json``.
+    there. Writes only inside ``.tombstone/`` and ``tombstones.json``.
     """
     from . import watcher
 

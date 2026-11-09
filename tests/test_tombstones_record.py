@@ -240,7 +240,8 @@ def _write_v3_session(kiro_home: Path, project: Path, *, turns: list[dict]) -> s
 
 
 def _project(tmp_path: Path) -> Path:
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
+    (tmp_path / ".kiro").mkdir(exist_ok=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
     return tmp_path
 
 
@@ -488,7 +489,7 @@ def test_two_boxes_in_one_turn_split_equally(tmp_path, monkeypatch):
     ])
     _run_hook(["hook", "prompt"], {"cwd": str(project), "prompt": "both"}, monkeypatch)
     from tombstone.tombstones import update_json
-    update_json(project / ".kiro" / "tombstone" / "state.json",
+    update_json(project / ".tombstone" / "state.json",
                 lambda s: s["turn"].update(checked=["4.1", "4.2"]) or s,
                 default={"version": 1})
     on_turn_end(project, {"session_id": sid}, kiro_home=kiro_home)

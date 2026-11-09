@@ -23,7 +23,7 @@ def test_write_stop_fields(tmp_path):
         task_id="11", estimate=58.0, requests_at_stop=1290, time=when,
         spec="demo", session_id="sess_1",
     )
-    assert path == tmp_path / ".kiro" / "tombstone" / "STOP"
+    assert path == tmp_path / ".tombstone" / "STOP"
     data = json.loads(path.read_text())
     assert data["reason"] == "over_cap"
     assert data["task_id"] == "11"
@@ -50,8 +50,9 @@ def test_pre_tool_blocks_repeatedly_until_resume(tmp_path, monkeypatch, capsys):
 
 
 def test_unreadable_stop_gives_generic_message(tmp_path, monkeypatch, capsys):
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
-    (tmp_path / ".kiro" / "tombstone" / "STOP").write_text("{not json")
+    (tmp_path / ".kiro").mkdir(exist_ok=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
+    (tmp_path / ".tombstone" / "STOP").write_text("{not json")
     code, err = _run_pre_tool(tmp_path, monkeypatch, capsys)
     assert code == 2
     assert err.strip() == stop.GENERIC_MESSAGE
@@ -75,7 +76,7 @@ def test_resume_removes_stop_and_unblocks(tmp_path, monkeypatch, capsys):
 
 
 def test_resume_clears_state_stop_entry(tmp_path):
-    sidecar = tmp_path / ".kiro" / "tombstone"
+    sidecar = tmp_path / ".tombstone"
     sidecar.mkdir(parents=True)
     (sidecar / "state.json").write_text(
         json.dumps({"version": 1, "stop": {"time": "x"}, "keep": 1}))
@@ -89,4 +90,4 @@ def test_resume_without_stop_is_harmless(tmp_path, capsys):
     (tmp_path / ".kiro").mkdir()
     assert cli.main(["resume", "--project", str(tmp_path)]) == 0
     assert "nothing to do" in capsys.readouterr().out
-    assert not (tmp_path / ".kiro" / "tombstone" / "state.json").exists()
+    assert not (tmp_path / ".tombstone" / "state.json").exists()

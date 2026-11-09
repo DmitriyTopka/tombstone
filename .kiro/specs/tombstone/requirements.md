@@ -173,3 +173,14 @@ Acceptance check: on a 10-request turn the estimate at the end of the turn is wi
 - R11.5 WHEN a pre-tool hook runs without a STOP file and without a cap breach THE SYSTEM SHALL exit with code 0 within 200 ms.
 
 Acceptance check: a session with Tombstone installed shows no extra metered request compared to the same task without it.
+
+### Requirement 12: Runtime state outside /.kiro
+
+**User Story:** As a hackathon entrant, I want `/.kiro` to stay fully tracked by git, because the Kiroween rules say "Do NOT add the /.kiro directory or sub-folders to your .gitignore".
+
+#### Acceptance Criteria
+
+- R12.1 THE SYSTEM SHALL keep its machine-local runtime state (STOP file, state.json, usage.json, installed.json, autopsies, graveyard.html, logs and lock files) in `.tombstone/` at the project root, not in `.kiro/tombstone/`. Every rule above that names `.kiro/tombstone/` means `.tombstone/`.
+- R12.2 WHEN `.kiro/tombstone/` exists and `.tombstone/` does not THE SYSTEM SHALL move it to `.tombstone/` once, on the first command that touches state, with the same symlink protection as every other write.
+- R12.3 THE SYSTEM SHALL NOT write any path under `.kiro/` to a `.gitignore` file, and `tombstone init` SHALL suggest ignoring `.tombstone/` instead.
+- R12.4 This repository SHALL run the full V3 hook set that `tombstone init` writes (seven hooks) and the MCP server from `.kiro/`, so what the README says is what a reader finds in `/.kiro`.

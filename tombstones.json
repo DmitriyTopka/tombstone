@@ -1470,6 +1470,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/16",
+      "task_id": "16",
+      "name": "Runtime state outside /.kiro",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 32,
+      "estimate": 3.7581,
+      "actual": 2.6796,
+      "minutes": 1.4037,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-09",
+      "turns": [
+        {
+          "session_id": "sess_f657401d-6b0b-4cc6-8d86-0af579e03d22",
+          "turn_id": "583c3fed-9d9b-4aa3-b748-a89df1500474",
+          "requests": 32,
+          "estimate": 11.2754,
+          "actual": 8.0397,
+          "minutes": 4.2116,
+          "start": "2026-11-09T19:36:12.438000Z",
+          "end": "2026-11-09T19:40:25.133000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/16.1",
+      "task_id": "16.1",
+      "name": "Move the sidecar to `.tombstone/`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 32,
+      "estimate": 3.7581,
+      "actual": 2.6796,
+      "minutes": 1.4037,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-09",
+      "turns": [
+        {
+          "session_id": "sess_f657401d-6b0b-4cc6-8d86-0af579e03d22",
+          "turn_id": "583c3fed-9d9b-4aa3-b748-a89df1500474",
+          "requests": 32,
+          "estimate": 11.2754,
+          "actual": 8.0397,
+          "minutes": 4.2116,
+          "start": "2026-11-09T19:36:12.438000Z",
+          "end": "2026-11-09T19:40:25.133000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/16.2",
+      "task_id": "16.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 32,
+      "estimate": 3.7581,
+      "actual": 2.6796,
+      "minutes": 1.4037,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-09",
+      "turns": [
+        {
+          "session_id": "sess_f657401d-6b0b-4cc6-8d86-0af579e03d22",
+          "turn_id": "583c3fed-9d9b-4aa3-b748-a89df1500474",
+          "requests": 32,
+          "estimate": 11.2754,
+          "actual": 8.0397,
+          "minutes": 4.2116,
+          "start": "2026-11-09T19:36:12.438000Z",
+          "end": "2026-11-09T19:40:25.133000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

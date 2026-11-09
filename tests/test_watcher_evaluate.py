@@ -368,7 +368,7 @@ def test_run_survives_a_failing_poll_and_logs(tmp_path, monkeypatch):
                         clock=lambda: T0)
     assert polls == 3 and len(calls) == 3
     assert sleeps == [2.0, 2.0]
-    log = (project / ".kiro" / "tombstone" / "errors.log").read_text(encoding="utf-8")
+    log = (project / ".tombstone" / "errors.log").read_text(encoding="utf-8")
     assert "RuntimeError: bad poll" in log
 
 
@@ -400,7 +400,7 @@ def test_dispatch_event_logs_when_begin_stop_missing(tmp_path, monkeypatch):
     (tmp_path / ".kiro").mkdir()
     event = watcher.Event(kind="over_cap", at="x", message="msg", detail="d")
     watcher.dispatch_event(tmp_path, event)
-    log = (tmp_path / ".kiro" / "tombstone" / "errors.log").read_text(encoding="utf-8")
+    log = (tmp_path / ".tombstone" / "errors.log").read_text(encoding="utf-8")
     assert "begin_stop not available" in log
 
 

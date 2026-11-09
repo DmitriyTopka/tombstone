@@ -67,14 +67,14 @@ def test_symlinked_sidecar_purge_deletes_nothing(env, capsys):
     outside.mkdir()
     (outside / "keep.txt").write_text("precious", encoding="utf-8")
     (project / ".kiro").mkdir()
-    (project / ".kiro" / "tombstone").symlink_to(outside, target_is_directory=True)
+    (project / ".tombstone").symlink_to(outside, target_is_directory=True)
     capsys.readouterr()
     code = cli.main(["uninstall", "--project", str(project), "--purge"])
     out = capsys.readouterr().out
     assert code == 1
     assert cli.REFUSED in out
     assert (outside / "keep.txt").read_text() == "precious"
-    assert (project / ".kiro" / "tombstone").is_symlink()
+    assert (project / ".tombstone").is_symlink()
 
 
 def test_symlink_inside_sidecar_is_not_followed_on_purge(env, capsys):
@@ -82,7 +82,7 @@ def test_symlink_inside_sidecar_is_not_followed_on_purge(env, capsys):
     outside = tmp / "victim"
     outside.mkdir()
     (outside / "keep.txt").write_text("precious", encoding="utf-8")
-    sidecar = project / ".kiro" / "tombstone"
+    sidecar = project / ".tombstone"
     sidecar.mkdir(parents=True)
     (sidecar / "plain.txt").write_text("x", encoding="utf-8")
     (sidecar / "link").symlink_to(outside, target_is_directory=True)
@@ -102,7 +102,7 @@ def test_forged_installed_json_does_not_authorise_delete(env, capsys):
     hooks.mkdir(parents=True)
     mine = hooks / "tombstone-stop.json"
     mine.write_text("user content\n", encoding="utf-8")
-    sidecar = project / ".kiro" / "tombstone"
+    sidecar = project / ".tombstone"
     sidecar.mkdir()
     (sidecar / "installed.json").write_text(json.dumps({
         "version": 1,
@@ -146,7 +146,7 @@ def test_symlinked_mcp_json_refused(env, capsys):
 def test_normal_purge_still_works(env, capsys):
     tmp, home, project = env
     assert cli.main(["init", "--project", str(project)]) == 0
-    sidecar = project / ".kiro" / "tombstone"
+    sidecar = project / ".tombstone"
     (sidecar / "autopsy").mkdir(parents=True)
     (sidecar / "autopsy" / "a.md").write_text("x", encoding="utf-8")
     capsys.readouterr()

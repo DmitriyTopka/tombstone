@@ -21,7 +21,7 @@ def _project(tmp_path, monkeypatch, *records):
     (tmp_path / ".kiro").mkdir()
     _store(tmp_path / "tombstones.json", *records)
     monkeypatch.chdir(tmp_path)
-    return tmp_path / ".kiro" / "tombstone" / "graveyard.html"
+    return tmp_path / ".tombstone" / "graveyard.html"
 
 
 def _killed(**over):

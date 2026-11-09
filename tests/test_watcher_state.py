@@ -104,8 +104,8 @@ def test_tilde_helpers():
 
 
 @pytest.mark.parametrize("rel", [
-    ".kiro/tombstone/state.json",
-    ".kiro/tombstone/STOP",
+    ".tombstone/state.json",
+    ".tombstone/STOP",
     ".git/index",
     "sub/.git/HEAD",
     "tombstones.json",
@@ -158,8 +158,8 @@ def test_walk_ignores_tombstone_dirs_and_files(tmp_path, monkeypatch):
     _no_git(monkeypatch)
     _write(tmp_path / "a.py", "a", mtime=1_000_000)
     base = watcher.project_fingerprint(tmp_path)
-    _write(tmp_path / ".kiro" / "tombstone" / "state.json", "{}")
-    _write(tmp_path / ".kiro" / "tombstone" / "autopsy" / "x.md", "x")
+    _write(tmp_path / ".tombstone" / "state.json", "{}")
+    _write(tmp_path / ".tombstone" / "autopsy" / "x.md", "x")
     _write(tmp_path / ".git" / "HEAD", "ref")
     _write(tmp_path / "tombstones.json", "{}")
     _write(tmp_path / "node_modules" / "m" / "i.js", "j")
@@ -189,10 +189,10 @@ def test_git_fingerprint_ignores_tombstone_files(tmp_path):
     _git_init(tmp_path)
     _write(tmp_path / "a.py", "a", mtime=1_000_000)
     base = watcher.project_fingerprint(tmp_path)
-    _write(tmp_path / ".kiro" / "tombstone" / "state.json", "{}")
+    _write(tmp_path / ".tombstone" / "state.json", "{}")
     _write(tmp_path / "tombstones.json", "{}")
     listed = watcher.git_changed_files(tmp_path)
-    assert ".kiro/tombstone/state.json" in listed
+    assert ".tombstone/state.json" in listed
     assert "tombstones.json" in listed
     assert watcher.project_fingerprint(tmp_path) == base
 

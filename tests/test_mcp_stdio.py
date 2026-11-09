@@ -30,7 +30,7 @@ def _recv(proc: subprocess.Popen) -> dict:
 
 def test_stdio_session(tmp_path):
     # A fresh usage cache keeps the call from probing kiro-cli.
-    cache = tmp_path / ".kiro" / "tombstone"
+    cache = tmp_path / ".tombstone"
     cache.mkdir(parents=True)
     (cache / "usage.json").write_text(json.dumps({
         "fetched_at": datetime.now(timezone.utc).isoformat(),

@@ -19,7 +19,7 @@ If `spec.remaining` is lower than `similar.median`, do not start the task. Tell 
 
 ## A TOMBSTONE: refusal
 
-A tool call refused with a message that starts with `TOMBSTONE:` means stop. Do not retry the tool, do not try another tool to get around it, and do not edit the cap or anything in `.kiro/tombstone/`, `tombstone.toml` or `tombstones.json`. Quote the message to the human and wait. The human removes the block with `tombstone resume`.
+A tool call refused with a message that starts with `TOMBSTONE:` means stop. Do not retry the tool, do not try another tool to get around it, and do not edit the cap or anything in `.tombstone/`, `tombstone.toml` or `tombstones.json`. Quote the message to the human and wait. The human removes the block with `tombstone resume`.
 
 ## Hooks are not part of the power
 

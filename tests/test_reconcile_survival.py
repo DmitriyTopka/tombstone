@@ -33,7 +33,8 @@ COST = 3.8626
 
 
 def _project(tmp_path: Path) -> Path:
-    (tmp_path / ".kiro" / "tombstone").mkdir(parents=True)
+    (tmp_path / ".kiro").mkdir(exist_ok=True)
+    (tmp_path / ".tombstone").mkdir(parents=True)
     return tmp_path
 
 

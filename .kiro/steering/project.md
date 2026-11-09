@@ -34,5 +34,5 @@ inclusion: always
 
 ## Dogfood rules (this repo runs its own Tombstone hooks)
 
-- Never run `tombstone hook ...` by hand against this repo's real `.kiro/tombstone/` or `tombstones.json`. Manual checks go through pytest with `tmp_path`, or with `--project` pointing to a temp directory.
-- Never edit `tombstones.json` or `.kiro/tombstone/` by hand. They are evidence for the build log.
+- Never run `tombstone hook ...` by hand against this repo's real `.tombstone/` or `tombstones.json`. Manual checks go through pytest with `tmp_path`, or with `--project` pointing to a temp directory.
+- Never edit `tombstones.json` or `.tombstone/` by hand. They are evidence for the build log.

@@ -1,4 +1,4 @@
-"""A symlink planted inside a real ``.kiro/tombstone`` must never be written.
+"""A symlink planted inside a real ``.tombstone`` must never be written.
 
 Each test points one sidecar file (lock, pending queue, state, error log,
 STOP, usage cache, graveyard, autopsy) or one init target (mcp.json, a hook
@@ -25,8 +25,9 @@ def env(tmp_path, monkeypatch):
     home = tmp_path / "home"
     home.mkdir()
     project = tmp_path / "proj"
-    side = project / ".kiro" / "tombstone"
+    side = project / ".tombstone"
     side.mkdir(parents=True)
+    (project / ".kiro").mkdir()
     outside = tmp_path / "outside.txt"
     outside.write_bytes(OUTSIDE_TEXT)
     monkeypatch.setenv("HOME", str(home))
