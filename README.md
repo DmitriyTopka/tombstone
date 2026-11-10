@@ -15,7 +15,7 @@ Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.
 - **Catches a stall**, when the agent keeps calling the model and no project file changes.
 - **Costs zero credits.** No model calls, no agent hooks, no network.
 
-Video, 2:52: VIDEO_LINK  
+Video, 2:52: [youtu.be/kzdNSIHnfyM](https://youtu.be/kzdNSIHnfyM)  
 Live graveyard of this build: [dmitriytopka.github.io/tombstone](https://dmitriytopka.github.io/tombstone/)
 
 ```mermaid
