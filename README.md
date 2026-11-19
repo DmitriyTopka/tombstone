@@ -106,7 +106,8 @@ A receipt from a live run (cap 0.60 credits, the agent was asked to work past it
 - The process kill has only been tested with a fake process list. In every live run the agent stopped at the first refused tool, even when the prompt told it to keep going and the steering file was removed, so the kill never had to fire.
 - The Kiro IDE stores its data elsewhere. It is not a source yet.
 - The video was recorded before the runtime state moved from `.kiro/tombstone/` to `.tombstone/` (task 16, so that nothing under `/.kiro` is git-ignored). The receipt path on screen shows the old place.
-- Installing from GitHub (`uv tool install git+...`) and installing the Power by URL can be checked only once the repo is public.
+- Installing from GitHub works: on 19 November a fresh clone installed with `uv`, priced the fixture session and passed all 563 tests (`uv pip install -e ".[dev]"` adds pytest), and `uv tool install git+https://github.com/DmitriyTopka/tombstone` gave a working `tombstone` command. Installing the Power by URL has not been checked yet.
+- `test_pre_tool_hook_median_under_200ms` times real processes. On a heavily loaded machine its first cold run can go over 200 ms; it passed on the next runs.
 
 ## How we built it
 
