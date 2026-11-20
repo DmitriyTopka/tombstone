@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import sys
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Optional
@@ -372,3 +373,127 @@ def append_actual(path, turn, home: Optional[Path] = None) -> bool:
     except OSError:
         return False
     return True
+
+
+# --- Reading receipts back for the graveyard card (R2.11) -------------------
+
+MAX_AUTOPSY_BYTES = 256 * 1024
+_FIELD = re.compile(r"^- ([^:]+): ?(.*)$")
+_CELL_SPLIT = re.compile(r"(?<!\\)\|")
+_DATE = re.compile(r"\d{4}-\d{2}-\d{2}")
+
+
+def parse_autopsy(text: str, name: str = "") -> Optional[dict]:
+    """Parse the Markdown that ``write_autopsy`` writes. None when malformed.
+
+    Returns ``name`` (file name), ``task_id``, ``date`` (from the STOP time,
+    else the file name), ``reason``, ``refusal``, ``estimate`` (text such as
+    ``0.662 credits``), ``step_two`` (the line), ``kill_ran`` (bool) and
+    ``calls`` (up to 10 ``(tool, title)`` pairs, oldest first). A file with no
+    STOP reason line is not an autopsy.
+    """
+    if not isinstance(text, str) or not text.lstrip().startswith("# Autopsy"):
+        return None
+    fields: dict = {}
+    calls: list = []
+    in_table = False
+    for line in text.splitlines():
+        if line.startswith("## "):
+            in_table = line.startswith("## Last")
+            continue
+        if in_table and line.startswith("|"):
+            cells = [c.strip().replace("\\|", "|") for c in _CELL_SPLIT.split(line.strip())[1:-1]]
+            if len(cells) >= 2 and cells[0] != "Tool" and not set(cells[0]) <= set("-: "):
+                calls.append((cells[0], cells[1]))
+            continue
+        match = _FIELD.match(line)
+        if match and match.group(1) not in fields:
+            fields[match.group(1)] = match.group(2).strip()
+    reason = fields.get("STOP reason")
+    if not reason:
+        return None
+    stamp = fields.get("STOP time", "")
+    date = stamp[:10] if _DATE.fullmatch(stamp[:10]) else ""
+    if not date:
+        found = _DATE.match(name)
+        date = found.group(0) if found else ""
+    step = fields.get("Step two (kill)", "")
+    estimate = fields.get("Estimate at stop (est.)", "")
+    return {
+        "name": name,
+        "task_id": fields.get("Task id", "unknown"),
+        "date": date,
+        "reason": reason,
+        "refusal": fields.get("Refusal text", ""),
+        "estimate": "" if estimate == "unknown" else estimate,
+        "step_two": step,
+        "kill_ran": step.lower().startswith("yes"),
+        "calls": calls[-TOOL_CALLS:],
+    }
+
+
+def _read_one(path: Path) -> Optional[dict]:
+    from .safepath import open_nofollow
+
+    try:
+        with open_nofollow(path, "r", encoding="utf-8") as handle:
+            text = handle.read(MAX_AUTOPSY_BYTES)
+    except (OSError, ValueError):
+        return None
+    parsed = parse_autopsy(text, path.name)
+    if parsed is not None:
+        parsed["text"] = text
+    return parsed
+
+
+def read_autopsies(dirs) -> list:
+    """Read every autopsy in ``dirs``. Never raises.
+
+    A directory that is missing, unreadable or a symlink is skipped with one
+    stderr line. A file that is a symlink, unreadable or malformed is skipped
+    quietly. Order is stable: directory order, then file name.
+    """
+    found: list = []
+    for raw in dirs or []:
+        base = Path(raw).expanduser()
+        try:
+            if base.is_symlink() or not base.is_dir():
+                raise OSError("not a plain directory")
+            names = sorted(entry.name for entry in os.scandir(base)
+                           if entry.name.endswith(".md") and entry.is_file(follow_symlinks=False))
+        except OSError:
+            sys.stderr.write(f"tombstone graveyard: autopsy directory skipped: {base}\n")
+            continue
+        for file_name in names:
+            parsed = _read_one(base / file_name)
+            if parsed is not None:
+                found.append(parsed)
+    return found
+
+
+def match_autopsy(record: dict, autopsies: list) -> Optional[dict]:
+    """The autopsy of a stopped record, or None (R2.11).
+
+    First by turn id, when the file name or the file text holds one of the
+    record's turn ids. Otherwise by task id and date, only for a known task.
+    """
+    if not isinstance(record, dict):
+        return None
+    ids = []
+    for turn in record.get("turns") or []:
+        if isinstance(turn, dict) and isinstance(turn.get("turn_id"), str) and turn["turn_id"]:
+            ids.append(turn["turn_id"])
+    rid = record.get("id")
+    if isinstance(rid, str) and "/" in rid and rid.split("/", 1)[1]:
+        ids.append(rid.split("/", 1)[1])
+    ids = [i for i in ids if len(i) >= 16]  # a short id would match by chance
+    for item in autopsies:
+        if any(i in item["name"] or i in item.get("text", "") for i in ids):
+            return item
+    task_id = record.get("task_id")
+    date = record.get("date")
+    if isinstance(task_id, str) and task_id and task_id != "unknown" and date:
+        for item in autopsies:
+            if item["task_id"] == task_id and item["date"] == date:
+                return item
+    return None

@@ -43,6 +43,7 @@ DIRECT = {
 HELPER_UNGUARDED = {
     "cli.py:_save_installed",
     "cli.py:write_power_folder",
+    "autopsy.py:_read_one",
     "tombstones.py:_atomic_write",
 }
 CALLER_GUARDED = {"tombstones.py:_atomic_write"}

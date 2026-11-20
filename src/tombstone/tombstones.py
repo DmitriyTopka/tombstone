@@ -2006,6 +2006,16 @@ dialog dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0 0 18
 dialog dt{color:#5b574d}
 dialog dd{margin:0;text-align:right}
 dialog .gap{font-size:15px;color:#3d392f;margin:0 0 18px;border-left:2px solid #b49a6a;padding-left:10px}
+dialog{max-height:calc(100vh - 32px);overflow-y:auto}
+dialog .receipt{border-top:1px solid #b49a6a;margin:0 0 18px;padding-top:12px}
+dialog .receipt h4{font-weight:400;font-size:18px;margin:0 0 8px}
+dialog .receipt p{margin:0 0 8px;font-size:15px}
+dialog .receipt dl{margin:0 0 10px}
+dialog #crt{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;color:#8f1d1d;
+  background:rgba(255,59,59,.08);border-left:2px solid #c23a3a;margin:0 0 10px;padding:8px 10px;
+  white-space:pre-wrap;overflow-wrap:anywhere}
+dialog #crc{margin:0;padding-left:22px;font-size:14px;color:#3d392f}
+dialog #crc li{overflow-wrap:anywhere}
 dialog button{font:inherit;font-size:15px;padding:8px 18px;border:1px solid #1e1c18;background:transparent;border-radius:2px;cursor:pointer}
 .register{max-width:1240px;margin:0 auto;padding:30px 5vw 80px;border-top:1px solid #1a2230}
 .register h2{font-weight:400;font-size:clamp(26px,2.4vw,34px);margin:0 0 6px}
@@ -2121,6 +2131,30 @@ if(card&&ground&&typeof card.showModal==="function"){
       var dd=document.createElement("dd");dd.textContent=b.getAttribute("data-"+f[1])||"n/a";
       dl.appendChild(dt);dl.appendChild(dd);
     });
+    var rc=document.getElementById("cr"),st=b.getAttribute("data-receipt");
+    if(rc){
+      rc.hidden=st===null;
+      var yes=st==="yes";
+      document.getElementById("crn").hidden=yes;
+      document.getElementById("crb").hidden=!yes;
+      var rd=document.getElementById("crd"),rl=document.getElementById("crc");
+      while(rd.firstChild){rd.removeChild(rd.firstChild);}
+      while(rl.firstChild){rl.removeChild(rl.firstChild);}
+      if(yes){
+        [["Reason","rc-reason"],["Estimate at the stop","rc-estimate"],["Kill","rc-kill"]].forEach(function(f){
+          var dt=document.createElement("dt");dt.textContent=f[0];
+          var dd=document.createElement("dd");dd.textContent=b.getAttribute("data-"+f[1])||"n/a";
+          rd.appendChild(dt);rd.appendChild(dd);
+        });
+        var rt=document.getElementById("crt");
+        rt.textContent=b.getAttribute("data-rc-refusal")||"";
+        rt.hidden=rt.textContent==="";
+        (b.getAttribute("data-rc-calls")||"").split("\\n").forEach(function(c){
+          if(c===""){return;}
+          var li=document.createElement("li");li.textContent=c;rl.appendChild(li);
+        });
+      }
+    }
     card.showModal();
   });
 }
@@ -2245,8 +2279,28 @@ def _g_row_shapes(records: list, peak: float, row_key: str) -> list:
     return out
 
 
+def _g_receipt_attrs(record: dict, receipt: Optional[dict]) -> str:
+    """Data attributes of the stop receipt for a stopped stone (R2.11). Escaped."""
+    if record.get("outcome") == "finished":
+        return ""
+    esc = functools.partial(html.escape, quote=True)
+    if not isinstance(receipt, dict):
+        return 'data-receipt="no" '
+    calls = "\n".join(f"{tool}: {title}" if title else tool
+                      for tool, title in (receipt.get("calls") or [])[:10])
+    estimate = receipt.get("estimate") or ""
+    return (
+        'data-receipt="yes" '
+        f'data-rc-reason="{esc(receipt.get("reason") or "unknown")}" '
+        f'data-rc-refusal="{esc(receipt.get("refusal") or "")}" '
+        f'data-rc-estimate="{esc(estimate + " est." if estimate else "n/a")}" '
+        f'data-rc-kill="{"ran" if receipt.get("kill_ran") else "did not run"}" '
+        f'data-rc-calls="{esc(calls)}" '
+    )
+
+
 def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
-             shape: Optional[str] = None) -> str:
+             shape: Optional[str] = None, receipt: Optional[dict] = None) -> str:
     """One headstone as a ``<button>`` with plain text inside. Everything escaped.
 
     ``index`` is the position in its row and ``row_key`` the plot number,
@@ -2301,6 +2355,7 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
         f'data-minutes="{esc(f"{minutes:.1f} {basis}" if minutes is not None else "n/a")}" '
         f'data-model="{esc(_g_str(record, "model", "n/a"))}" '
         f'data-engine="{esc(_g_str(record, "engine", "n/a"))}" '
+        f'{_g_receipt_attrs(record, receipt)}'
         f'data-gap="{esc(gap)}">'
         f'<span class="tid">{esc(tid)}</span>'
         f'<span class="cost">{esc(_g_credits(cost))}</span>'
@@ -2426,7 +2481,8 @@ def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER) -> dict:
 
 
 def render_graveyard(records: list, plots: Optional[dict] = None,
-                     included: Optional[dict] = None) -> str:
+                     included: Optional[dict] = None,
+                     receipts: Optional[dict] = None) -> str:
     """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
 
     Headstones, plots, the stopped row, unmarked graves and the register are
@@ -2439,8 +2495,12 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
     ``included`` maps a record id to the file name it was read from with
     ``--include`` (R2.9). When any stopped record is in it, the stopped row
     note names the file and the kicker mentions the live tests.
+
+    ``receipts`` maps a record id to its parsed autopsy (R2.11). A stopped
+    record without one shows "No receipt was kept for this stop." in the card.
     """
     esc = functools.partial(html.escape, quote=True)
+    receipts = receipts if isinstance(receipts, dict) else {}
     plots = plots if isinstance(plots, dict) else {}
     rows = [r for r in (records or []) if isinstance(r, dict)]
     costs = [_g_cost(r)[0] or 0.0 for r in rows]
@@ -2476,7 +2536,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             "The next tool call was refused and the agent stopped. "
             f"The cost is what Kiro charged before it did.{live_note}</div>"
             '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
-            + "".join(_g_stone(r, peak, i, "stopped", sh) for i, (r, sh)
+            + "".join(_g_stone(r, peak, i, "stopped", sh, receipts.get(r.get("id"))) for i, (r, sh)
                       in enumerate(zip(stopped, _g_row_shapes(stopped, peak, "stopped"))))
             + "</div></div>"
             '<div class="section-note wide"><h2>Finished tasks</h2>'
@@ -2551,6 +2611,10 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         "files report them.</footer>\n"
         '<dialog id="card" aria-labelledby="ct"><h3 id="ct"></h3><p class="meta" id="cm"></p>'
         '<dl id="cd"></dl><p class="gap" id="cg"></p>'
+        '<section id="cr" class="receipt" aria-labelledby="crh" hidden><h4 id="crh">Receipt</h4>'
+        '<p id="crn">No receipt was kept for this stop.</p>'
+        '<div id="crb" hidden><dl id="crd"></dl><pre id="crt" tabindex="0"></pre>'
+        '<p class="rl">Last tool calls</p><ol id="crc"></ol></div></section>'
         '<form method="dialog"><button>Close</button></form></dialog>\n'
         f"<script>\n{_GRAVEYARD_JS}\n</script>\n</body>\n</html>\n"
     )
@@ -2631,8 +2695,30 @@ def merge_includes(records: list, loaded: list) -> tuple:
     return merged, included
 
 
+def _collect_receipts(project: Path, records: list, extra_dirs: Optional[list]) -> dict:
+    """Map each stopped record id to its autopsy, when one matches (R2.11)."""
+    from . import autopsy
+
+    stopped = [r for r in records if isinstance(r, dict) and r.get("outcome") != "finished"]
+    if not stopped:
+        return {}
+    dirs = []
+    own = project / TOMBSTONE_DIR / "autopsy"
+    if own.is_dir():
+        dirs.append(own)
+    dirs.extend(extra_dirs or [])
+    found = autopsy.read_autopsies(dirs)
+    out: dict = {}
+    for record in stopped:
+        match = autopsy.match_autopsy(record, found)
+        if match is not None:
+            out[record.get("id")] = match
+    return out
+
+
 def write_graveyard(project: Path, out: Optional[Path] = None,
-                    includes: Optional[list] = None) -> Path:
+                    includes: Optional[list] = None,
+                    autopsy_dirs: Optional[list] = None) -> Path:
     """Render ``tombstones.json`` of ``project`` and write the page.
 
     Default target is ``.tombstone/graveyard.html``. Reads the store
@@ -2642,7 +2728,8 @@ def write_graveyard(project: Path, out: Optional[Path] = None,
     project = Path(project)
     store = load_tombstones(project / "tombstones.json")
     records, included = merge_includes(store.get("tombstones") or [], includes or [])
-    page = render_graveyard(records, read_plot_names(project), included)
+    receipts = _collect_receipts(project, records, autopsy_dirs)
+    page = render_graveyard(records, read_plot_names(project), included, receipts)
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
     if out is None and not guard(project, target):

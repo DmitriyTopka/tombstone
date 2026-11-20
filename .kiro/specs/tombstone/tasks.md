@@ -231,3 +231,23 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 17.1 Seven hooks and MCP in `.kiro/`
     - Add to `.kiro/hooks/` the four missing V3 hooks from `power/hooks/v3/` (pre-tool, session-start, task-pre, task-post), in the same style as the three already there: command `.venv/bin/tombstone hook <name>`, timeout 10. Add `.kiro/settings/mcp.json` that starts `.venv/bin/tombstone mcp` for this project. Add `tombstone.toml` at the repo root with `spec_cap = 600` so the brake never blocks normal build tasks, keep the other keys at their defaults. A test checks that `.kiro/hooks/` holds one hook per trigger that init writes for V3 and that no file under `.kiro/` is matched by the repo `.gitignore`.
     - _Requirements: R12.4_
+
+- [x] 18. Stop receipt in the card of a cracked stone
+  - Approved by Dima on 2026-11-20. Reason: the Costume Contest asks for spooky elements that serve the function; the crack should open the receipt that explains it.
+  - _Requirements: R2.11_
+
+  - [x] 18.1 Read autopsies and match them to stopped records
+    - A small parser for the autopsy markdown that `write_autopsy` writes (src/tombstone/autopsy.py): STOP reason, refusal text, estimate at stop, step two line, and the rows of the "Last 10 tool calls" table (tool, title). Match an autopsy to a stopped record by the turn id when the file name or the content holds it, otherwise by task id and date. Sources: the project's `.tombstone/autopsy/` and every `--autopsies DIR` (repeatable) on `tombstone graveyard`. A missing or unreadable directory is skipped with one stderr line; a malformed autopsy is skipped, never crashes the render. Open files with the existing safe helpers (no symlink following).
+    - _Requirements: R2.11_
+
+  - [x] 18.2 Receipt block in the card
+    - For stopped headstones only, carry the receipt in data attributes (escaped) and render a "Receipt" section in the card: reason, the refusal text in the monospace red style already used for stops, "kill: ran / did not run", and the tool calls as a short list. Without a receipt the section reads "No receipt was kept for this stop." Same look as the existing card (fonts, colours, spacing), works with the keyboard and on a 375 px screen, no external requests, no em or en dash.
+    - _Requirements: R2.11_
+
+  - [x] 18.3 Tests
+    - Parser on a real autopsy fixture (copy `live_autopsies/` files into tests/fixtures), matching by turn id and by task and date, a stopped record without autopsy shows the "No receipt" line, a malformed file is skipped, `--autopsies` with a missing dir exits 0 and writes the page, HTML escaping of a refusal text with `<` and `"`, no receipt section on finished stones.
+    - _Requirements: R2.11_
+
+  - [x] 18.4 Fix: the page script must parse
+    - Found by a human after 18.2: the generated page's inline script contains `.split("` followed by a real line break, because the Python source writes `"\n"` inside a normal (not raw) string, so the browser gets a syntax error and no card opens at all. Fix the escaping (for example `\\n` in the Python source, or split on a character that needs no escape). Add a test that extracts the inline script from a rendered page and checks it has no raw line break inside a JS string literal; if `node` is on PATH, also check `new Function(script)` does not throw (skip that part when node is missing).
+    - _Requirements: R2.11_

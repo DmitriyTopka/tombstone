@@ -221,3 +221,9 @@ Task 16 (Kiro): runtime state moved to `.tombstone/` behind one constant in `sid
 Task 17 (Kiro): this repo now runs all seven V3 hooks from `.kiro/hooks/` (the brake included) and the MCP server from `.kiro/settings/mcp.json`, with `spec = 600` in `tombstone.toml`. Kiro was denied writing `.kiro/settings/`, so a human created `mcp.json` with the line Kiro proposed. A test checks the hook set, the MCP entry and that `git check-ignore` matches nothing under `.kiro/`. 563 tests.
 The 17.1 test turn itself ran with the `PreToolUse` brake armed and was not blocked. `get_budget` over stdio from this repo: spec spent 181.01 of 600.
 `/usage` after: 266.08/4000.
+
+## 2026-11-20 Task 18, the crack opens the receipt (approved by Dima)
+A cracked stone now opens the stop receipt in its card: STOP reason, the refusal text the agent read, the estimate at the stop, whether the kill ran, and the last tool calls. Added R2.11 and task 18. Kiro: 18.1 autopsy parser and matching by turn id or by task and date, `--autopsies DIR` on `tombstone graveyard`; 18.2 the receipt block in the card; 18.3 tests on a real autopsy. 572 tests.
+Checked by hand in Chrome: no card opened at all. The new code wrote `"\n"` into the page script as a real line break, so the whole inline script failed to parse, and the tests only looked at the HTML. Added 18.4: Kiro fixed the escaping and added a test that parses the inline script (with node when it is on PATH). 574 tests. The card then showed the receipt at 1440 and 500 px.
+Only one autopsy from the live tests survives (the video recording run); the scratch projects of the earlier runs are gone, so 14 of the 15 cracked stones say "No receipt was kept for this stop."
+`/usage` after: 271.59/4000.

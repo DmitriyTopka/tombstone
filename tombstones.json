@@ -1650,6 +1650,156 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/18",
+      "task_id": "18",
+      "name": "Stop receipt in the card of a cracked stone",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.4628,
+      "actual": 1.036,
+      "minutes": 0.5225,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-20",
+      "turns": [
+        {
+          "session_id": "sess_f8243b1c-3983-4c15-ab1d-368d8f385cb1",
+          "turn_id": "c73e74ec-1a54-48cc-92b5-4b19266023bd",
+          "requests": 16,
+          "estimate": 5.8512,
+          "actual": 4.1439,
+          "minutes": 2.09,
+          "start": "2026-11-20T08:47:00.914000Z",
+          "end": "2026-11-20T08:49:06.316000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/18.1",
+      "task_id": "18.1",
+      "name": "Read autopsies and match them to stopped records",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.4628,
+      "actual": 1.036,
+      "minutes": 0.5225,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-20",
+      "turns": [
+        {
+          "session_id": "sess_f8243b1c-3983-4c15-ab1d-368d8f385cb1",
+          "turn_id": "c73e74ec-1a54-48cc-92b5-4b19266023bd",
+          "requests": 16,
+          "estimate": 5.8512,
+          "actual": 4.1439,
+          "minutes": 2.09,
+          "start": "2026-11-20T08:47:00.914000Z",
+          "end": "2026-11-20T08:49:06.316000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/18.2",
+      "task_id": "18.2",
+      "name": "Receipt block in the card",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.4628,
+      "actual": 1.036,
+      "minutes": 0.5225,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-20",
+      "turns": [
+        {
+          "session_id": "sess_f8243b1c-3983-4c15-ab1d-368d8f385cb1",
+          "turn_id": "c73e74ec-1a54-48cc-92b5-4b19266023bd",
+          "requests": 16,
+          "estimate": 5.8512,
+          "actual": 4.1439,
+          "minutes": 2.09,
+          "start": "2026-11-20T08:47:00.914000Z",
+          "end": "2026-11-20T08:49:06.316000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/18.3",
+      "task_id": "18.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.4628,
+      "actual": 1.036,
+      "minutes": 0.5225,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-20",
+      "turns": [
+        {
+          "session_id": "sess_f8243b1c-3983-4c15-ab1d-368d8f385cb1",
+          "turn_id": "c73e74ec-1a54-48cc-92b5-4b19266023bd",
+          "requests": 16,
+          "estimate": 5.8512,
+          "actual": 4.1439,
+          "minutes": 2.09,
+          "start": "2026-11-20T08:47:00.914000Z",
+          "end": "2026-11-20T08:49:06.316000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/18.4",
+      "task_id": "18.4",
+      "name": "Fix: the page script must parse",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 2.8302,
+      "actual": 0.4923,
+      "minutes": 0.5496,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-20",
+      "turns": [
+        {
+          "session_id": "sess_9ad5c4b8-5321-472a-bb92-c656172de60e",
+          "turn_id": "091e1b92-18b4-43ff-bdd3-21ed4336c2e1",
+          "requests": 8,
+          "estimate": 2.8302,
+          "actual": 0.4923,
+          "minutes": 0.5496,
+          "start": "2026-11-20T08:50:38.705000Z",
+          "end": "2026-11-20T08:51:11.682000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
