@@ -109,7 +109,7 @@ A receipt from a live run (cap 0.60 credits, the agent was asked to work past it
 - The process kill has only been tested with a fake process list. In every live run the agent stopped at the first refused tool, even when the prompt told it to keep going and the steering file was removed, so the kill never had to fire.
 - The Kiro IDE stores its data elsewhere. It is not a source yet.
 - The video was recorded before the runtime state moved from `.kiro/tombstone/` to `.tombstone/` (task 16, so that nothing under `/.kiro` is git-ignored). The receipt path on screen shows the old place.
-- Installing from GitHub works: on 19 November a fresh clone installed with `uv`, priced the fixture session and passed all 563 tests (`uv pip install -e ".[dev]"` adds pytest), and `uv tool install git+https://github.com/DmitriyTopka/tombstone` gave a working `tombstone` command. Installing the Power by URL has not been checked yet.
+- Installing from GitHub works: on 19 November a fresh clone installed with `uv`, priced the fixture session and passed all 563 tests of that day, before task 18 added 11 more (`uv pip install -e ".[dev]"` adds pytest), and `uv tool install git+https://github.com/DmitriyTopka/tombstone` gave a working `tombstone` command. Installing the Power by URL has not been checked yet.
 - `test_pre_tool_hook_median_under_200ms` times real processes. On a heavily loaded machine its first cold run can go over 200 ms; it passed on the next runs.
 
 ## How we built it
@@ -165,7 +165,7 @@ The Kiro IDE as a second source, a watcher for agents running on a server, and a
 
 ## Honest comparison
 
-Most neighbors answer "how much is left" or "did the agent really do it". Since CLI 3.1.0, Kiro itself shows what a session has spent. Tombstone answers a different question: "what did this task cost, and stop it when it costs too much". Checked on GitHub and the Kiro changelog on 7 November 2026, three Kiroween neighbours added on 20 November 2026.
+Most neighbors answer "how much is left" or "did the agent really do it". Since CLI 3.1.0, Kiro itself shows what a session has spent. Tombstone answers a different question: "what did this task cost, and stop it when it costs too much". Checked on GitHub and the Kiro changelog on 7 November 2026, four Kiroween neighbours added on 20 and 22 November 2026.
 
 | | What it answers | Cost per spec task | Cap per task | Stops the agent | Receipt |
 |---|---|---|---|---|---|
@@ -183,6 +183,7 @@ Most neighbors answer "how much is left" or "did the agent really do it". Since 
 | [Miguel-Shinyenyi/umwayi-os](https://github.com/Miguel-Shinyenyi/umwayi-os) | One gate with rules and a budget for Claude Code, Kiro and OpenCode | no, per run; for Kiro a declared rate ("Kiro sends umwayi nothing") | per run | yes for Claude Code; for Kiro only refused at the start | logbook entry |
 | [pranavsaji/exorcist-98](https://github.com/pranavsaji/exorcist-98) | Is a repo, MCP server or hook trying to hijack the agent | no | no | blocks poisoned MCP tools | scan report |
 | [Tauwho/Sleuth](https://github.com/Tauwho/Sleuth) | Does a demo video show what its script claims | no | no | no | a sealed report |
+| [Akar-Samudra-Artifisial/Seance](https://github.com/Akar-Samudra-Artifisial/Seance) | Runs Kiro agents as IRC users and shows the credits each one used | no, per channel and agent | optional cap per channel | a human runs `/kick`, which cancels the turn | the channel log |
 
 They do their jobs well. If you only want a balance gauge, Bobert or one of the widgets is the better pick. Credit pooling is the right tool for a company limit. It sets limits on people and groups, and Tombstone stops one task while the spec goes on.
 
