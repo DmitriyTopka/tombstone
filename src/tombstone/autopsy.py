@@ -263,6 +263,51 @@ def safe_autopsy_path(project, raw: str) -> Optional[Path]:
         return None
 
 
+STEP_TWO_PREFIX = "- Step two (kill): "
+
+
+def step_two_line(kill: dict) -> str:
+    """The receipt line for a finished kill step (R6.3, R7.1)."""
+    stamp = str(kill.get("time") or "unknown time")
+    if kill.get("status") == "killed":
+        done = kill.get("terminated") or []
+        forced = kill.get("killed") or []
+        return (f"{STEP_TWO_PREFIX}yes (ran at {stamp}; {len(done)} processes "
+                f"terminated, {len(forced)} killed)")
+    warning = kill.get("warning") or "no kiro-cli process bound to this project"
+    return f"{STEP_TWO_PREFIX}skipped at {stamp}: {warning}"
+
+
+def update_step_two(project, raw_path, kill: dict,
+                    home: Optional[Path] = None) -> bool:
+    """Rewrite only the step two line of a stop's receipt (R6.3, R7.1).
+
+    ``raw_path`` is ``state.stop.autopsy``. The path goes through
+    ``safe_autopsy_path``. A missing, unreadable or symlinked receipt is left
+    alone. Returns True when the line was rewritten. Never raises.
+    """
+    try:
+        if not isinstance(raw_path, str) or not raw_path or not isinstance(kill, dict):
+            return False
+        from . import watcher
+
+        project = Path(project)
+        path = safe_autopsy_path(project, watcher.from_tilde(raw_path, home))
+        if path is None or not guard(project, path):
+            return False
+        text = path.read_text(encoding="utf-8")
+        lines = text.split("\n")
+        index = next((i for i, line in enumerate(lines)
+                      if line.startswith(STEP_TWO_PREFIX)), None)
+        if index is None:
+            return False
+        lines[index] = scrub(step_two_line(kill), home)
+        write_atomic(path, "\n".join(lines))
+        return True
+    except (OSError, ValueError):
+        return False
+
+
 def settle_autopsy(project, *, kiro_home: Optional[Path] = None,
                    home: Optional[Path] = None) -> bool:
     """Append the actual cost to the waiting autopsy once (R7.3, R4.2).

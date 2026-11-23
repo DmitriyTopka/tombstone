@@ -1920,6 +1920,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/20",
+      "task_id": "20",
+      "name": "The receipt records a kill that ran",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 1.5171,
+      "actual": 0.7039,
+      "minutes": 0.5212,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_39ee70bb-3a66-42a4-8a25-ea01c58f6a67",
+          "turn_id": "1839fb9a-7a31-4258-93a1-355fb7a50eb1",
+          "requests": 10,
+          "estimate": 3.0343,
+          "actual": 1.4079,
+          "minutes": 1.0423,
+          "start": "2026-11-23T08:56:16.028000Z",
+          "end": "2026-11-23T08:57:18.565000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/20.1",
+      "task_id": "20.1",
+      "name": "Update the step two line after `maybe_kill`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 1.5171,
+      "actual": 0.7039,
+      "minutes": 0.5212,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_39ee70bb-3a66-42a4-8a25-ea01c58f6a67",
+          "turn_id": "1839fb9a-7a31-4258-93a1-355fb7a50eb1",
+          "requests": 10,
+          "estimate": 3.0343,
+          "actual": 1.4079,
+          "minutes": 1.0423,
+          "start": "2026-11-23T08:56:16.028000Z",
+          "end": "2026-11-23T08:57:18.565000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "unknown/cdd47fe1-f979-4cef-a97f-042852ff79b2",
+      "task_id": "unknown",
+      "name": "A human added one real record to live_stops.json",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 3,
+      "estimate": 0.8201,
+      "actual": 0.1964,
+      "minutes": 0.2894,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_ba4363fb-e79d-4288-8b3b-06243c9b8019",
+          "turn_id": "cdd47fe1-f979-4cef-a97f-042852ff79b2",
+          "requests": 3,
+          "estimate": 0.8201,
+          "actual": 0.1964,
+          "minutes": 0.2894,
+          "start": "2026-11-23T09:00:19.437000Z",
+          "end": "2026-11-23T09:00:36.802000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

@@ -95,16 +95,23 @@ def test_killed_reads_stopped_in_card_meta_and_register():
     assert "blocked" in cells
 
 
-def test_repo_live_stops_render_fifteen_stopped_records(tmp_path, monkeypatch):
+def test_repo_live_stops_render_all_stopped_records(tmp_path, monkeypatch):
     from pathlib import Path
 
+    import json
+
     live = Path(__file__).resolve().parent.parent / "live_stops.json"
+    n = sum(
+        1
+        for r in json.loads(live.read_text(encoding="utf-8"))["tombstones"]
+        if r.get("outcome") == "killed"
+    )
     page = _project(tmp_path, monkeypatch)
 
     assert cli.main(["graveyard", "--include", str(live)]) == 0
     html = page.read_text(encoding="utf-8")
-    assert html.count('data-outcome="killed"') == 15
-    assert "All 15 are live test runs on scratch projects, kept in live_stops.json." in html
+    assert html.count('data-outcome="killed"') == n
+    assert f"All {n} are live test runs on scratch projects, kept in live_stops.json." in html
     assert KICKER in html
-    assert "15 stopped by the breaker" in re.sub(r"<[^>]+>", " ", html).replace("\n", " ") or \
-        "<dt>stopped by the breaker</dt><dd>15</dd>" in html
+    assert f"{n} stopped by the breaker" in re.sub(r"<[^>]+>", " ", html).replace("\n", " ") or \
+        f"<dt>stopped by the breaker</dt><dd>{n}</dd>" in html

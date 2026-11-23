@@ -465,6 +465,37 @@
         }
       ],
       "source": "video"
+    },
+    {
+      "id": "unknown/ab7afd26-a32c-4ef2-9a45-d0ef793158e2",
+      "task_id": "unknown",
+      "name": "You are auditing this project for consistency. Do",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 2,
+      "estimate": 0.32,
+      "actual": null,
+      "minutes": null,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_4ff8fc3a-53c5-4d41-bf39-d2a5eea0d659",
+          "turn_id": "ab7afd26-a32c-4ef2-9a45-d0ef793158e2",
+          "requests": 2,
+          "estimate": 0.32,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-23T08:58:34.054000Z",
+          "end": null,
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "kill-live-2026-11-23"
     }
   ]
 }

@@ -267,3 +267,12 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 19.3 Badge
     - Add the badge `[![tests](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml/badge.svg)](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml)` as the first line under the README title. Change nothing else in README.md.
     - _Requirements: R13.3_
+
+- [x] 20. The receipt records a kill that ran
+  - Found on 2026-11-23 in the first live kill: the watcher ended the kiro-cli tree 12 s after STOP (state.json `stop.kill.status = killed`, three PIDs terminated), but the autopsy still says "Step two (kill): no (not yet; waits for the grace period and more requests after the stop)", because it is written at STOP time and never updated.
+  - _Requirements: R6.3, R7.1_
+
+  - [x] 20.1 Update the step two line after `maybe_kill`
+    - When `maybe_kill` finishes with `killed` or `no_process`, rewrite the "Step two (kill)" line of that stop's autopsy (path in `state.stop.autopsy`) with the outcome, the time and the number of processes terminated and killed, using the existing safe atomic write helpers and `safe_autopsy_path`. Leave the rest of the file unchanged. If the autopsy is missing or unreadable, do nothing and keep the kill result in state.json.
+    - Tests: after a fake kill the autopsy line says the kill ran with the PID counts; `no_process` writes its warning; a missing autopsy does not raise; a symlinked autopsy is not followed. The graveyard receipt parser reads the new line and the card shows "ran".
+    - _Requirements: R6.3, R7.1_

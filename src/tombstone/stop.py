@@ -466,7 +466,25 @@ def maybe_kill(project: Path, *, requests_now: Optional[int] = None,
         return state_value
 
     tombstones.update_json(state_path, store, default={"version": 1})
+    if result["status"] in ("killed", "no_process"):
+        _record_kill_in_autopsy(project, state_path)
     return result
+
+
+def _record_kill_in_autopsy(project: Path, state_path: Path) -> None:
+    """Rewrite the step two line of the stop's receipt. Never raises."""
+    try:
+        from . import autopsy, tombstones
+
+        state, _valid = tombstones._read_json(state_path)
+        entry = (state or {}).get("stop")
+        if isinstance(entry, dict) and isinstance(entry.get("kill"), dict):
+            kill = dict(entry["kill"])
+            if kill.get("status") == "no_process":
+                kill["warning"] = NO_PROCESS_WARNING
+            autopsy.update_step_two(project, entry.get("autopsy"), kill)
+    except Exception:  # noqa: BLE001 - the kill result stays in state.json
+        pass
 
 
 # --- step one orchestration (R5.5, R6.1, R6.7) --------------------------------
