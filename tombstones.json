@@ -1800,6 +1800,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/19",
+      "task_id": "19",
+      "name": "Continuous integration",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.8108,
+      "actual": 0.1574,
+      "minutes": 0.383,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_937e7959-a89c-4914-9169-96ef0ecbf726",
+          "turn_id": "06120cfc-e059-45d9-befd-2f4cc77e7dca",
+          "requests": 8,
+          "estimate": 3.2432,
+          "actual": 0.6295,
+          "minutes": 1.5319,
+          "start": "2026-11-23T08:53:31.913000Z",
+          "end": "2026-11-23T08:55:03.827000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/19.1",
+      "task_id": "19.1",
+      "name": "GitHub Actions workflow",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.8108,
+      "actual": 0.1574,
+      "minutes": 0.383,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_937e7959-a89c-4914-9169-96ef0ecbf726",
+          "turn_id": "06120cfc-e059-45d9-befd-2f4cc77e7dca",
+          "requests": 8,
+          "estimate": 3.2432,
+          "actual": 0.6295,
+          "minutes": 1.5319,
+          "start": "2026-11-23T08:53:31.913000Z",
+          "end": "2026-11-23T08:55:03.827000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/19.2",
+      "task_id": "19.2",
+      "name": "Make the suite runner-safe",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.8108,
+      "actual": 0.1574,
+      "minutes": 0.383,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_937e7959-a89c-4914-9169-96ef0ecbf726",
+          "turn_id": "06120cfc-e059-45d9-befd-2f4cc77e7dca",
+          "requests": 8,
+          "estimate": 3.2432,
+          "actual": 0.6295,
+          "minutes": 1.5319,
+          "start": "2026-11-23T08:53:31.913000Z",
+          "end": "2026-11-23T08:55:03.827000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/19.3",
+      "task_id": "19.3",
+      "name": "Badge",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.8108,
+      "actual": 0.1574,
+      "minutes": 0.383,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-23",
+      "turns": [
+        {
+          "session_id": "sess_937e7959-a89c-4914-9169-96ef0ecbf726",
+          "turn_id": "06120cfc-e059-45d9-befd-2f4cc77e7dca",
+          "requests": 8,
+          "estimate": 3.2432,
+          "actual": 0.6295,
+          "minutes": 1.5319,
+          "start": "2026-11-23T08:53:31.913000Z",
+          "end": "2026-11-23T08:55:03.827000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

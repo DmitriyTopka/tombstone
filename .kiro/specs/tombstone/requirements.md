@@ -185,3 +185,13 @@ Acceptance check: a session with Tombstone installed shows no extra metered requ
 - R12.2 WHEN `.kiro/tombstone/` exists and `.tombstone/` does not THE SYSTEM SHALL move it to `.tombstone/` once, on the first command that touches state, with the same symlink protection as every other write.
 - R12.3 THE SYSTEM SHALL NOT write any path under `.kiro/` to a `.gitignore` file, and `tombstone init` SHALL suggest ignoring `.tombstone/` instead.
 - R12.4 This repository SHALL run the full V3 hook set that `tombstone init` writes (seven hooks) and the MCP server from `.kiro/`, so what the README says is what a reader finds in `/.kiro`.
+
+### Requirement 13: Continuous integration
+
+**User Story:** As a judge or a new user, I want to see that the tests pass on a clean machine, without installing anything myself.
+
+#### Acceptance Criteria
+
+- R13.1 THE repository SHALL run the full test suite on every push to main and on pull requests, on Linux and macOS, with Python 3.11 and 3.12, using only the standard library plus pytest.
+- R13.2 Tests that need a real local resource that a CI runner does not have (a Kiro install, the project virtualenv path, launchd) SHALL skip with a reason instead of failing.
+- R13.3 THE README SHALL show the CI status badge near the top.

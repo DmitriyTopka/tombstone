@@ -251,3 +251,19 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 18.4 Fix: the page script must parse
     - Found by a human after 18.2: the generated page's inline script contains `.split("` followed by a real line break, because the Python source writes `"\n"` inside a normal (not raw) string, so the browser gets a syntax error and no card opens at all. Fix the escaping (for example `\\n` in the Python source, or split on a character that needs no escape). Add a test that extracts the inline script from a rendered page and checks it has no raw line break inside a JS string literal; if `node` is on PATH, also check `new Function(script)` does not throw (skip that part when node is missing).
     - _Requirements: R2.11_
+
+- [x] 19. Continuous integration
+  - Approved by Dima on 2026-11-23.
+  - _Requirements: R13.1, R13.2, R13.3_
+
+  - [x] 19.1 GitHub Actions workflow
+    - `.github/workflows/tests.yml`: on push to main and pull_request; matrix ubuntu-latest and macos-latest, Python 3.11 and 3.12; checkout, setup-python, `pip install -e ".[dev]"`, `python -m pytest -q`. No secrets, no network beyond installing pytest. Pin actions to a major version.
+    - _Requirements: R13.1_
+
+  - [x] 19.2 Make the suite runner-safe
+    - Run the suite the way CI will: in a fresh venv outside this repo's `.venv` (for example `python3 -m venv /tmp/ci-venv && /tmp/ci-venv/bin/pip install -e ".[dev]"`) and with `HOME` pointed at an empty temp dir. Any test that fails only because of this machine's setup (the project `.venv` path, a home-directory file, macOS-only tools such as launchctl or ps flags) gets a skip with a clear reason or a portable fix. Tests that check product behaviour must not be skipped. Report which tests were changed and why.
+    - _Requirements: R13.2_
+
+  - [x] 19.3 Badge
+    - Add the badge `[![tests](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml/badge.svg)](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml)` as the first line under the README title. Change nothing else in README.md.
+    - _Requirements: R13.3_
