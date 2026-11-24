@@ -243,4 +243,4 @@ Checked by hand in the browser: the first screen reads tagline, total, three fig
 ## 2026-11-24 Task 22, `tombstone demo` (approved by Dima)
 For a judge with no paid Kiro plan. Added Requirement 14 and task 22. Kiro: 22.1 the scrubbed V3 session from `tests/fixtures/v3_measurement5/` packaged under `src/tombstone/data/demo_session/`, `src/tombstone/demo.py` and the `demo` subcommand, reusing `watcher.evaluate`, `stop.begin_stop` and the real pre-tool hook function; 22.2 `tests/test_demo.py`. 594 tests, green on the first run.
 Checked by hand: `tombstone demo --dir <tmp>` trips the 0.30 cap at request 2 (est. 0.32), writes STOP and a receipt, the hook answers exit code 2 with the refusal text, 0.12 s. A clean `pip install` of the repo into a fresh Python 3.12 venv with an empty `HOME` runs the same demo and leaves `HOME` empty.
-Cost: not priced yet at the commit (23 requests); Kiro writes the price after the turn.
+Cost: 2.533 credits actual (14 requests), filled by the watcher after the turn.
