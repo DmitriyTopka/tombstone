@@ -2010,6 +2010,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/21",
+      "task_id": "21",
+      "name": "A first screen a newcomer understands",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.7516,
+      "actual": 1.3888,
+      "minutes": 1.1022,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_6d0b3f95-7946-419a-92dd-385b6f2b9822",
+          "turn_id": "56ea1467-747c-49bc-a0d6-5c0071602cec",
+          "requests": 21,
+          "estimate": 5.2553,
+          "actual": 4.1667,
+          "minutes": 3.3068,
+          "start": "2026-11-24T07:41:13.037000Z",
+          "end": "2026-11-24T07:44:31.447000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/21.1",
+      "task_id": "21.1",
+      "name": "First screen, plain names, one word",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.7516,
+      "actual": 1.3888,
+      "minutes": 1.1022,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_6d0b3f95-7946-419a-92dd-385b6f2b9822",
+          "turn_id": "56ea1467-747c-49bc-a0d6-5c0071602cec",
+          "requests": 21,
+          "estimate": 5.2553,
+          "actual": 4.1667,
+          "minutes": 3.3068,
+          "start": "2026-11-24T07:41:13.037000Z",
+          "end": "2026-11-24T07:44:31.447000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/21.2",
+      "task_id": "21.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.7516,
+      "actual": 1.3888,
+      "minutes": 1.1022,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_6d0b3f95-7946-419a-92dd-385b6f2b9822",
+          "turn_id": "56ea1467-747c-49bc-a0d6-5c0071602cec",
+          "requests": 21,
+          "estimate": 5.2553,
+          "actual": 4.1667,
+          "minutes": 3.3068,
+          "start": "2026-11-24T07:41:13.037000Z",
+          "end": "2026-11-24T07:44:31.447000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

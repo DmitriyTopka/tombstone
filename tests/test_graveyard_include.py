@@ -10,7 +10,7 @@ from tombstone.tombstones import render_graveyard
 
 from .test_graveyard import _record
 
-KICKER = "the graveyard of its own build and its live tests"
+KICKER = "the record of its own build and its live tests"
 
 
 def _store(path, *records):

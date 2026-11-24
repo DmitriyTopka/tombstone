@@ -2105,6 +2105,10 @@ _GRAVEYARD_CSS_V4 = """
   .row{gap:28px}
   .stopped .row{gap:56px 40px}
 }
+/* v5: first screen, tagline above the headline, legend and links below the figures */
+.intro .tagline{margin:0 0 16px}
+.intro .legend,.intro .links{margin:22px 0 0}
+.intro .links a{color:var(--bone)}
 """.strip()
 
 _GRAVEYARD_CSS = _GRAVEYARD_CSS + "\n" + _g_crack_css() + "\n" + _GRAVEYARD_CSS_V4
@@ -2116,7 +2120,7 @@ _GRAVEYARD_JS = """
 var card=document.getElementById("card");
 var ground=document.getElementById("ground");
 if(card&&ground&&typeof card.showModal==="function"){
-  var fields=[["Actual","actual"],["Estimate during the turn","estimate"],["Requests","requests"],
+  var fields=[["Actual","actual"],["Estimate during the task","estimate"],["Requests","requests"],
               ["Minutes","minutes"],["Model","model"],["Engine","engine"]];
   ground.addEventListener("click",function(e){
     var b=e.target.closest?e.target.closest(".stone"):null;
@@ -2299,8 +2303,41 @@ def _g_receipt_attrs(record: dict, receipt: Optional[dict]) -> str:
     )
 
 
+def _g_stop_reason(receipt: Optional[dict]) -> str:
+    """The reason of a stop in plain words, from its receipt (R2.12)."""
+    if not isinstance(receipt, dict):
+        return "stopped"
+    reason = str(receipt.get("reason") or "").lower()
+    refusal = str(receipt.get("refusal") or "").lower()
+    if "block" in reason or " blocked" in refusal:
+        return "blocked before it started"
+    if reason == "over_cap":
+        return "over its cap"
+    if reason == "stall":
+        return "stalled"
+    return "stopped"
+
+
+def _g_stop_numbers(stopped: list) -> dict:
+    """Map ``id(record)`` of each stopped record with an unknown task id to N.
+
+    N counts from the oldest by stop time (turn start, else the date), and
+    the input order breaks ties, so the same input gives the same numbers.
+    """
+    def key(item: tuple) -> tuple:
+        pos, record = item
+        stamps = [e.get("start") or e.get("end") or ""
+                  for e in (record.get("turns") or []) if isinstance(e, dict)]
+        stamps = [s for s in stamps if isinstance(s, str) and s]
+        return (min(stamps) if stamps else _g_str(record, "date"), pos)
+
+    unknown = [(i, r) for i, r in enumerate(stopped) if _g_task_id(r) == "unknown"]
+    return {id(r): n for n, (_, r) in enumerate(sorted(unknown, key=key), 1)}
+
+
 def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
-             shape: Optional[str] = None, receipt: Optional[dict] = None) -> str:
+             shape: Optional[str] = None, receipt: Optional[dict] = None,
+             stop_no: Optional[int] = None) -> str:
     """One headstone as a ``<button>`` with plain text inside. Everything escaped.
 
     ``index`` is the position in its row and ``row_key`` the plot number,
@@ -2312,7 +2349,12 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
     task_id = _g_task_id(record)
     outcome = _g_str(record, "outcome", "unknown")
     name = _g_str(record, "name", "(unnamed)")
-    tid = "no task" if task_id == "unknown" else f"task {task_id}"
+    live_stop = task_id == "unknown" and outcome != "finished"
+    if live_stop:
+        tid = f"Live stop {stop_no}" if stop_no else "Live stop"
+    else:
+        tid = "no task" if task_id == "unknown" else f"task {task_id}"
+    epi = _g_stop_reason(receipt) if live_stop else name
     estimate = _g_num(record.get("estimate"))
     actual = _g_num(record.get("actual"))
     requests = record.get("requests")
@@ -2323,7 +2365,7 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
     source = _g_str(record, "source")
     height = _g_height(cost, peak)
 
-    meta = (f"{'No task' if task_id == 'unknown' else 'Task ' + task_id}, "
+    meta = (f"{tid if live_stop else ('No task' if task_id == 'unknown' else 'Task ' + task_id)}, "
             f"{_g_outcome_text(outcome)}")
     if date:
         meta += f", {date}"
@@ -2338,7 +2380,7 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
         gap = "The actual price had not arrived when this was written."
 
     unit = f"credits {label}"
-    aria = f"{tid}, {_g_credits(cost)} credits {label}, {name}"
+    aria = f"{tid}, {_g_credits(cost)} credits {label}, {epi}"
     if shape is None:
         shape = _G_SHAPES[(index + zlib.crc32(row_key.encode("utf-8"))) % len(_G_SHAPES)]
         if shape == "cross" and height < 170:
@@ -2360,7 +2402,7 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
         f'<span class="tid">{esc(tid)}</span>'
         f'<span class="cost">{esc(_g_credits(cost))}</span>'
         f'<span class="unit">{esc(unit)}</span>'
-        f'<span class="epi">{esc(name)}</span></button>'
+        f'<span class="epi">{esc(epi)}</span></button>'
     )
 
 
@@ -2404,7 +2446,7 @@ def _g_register_row(record: dict) -> str:
     )
 
 
-_GRAVEYARD_LEDE = ("Each stone is a spec task Kiro finished or a turn the breaker stopped, "
+_GRAVEYARD_LEDE = ("Each stone is a spec task Kiro finished or a task the breaker stopped, "
                    "as tall as its price. "
                    "Open a stone for the estimate, the requests and the time.")
 
@@ -2426,17 +2468,26 @@ def _g_median(values: list) -> float:
     return (ordered[mid - 1] + ordered[mid]) / 2
 
 
-_GRAVEYARD_KICKER = "Tombstone, the graveyard of its own build"
-_GRAVEYARD_KICKER_LIVE = "Tombstone, the graveyard of its own build and its live tests"
+_GRAVEYARD_KICKER = "Tombstone, the record of its own build"
+_GRAVEYARD_KICKER_LIVE = "Tombstone, the record of its own build and its live tests"
 
 
-def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER) -> dict:
-    """The scene header (task 13.1): title, headline and proof strip.
+_GRAVEYARD_TAGLINE = "Tombstone stops a Kiro agent when a task goes over its budget."
+_GRAVEYARD_LEGEND = "Height is the price. A crack means the breaker stopped it."
+_GRAVEYARD_HINT = "Click a cracked stone to read its receipt."
+
+
+def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER,
+              video: Optional[str] = None, repo: Optional[str] = None) -> dict:
+    """The scene header (task 13.1, 21.1): title, tagline, headline, three figures.
 
     Every figure is computed from the records. ``total`` is the sum of the
     cost each stone shows (an unpriced stone adds nothing). Costs print with
     two decimals and are a mix of actual and est. prices, as on the stones.
-    Returns ``{"title": str, "html": str}``; ``html`` is already escaped.
+    The strip holds exactly three figures: tasks buried, stopped by the
+    breaker and the most expensive task. The legend, the click hint (only
+    with a stopped stone) and the optional ``video`` and ``repo`` links
+    follow. Returns ``{"title": str, "html": str}``; ``html`` is already escaped.
     """
     esc = functools.partial(html.escape, quote=True)
     priced = [(c, r) for r in rows for c in [_g_cost(r)[0]] if c is not None]
@@ -2448,41 +2499,44 @@ def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER) -> dict:
         headline = "Nothing is buried here yet."
 
     strip = ""
+    n_stopped = sum(1 for r in rows if r.get("outcome") != "finished")
     if rows:
-        items = [("", "graves", str(len(rows)))]
-        if priced:
-            top_cost, top = max(priced, key=lambda p: p[0])
-            top_name = _g_str(top, "name", "(unnamed)").lower()
-            items.append(("", f"the most expensive: {top_name}", f"{top_cost:.2f}"))
-            items.append(("", "credits for a median grave",
-                          f"{_g_median([c for c, _ in priced]):.2f}"))
-        requests = 0
-        for r in rows:
-            n = r.get("requests")
-            if isinstance(n, int) and not isinstance(n, bool):
-                requests += n
-        items.append(("", "model requests behind them", str(requests)))
-        n_stopped = sum(1 for r in rows if r.get("outcome") != "finished")
-        if n_stopped:
-            items.append((' class="red"', "stopped by the breaker", str(n_stopped)))
+        top_cost = max((c for c, _ in priced), default=None)
+        items = [
+            ("", "tasks buried", str(len(rows))),
+            (' class="red"' if n_stopped else "", "stopped by the breaker", str(n_stopped)),
+            ("", "the most expensive task",
+             "n/a" if top_cost is None else f"{top_cost:.2f}"),
+        ]
         strip = '<dl class="proof">' + "".join(
             f"<div{cls}><dt>{esc(label)}</dt><dd>{esc(value)}</dd></div>"
             for cls, label, value in items) + "</dl>\n"
+    legend = f'<p class="kicker legend">{esc(_GRAVEYARD_LEGEND)}'
+    if n_stopped:
+        legend += f" {esc(_GRAVEYARD_HINT)}"
+    legend += "</p>\n"
+    links = [(label, url) for label, url in (("Demo video", video), ("Repository", repo)) if url]
+    link_html = ""
+    if links:
+        link_html = '<p class="kicker links">' + " ".join(
+            f'<a href="{esc(url)}">{label}</a>' for label, url in links) + "</p>\n"
 
     markup = (
         '<header class="sky">\n<div class="stars" aria-hidden="true"></div>\n'
         '<div class="moon" aria-hidden="true"></div>\n<div class="intro">\n'
         f'<p class="kicker">{esc(kicker)}</p>\n'
+        f'<p class="lede tagline">{esc(_GRAVEYARD_TAGLINE)}</p>\n'
         f"<h1>{esc(headline)}</h1>\n"
         f'<p class="lede" id="lede">{esc(_GRAVEYARD_LEDE)}</p>\n'
-        f"{strip}</div>\n{_GRAVEYARD_HILLS}</header>\n"
+        f"{strip}{legend}{link_html}</div>\n{_GRAVEYARD_HILLS}</header>\n"
     )
     return {"title": title, "html": markup}
 
 
 def render_graveyard(records: list, plots: Optional[dict] = None,
                      included: Optional[dict] = None,
-                     receipts: Optional[dict] = None) -> str:
+                     receipts: Optional[dict] = None,
+                     video: Optional[str] = None, repo: Optional[str] = None) -> str:
     """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
 
     Headstones, plots, the stopped row, unmarked graves and the register are
@@ -2498,6 +2552,9 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
 
     ``receipts`` maps a record id to its parsed autopsy (R2.11). A stopped
     record without one shows "No receipt was kept for this stop." in the card.
+
+    ``video`` and ``repo`` are optional URLs drawn as two plain links in the
+    header (R2.12). Each is escaped and left out when not given.
     """
     esc = functools.partial(html.escape, quote=True)
     receipts = receipts if isinstance(receipts, dict) else {}
@@ -2528,15 +2585,17 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             live_note = f" {lead} are live test runs on scratch projects, kept in {kept}."
     on_page = any(r.get("id") in included for r in rows)
 
+    stop_nos = _g_stop_numbers(stopped)
     parts: list[str] = []
     if stopped:
         parts.append(
             '<div class="section-note wide stopped-note"><h2>Stopped by the breaker</h2>'
-            "These turns went over their cap or were blocked before they started. "
+            "These tasks went over their cap or were blocked before they started. "
             "The next tool call was refused and the agent stopped. "
             f"The cost is what Kiro charged before it did.{live_note}</div>"
             '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
-            + "".join(_g_stone(r, peak, i, "stopped", sh, receipts.get(r.get("id"))) for i, (r, sh)
+            + "".join(_g_stone(r, peak, i, "stopped", sh, receipts.get(r.get("id")),
+                                            stop_nos.get(id(r))) for i, (r, sh)
                       in enumerate(zip(stopped, _g_row_shapes(stopped, peak, "stopped"))))
             + "</div></div>"
             '<div class="section-note wide"><h2>Finished tasks</h2>'
@@ -2555,14 +2614,14 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             + "".join(_g_stone(r, peak, i, key, sh) for i, (r, sh)
                       in enumerate(zip(members, _g_row_shapes(members, peak, key))))
             + f'</div><div class="plaque"><span class="num">{esc(key)}</span><b>{esc(title)}</b>'
-            f'<span class="sum">{n} {"grave" if n == 1 else "graves"}, '
+            f'<span class="sum">{n} {"task" if n == 1 else "tasks"}, '
             f"{esc(_g_sum_label(members))}</span></div></div>"
         )
 
     if unmarked:
         parts.append(
-            '<div class="section-note wide"><h2>Unmarked graves</h2>'
-            f"{len(unmarked)} turns ticked no box in tasks.md: bug fixes, retries, a hello. "
+            '<div class="section-note wide"><h2>Unmarked tasks</h2>'
+            f"{len(unmarked)} tasks ticked no box in tasks.md: bug fixes, retries, a hello. "
             "Tombstone does not guess their task, so each is named by the first words of its "
             f"prompt. {esc(_g_sum_label(unmarked))}.</div>"
             '<div class="plot unmarked wide"><div class="row" style="flex-wrap:wrap;row-gap:40px">'
@@ -2572,11 +2631,12 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         )
 
     if not rows:
-        parts.append('<p class="section-note wide">No tombstones yet. The graveyard is quiet.</p>')
+        parts.append('<p class="section-note wide">No tombstones yet. It is quiet here.</p>')
 
     register_rows = sorted(
         rows, key=lambda r: (_g_num(r.get("actual")) is None, -(_g_num(r.get("actual")) or 0.0)))
-    header = _g_header(rows, _GRAVEYARD_KICKER_LIVE if on_page else _GRAVEYARD_KICKER)
+    header = _g_header(rows, _GRAVEYARD_KICKER_LIVE if on_page else _GRAVEYARD_KICKER,
+                       video, repo)
 
     return (
         "<!doctype html>\n"
@@ -2587,7 +2647,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<div class="fog" aria-hidden="true"></div>\n'
         f"{header['html']}"
         "<main>\n"
-        f'<section class="ground" id="ground" aria-label="Graves by task">'
+        f'<section class="ground" id="ground" aria-label="Tasks by plot">'
         f'<div class="field">{"".join(parts)}</div></section>\n'
         '<section class="register" aria-labelledby="regh">\n'
         '<h2 id="regh">The register</h2>\n'
@@ -2718,7 +2778,8 @@ def _collect_receipts(project: Path, records: list, extra_dirs: Optional[list]) 
 
 def write_graveyard(project: Path, out: Optional[Path] = None,
                     includes: Optional[list] = None,
-                    autopsy_dirs: Optional[list] = None) -> Path:
+                    autopsy_dirs: Optional[list] = None,
+                    video: Optional[str] = None, repo: Optional[str] = None) -> Path:
     """Render ``tombstones.json`` of ``project`` and write the page.
 
     Default target is ``.tombstone/graveyard.html``. Reads the store
@@ -2729,7 +2790,8 @@ def write_graveyard(project: Path, out: Optional[Path] = None,
     store = load_tombstones(project / "tombstones.json")
     records, included = merge_includes(store.get("tombstones") or [], includes or [])
     receipts = _collect_receipts(project, records, autopsy_dirs)
-    page = render_graveyard(records, read_plot_names(project), included, receipts)
+    page = render_graveyard(records, read_plot_names(project), included, receipts,
+                            video, repo)
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
     if out is None and not guard(project, target):

@@ -59,4 +59,4 @@ def test_copy_all_versus_some():
     assert "1 of them are live test runs" in some
     everyone = render_graveyard(recs, None, {"a": "x.json", "b": "x.json"})
     assert "All 2 are live test runs" in everyone
-    assert "a spec task Kiro finished or a turn the breaker stopped" in everyone
+    assert "a spec task Kiro finished or a task the breaker stopped" in everyone

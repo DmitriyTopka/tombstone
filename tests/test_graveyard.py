@@ -65,11 +65,11 @@ def test_stopped_row_and_unmarked_row():
         _record(id="d", task_id="unknown", name="hello there"),
     ])
     assert "Stopped by the breaker" in page
-    assert "Unmarked graves" in page
+    assert "Unmarked tasks" in page
     stopped = page.index("Stopped by the breaker")
     finished = page.index("Finished tasks")
     assert stopped < finished
-    assert page.index("hello there") > page.index("Unmarked graves")
+    assert page.index("hello there") > page.index("Unmarked tasks")
     assert 'class="ghost"' not in page
 
 
@@ -80,7 +80,7 @@ def test_plot_names_and_grouping():
         {"2": "Writer"})
     assert "<b>Writer</b>" in page
     assert "<b>Task 7</b>" in page
-    assert "2 graves" in page and "1 grave," in page
+    assert "2 tasks" in page and "1 task," in page
 
 
 def test_height_grows_with_cost():
@@ -204,7 +204,7 @@ def test_unknown_records_only_in_unmarked_graves():
         _record(id="u/1", task_id="unknown", name="orphan one"),
         _record(id="s/3", task_id="3", name="plotted"),
     ]))
-    unmarked = page.index("Unmarked graves")
+    unmarked = page.index("Unmarked tasks")
     assert page.index("orphan one") > unmarked
     assert page.index("plotted") < unmarked
     assert "<b>Task unknown</b>" not in page
@@ -236,7 +236,7 @@ def _lede(page: str) -> str:
     return re.search(r'<p class="lede" id="lede">(.*?)</p>', page).group(1)
 
 
-V3_LEDE = ("Each stone is a spec task Kiro finished or a turn the breaker stopped, "
+V3_LEDE = ("Each stone is a spec task Kiro finished or a task the breaker stopped, "
            "as tall as its price. "
            "Open a stone for the estimate, the requests and the time.")
 
@@ -254,7 +254,7 @@ def _strip(page: str) -> dict:
 
 def test_v3_header_copy_title_and_hills():
     page = render_graveyard([_record(actual=0.5)])
-    assert '<p class="kicker">Tombstone, the graveyard of its own build</p>' in page
+    assert '<p class="kicker">Tombstone, the record of its own build</p>' in page
     assert _lede(page) == V3_LEDE
     assert "<title>The Graveyard, 0.50 credits</title>" in page
     assert '<svg class="hills"' in page and 'class="stars"' in page
@@ -279,11 +279,10 @@ def test_v3_proof_strip_figures():
         _record(id="d", task_id="4", name="est", actual=None, estimate=3.0, requests=None),
     ])
     strip = _strip(page)
-    assert strip["graves"][0] == "4"
-    assert strip["the most expensive: big one"][0] == "4.00"
-    assert strip["credits for a median grave"][0] == "2.50"
-    assert strip["model requests behind them"][0] == "22"
-    assert "stopped by the breaker" not in strip
+    assert list(strip) == ["tasks buried", "stopped by the breaker", "the most expensive task"]
+    assert strip["tasks buried"][0] == "4"
+    assert strip["the most expensive task"][0] == "4.00"
+    assert strip["stopped by the breaker"][0] == "0"
 
 
 def test_v3_stopped_figure_only_with_stopped_records_and_is_red():
@@ -305,7 +304,8 @@ def test_v3_empty_has_no_strip():
 def test_v3_header_escapes_names():
     page = render_graveyard([_record(name="<i>x</i>", actual=1.0)])
     assert "<i>x</i>" not in page.split("<main>")[0]
-    assert "the most expensive: &lt;i&gt;x&lt;/i&gt;" in page
+    assert "the most expensive task" in page
+    assert "&lt;i&gt;x&lt;/i&gt;" not in page.split("<main>")[0]
 
 
 def test_v3_mobile_rule_keeps_stone_text_readable():

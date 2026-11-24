@@ -496,6 +496,285 @@
         }
       ],
       "source": "kill-live-2026-11-23"
+    },
+    {
+      "id": "unknown/f2ae9536-4752-4ee6-ae88-ee363d72a8d2",
+      "task_id": "unknown",
+      "name": "Read every note file one by one. For",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.32,
+      "actual": 0.1655,
+      "minutes": 0.1887,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_eacce570-4974-4853-bee8-61eac7b96c75",
+          "turn_id": "f2ae9536-4752-4ee6-ae88-ee363d72a8d2",
+          "requests": 4,
+          "estimate": 0.32,
+          "actual": 0.1655,
+          "minutes": 0.1887,
+          "start": "2026-11-24T07:20:31.795000Z",
+          "end": "2026-11-24T07:20:43.118000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s01"
+    },
+    {
+      "id": "unknown/204c6253-2e2d-4d04-986f-08d380510f10",
+      "task_id": "unknown",
+      "name": "Create a folder docs. For each note file,",
+      "spec": null,
+      "task_type": "docs",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.32,
+      "actual": 0.16,
+      "minutes": 0.1799,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_541c9247-6e1f-4d18-aa15-39f2e89af90a",
+          "turn_id": "204c6253-2e2d-4d04-986f-08d380510f10",
+          "requests": 4,
+          "estimate": 0.32,
+          "actual": 0.16,
+          "minutes": 0.1799,
+          "start": "2026-11-24T07:21:34.782000Z",
+          "end": "2026-11-24T07:21:45.574000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s02"
+    },
+    {
+      "id": "unknown/afba5104-07f0-467d-861c-140ff2a66738",
+      "task_id": "unknown",
+      "name": "Check every note for dates and budget numbers.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.32,
+      "actual": 0.1871,
+      "minutes": 0.2093,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_6fb908a2-523b-4986-beff-caa9acce73fa",
+          "turn_id": "afba5104-07f0-467d-861c-140ff2a66738",
+          "requests": 4,
+          "estimate": 0.32,
+          "actual": 0.1871,
+          "minutes": 0.2093,
+          "start": "2026-11-24T07:22:38.595000Z",
+          "end": "2026-11-24T07:22:51.154000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s03"
+    },
+    {
+      "id": "unknown/1134481f-bb9b-401a-8874-129d2ae84199",
+      "task_id": "unknown",
+      "name": "Read every note file one by one. For",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.48,
+      "actual": 0.1806,
+      "minutes": 0.1769,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_2d88a4ef-cc67-47d5-88e2-7dff2941e280",
+          "turn_id": "1134481f-bb9b-401a-8874-129d2ae84199",
+          "requests": 4,
+          "estimate": 0.48,
+          "actual": 0.1806,
+          "minutes": 0.1769,
+          "start": "2026-11-24T07:23:42.604000Z",
+          "end": "2026-11-24T07:23:53.220000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s04"
+    },
+    {
+      "id": "unknown/0de5dafc-ab8d-41c3-a67d-7457551ab72f",
+      "task_id": "unknown",
+      "name": "Create a folder docs. For each note file,",
+      "spec": null,
+      "task_type": "docs",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.32,
+      "actual": 0.1609,
+      "minutes": 0.1739,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_98c9f51b-b1d9-42d6-bd07-edfe7bca37f2",
+          "turn_id": "0de5dafc-ab8d-41c3-a67d-7457551ab72f",
+          "requests": 4,
+          "estimate": 0.32,
+          "actual": 0.1609,
+          "minutes": 0.1739,
+          "start": "2026-11-24T07:24:45.409000Z",
+          "end": "2026-11-24T07:24:55.841000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s05"
+    },
+    {
+      "id": "unknown/86a22aa8-7702-422e-9011-7dac1b380f8b",
+      "task_id": "unknown",
+      "name": "Check every note for dates and budget numbers.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.8,
+      "actual": 0.1839,
+      "minutes": 0.2062,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_409cf8b7-e4d3-4f64-9a7b-38685caf68ae",
+          "turn_id": "86a22aa8-7702-422e-9011-7dac1b380f8b",
+          "requests": 4,
+          "estimate": 0.8,
+          "actual": 0.1839,
+          "minutes": 0.2062,
+          "start": "2026-11-24T07:25:47.315000Z",
+          "end": "2026-11-24T07:25:59.686000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s06"
+    },
+    {
+      "id": "unknown/716ccb05-41b8-4a21-97ff-53c8ddb15c56",
+      "task_id": "unknown",
+      "name": "Create a folder docs. For each note file,",
+      "spec": null,
+      "task_type": "docs",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.32,
+      "actual": 0.1696,
+      "minutes": 0.2981,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_4cc378a9-c803-417e-9c5c-56e55537dde4",
+          "turn_id": "716ccb05-41b8-4a21-97ff-53c8ddb15c56",
+          "requests": 4,
+          "estimate": 0.32,
+          "actual": 0.1696,
+          "minutes": 0.2981,
+          "start": "2026-11-24T07:29:02.414000Z",
+          "end": "2026-11-24T07:29:20.301000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s09"
+    },
+    {
+      "id": "unknown/c1a1142c-5c92-4e45-a7e2-40e91c6373d5",
+      "task_id": "unknown",
+      "name": "Read every note file one by one. For",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 4,
+      "estimate": 0.32,
+      "actual": 0.1614,
+      "minutes": 0.1809,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_67cd029f-53ab-4e25-b780-148ccddfb587",
+          "turn_id": "c1a1142c-5c92-4e45-a7e2-40e91c6373d5",
+          "requests": 4,
+          "estimate": 0.32,
+          "actual": 0.1614,
+          "minutes": 0.1809,
+          "start": "2026-11-24T07:30:12.387000Z",
+          "end": "2026-11-24T07:30:23.243000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-s10"
+    },
+    {
+      "id": "unknown/b0bf0f60-e40d-4d53-950e-3df0283589ee",
+      "task_id": "unknown",
+      "name": "Check every note for dates and budget numbers.",
+      "spec": null,
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 3,
+      "estimate": 0.1144,
+      "actual": 0.1259,
+      "minutes": 0.1319,
+      "outcome": "killed",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_3e776a46-f938-45b0-b601-9b60dd5ee81a",
+          "turn_id": "b0bf0f60-e40d-4d53-950e-3df0283589ee",
+          "requests": 3,
+          "estimate": 0.1144,
+          "actual": 0.1259,
+          "minutes": 0.1319,
+          "start": "2026-11-24T07:36:38.043000Z",
+          "end": "2026-11-24T07:36:45.960000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ],
+      "source": "stops-live-2026-11-24-calibrated"
     }
   ]
 }

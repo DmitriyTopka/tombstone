@@ -556,7 +556,8 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
     out = Path(args.out) if args.out else None
     try:
         target = tombstones.write_graveyard(
-            project, out, loaded, getattr(args, "autopsies", None) or [])
+            project, out, loaded, getattr(args, "autopsies", None) or [],
+            getattr(args, "video", None) or None, getattr(args, "repo", None) or None)
     except OSError as exc:
         print(f"tombstone graveyard: could not write: {exc}", file=sys.stderr)
         return 1
@@ -1475,6 +1476,10 @@ def build_parser() -> argparse.ArgumentParser:
                            help="add the records of another tombstones file (repeatable)")
     graveyard.add_argument("--autopsies", action="append", default=[], metavar="DIR",
                            help="read stop receipts from DIR as well (repeatable)")
+    graveyard.add_argument("--video", default=None, metavar="URL",
+                           help="link to the demo video, drawn in the page header")
+    graveyard.add_argument("--repo", default=None, metavar="URL",
+                           help="link to the repository, drawn in the page header")
     graveyard.add_argument("--project", default=None,
                            help="project root (default: found from the working directory)")
     graveyard.set_defaults(func=cmd_graveyard)

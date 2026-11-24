@@ -276,3 +276,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - When `maybe_kill` finishes with `killed` or `no_process`, rewrite the "Step two (kill)" line of that stop's autopsy (path in `state.stop.autopsy`) with the outcome, the time and the number of processes terminated and killed, using the existing safe atomic write helpers and `safe_autopsy_path`. Leave the rest of the file unchanged. If the autopsy is missing or unreadable, do nothing and keep the kill result in state.json.
     - Tests: after a fake kill the autopsy line says the kill ran with the PID counts; `no_process` writes its warning; a missing autopsy does not raise; a symlinked autopsy is not followed. The graveyard receipt parser reads the new line and the card shows "ran".
     - _Requirements: R6.3, R7.1_
+
+- [x] 21. A first screen a newcomer understands
+  - Approved by Dima on 2026-11-24 (council plan, item 3). Judges asked for simplicity, a clean UI and a clear UX.
+  - _Requirements: R2.12_
+
+  - [x] 21.1 First screen, plain names, one word
+    - In `render_graveyard` (tombstones.py) add the tagline line, cut the figure strip to three (tasks buried, stopped by the breaker, the most expensive task), add the legend and the click hint, and `--video URL` / `--repo URL` options on `tombstone graveyard` that draw two plain links in the header (escaped, omitted when not given). For a stopped record with task id `unknown`, show "Live stop N" (N by stop time from the oldest, stable for the same input) and under it the reason from its matched autopsy in plain words (over_cap -> "over its cap", stall -> "stalled", a block before the turn started -> "blocked before it started", no receipt -> "stopped"); keep the prompt only inside the card. Replace "grave" and "turn" in visible copy with "task"; keep CSS class names and data attributes as they are. Keep the existing look; no new colours, no new sections.
+    - _Requirements: R2.12_
+
+  - [x] 21.2 Tests
+    - The tagline, the legend and exactly three figures are on the page; the hint shows only when a stopped stone exists; `--video`/`--repo` links appear only when given and are escaped; an unknown-task stopped record reads "Live stop N" with the right reason and never "no task"; no visible "grave" or "turn" outside the title and CSS; the inline script still parses (existing test).
+    - _Requirements: R2.12_
