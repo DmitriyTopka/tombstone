@@ -288,3 +288,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 21.2 Tests
     - The tagline, the legend and exactly three figures are on the page; the hint shows only when a stopped stone exists; `--video`/`--repo` links appear only when given and are escaped; an unknown-task stopped record reads "Live stop N" with the right reason and never "no task"; no visible "grave" or "turn" outside the title and CSS; the inline script still parses (existing test).
     - _Requirements: R2.12_
+
+- [x] 22. `tombstone demo`
+  - Approved by Dima on 2026-11-24 (council plan, item 4). A judge can see the breaker trip with no Kiro plan and no credits. If the suite is not green after one run, the task is dropped.
+  - _Requirements: R14.1, R14.2, R14.3, R14.4_
+
+  - [x] 22.1 Packaged session and the demo command
+    - Copy the scrubbed V3 fixture from `tests/fixtures/v3_measurement5/` (or another existing scrubbed V3 fixture with enough requests to pass 0.30 at the uncalibrated price) into package data under `src/tombstone/`, declared in `pyproject.toml` so it installs. Add the `demo` subcommand in `cli.py`: scratch project with `tombstone.toml` (task cap 0.30), replay the session one request at a time through the existing estimate and over-cap logic, print a line per request, write STOP and the autopsy through the existing functions, then call the existing pre-tool hook function with a sample `PreToolUse` payload and print its exit code and refusal text; end with the receipt path and the `tombstone graveyard --project <dir>` command. Reuse existing code; no new estimate logic.
+    - _Requirements: R14.1, R14.2, R14.3, R14.4_
+
+  - [x] 22.2 Tests
+    - `tombstone demo --dir <tmp>` exits 0, prints a STOP line, a hook exit code 2 and the refusal text, writes the STOP file and one autopsy in `<tmp>/.tombstone/`; it does not touch `HOME` (run it with `HOME` set to an empty temp dir and check nothing appeared there) and runs with `PATH` stripped of `kiro-cli`; a non-empty `--dir` is refused with exit 1; the packaged session contains no `/Users/` or `/home/` path.
+    - _Requirements: R14.1, R14.2, R14.3, R14.4_

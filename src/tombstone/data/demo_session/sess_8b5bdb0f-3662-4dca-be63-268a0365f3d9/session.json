@@ -1,0 +1,17 @@
+{
+  "schemaVersion": "1.0.0",
+  "dataModelVersion": 1,
+  "id": "sess_8b5bdb0f-3662-4dca-be63-268a0365f3d9",
+  "title": "scrubbed",
+  "agentMode": "vibe",
+  "workspacePaths": [
+    "/workspace/project0"
+  ],
+  "rootPaths": [
+    "/workspace/project0"
+  ],
+  "createdAt": "2026-11-05T17:37:56.024Z",
+  "lastModifiedAt": "2026-11-05T17:38:11.570Z",
+  "modelId": "auto",
+  "status": "idle"
+}

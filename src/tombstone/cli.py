@@ -617,6 +617,16 @@ def cmd_watch(args: argparse.Namespace) -> int:
     return 0
 
 
+# --- tombstone demo ---------------------------------------------------------
+
+
+def cmd_demo(args: argparse.Namespace) -> int:
+    """``tombstone demo``: replay a packaged session and trip the breaker (R14)."""
+    from . import demo
+
+    return demo.run(getattr(args, "dir", None))
+
+
 # --- tombstone mcp ----------------------------------------------------------
 
 
@@ -1495,6 +1505,14 @@ def build_parser() -> argparse.ArgumentParser:
     resume.add_argument("--project", default=None,
                         help="project root (default: found from the working directory)")
     resume.set_defaults(func=cmd_resume)
+
+    demo_cmd = sub.add_parser(
+        "demo", help="replay a recorded session and watch the breaker trip "
+                     "(no Kiro, no credits)")
+    demo_cmd.add_argument("--dir", default=None,
+                          help="scratch project directory (must be empty or new; "
+                               "default: a new temp directory)")
+    demo_cmd.set_defaults(func=cmd_demo)
 
     mcp_cmd = sub.add_parser("mcp", help="run the stdio MCP server (get_budget)")
     mcp_cmd.add_argument("--project", default=None,

@@ -2100,6 +2100,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/22",
+      "task_id": "22",
+      "name": "`tombstone demo`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 23,
+      "estimate": 1.0568,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_b222183d-afee-45ac-96cb-52b3c09fb567",
+          "turn_id": "897f5a1a-71a8-4aa4-8388-502e85eca047",
+          "requests": 23,
+          "estimate": 3.1707,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-24T07:47:46.851000Z",
+          "end": null,
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/22.1",
+      "task_id": "22.1",
+      "name": "Packaged session and the demo command",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 23,
+      "estimate": 1.0568,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_b222183d-afee-45ac-96cb-52b3c09fb567",
+          "turn_id": "897f5a1a-71a8-4aa4-8388-502e85eca047",
+          "requests": 23,
+          "estimate": 3.1707,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-24T07:47:46.851000Z",
+          "end": null,
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/22.2",
+      "task_id": "22.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 23,
+      "estimate": 1.0568,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_b222183d-afee-45ac-96cb-52b3c09fb567",
+          "turn_id": "897f5a1a-71a8-4aa4-8388-502e85eca047",
+          "requests": 23,
+          "estimate": 3.1707,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-24T07:47:46.851000Z",
+          "end": null,
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

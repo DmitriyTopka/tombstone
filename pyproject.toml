@@ -22,5 +22,8 @@ version = { attr = "tombstone.__version__" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+tombstone = ["data/**/*"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

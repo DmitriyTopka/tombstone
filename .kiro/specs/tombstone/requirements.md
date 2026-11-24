@@ -196,3 +196,14 @@ Acceptance check: a session with Tombstone installed shows no extra metered requ
 - R13.1 THE repository SHALL run the full test suite on every push to main and on pull requests, on Linux and macOS, with Python 3.11 and 3.12, using only the standard library plus pytest.
 - R13.2 Tests that need a real local resource that a CI runner does not have (a Kiro install, the project virtualenv path, launchd) SHALL skip with a reason instead of failing.
 - R13.3 THE README SHALL show the CI status badge near the top.
+
+### Requirement 14: A demo that costs nothing
+
+**User Story:** As a judge without a paid Kiro plan, I want to see the breaker trip on my own machine in under a minute, without Kiro, without credits and without a network.
+
+#### Acceptance Criteria
+
+- R14.1 THE SYSTEM SHALL provide `tombstone demo`, which creates a scratch project in a new temporary directory (or in `--dir DIR` when given, which must be empty or not exist), replays a recorded and scrubbed Kiro V3 session that ships inside the package, request by request, against a task cap of 0.30, and prints one line per request with the running estimate against the cap.
+- R14.2 WHEN the estimate goes over the cap THE SYSTEM SHALL write the STOP file and the autopsy through the same code paths the watcher uses, then run the real pre-tool hook entry point on a sample tool call and print its exit code (2) and the refusal text the agent would read.
+- R14.3 THE demo SHALL NOT start Kiro, call any model, use the network or read the user's `~/.kiro`; it SHALL finish in under 10 seconds, print where the receipt was written and the command to render the graveyard for the demo project, and exit 0. The temporary directory is kept so the receipt can be opened.
+- R14.4 THE recorded session SHALL be packaged as data of the `tombstone` package, so the demo works after `pip install` from a clean checkout, and SHALL contain no home path, user name or account id.
