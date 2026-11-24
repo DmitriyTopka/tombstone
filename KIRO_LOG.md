@@ -244,3 +244,7 @@ Checked by hand in the browser: the first screen reads tagline, total, three fig
 For a judge with no paid Kiro plan. Added Requirement 14 and task 22. Kiro: 22.1 the scrubbed V3 session from `tests/fixtures/v3_measurement5/` packaged under `src/tombstone/data/demo_session/`, `src/tombstone/demo.py` and the `demo` subcommand, reusing `watcher.evaluate`, `stop.begin_stop` and the real pre-tool hook function; 22.2 `tests/test_demo.py`. 594 tests, green on the first run.
 Checked by hand: `tombstone demo --dir <tmp>` trips the 0.30 cap at request 2 (est. 0.32), writes STOP and a receipt, the hook answers exit code 2 with the refusal text, 0.12 s. A clean `pip install` of the repo into a fresh Python 3.12 venv with an empty `HOME` runs the same demo and leaves `HOME` empty.
 Cost: 2.533 credits actual (14 requests), filled by the watcher after the turn.
+
+## 2026-11-24 Task 23, a lede that matches the page (approved by Dima)
+A cold reader saw "Each stone is a spec task Kiro finished" next to 22 stones filed as unknown. Added R2.13 and task 23. Kiro: 23.1 new lede text and the two tests that quoted the old one. 594 tests.
+Cost: 0.197 credits actual (8 requests); the turn ticked 23 and 23.1, so it is filed under both, as with tasks 20 to 22. The build graveyard is now 75 stones, 195.83 credits; the page 100 stones, 208.20; `/usage` 283.83.

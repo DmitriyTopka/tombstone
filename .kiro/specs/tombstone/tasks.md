@@ -300,3 +300,11 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 22.2 Tests
     - `tombstone demo --dir <tmp>` exits 0, prints a STOP line, a hook exit code 2 and the refusal text, writes the STOP file and one autopsy in `<tmp>/.tombstone/`; it does not touch `HOME` (run it with `HOME` set to an empty temp dir and check nothing appeared there) and runs with `PATH` stripped of `kiro-cli`; a non-empty `--dir` is refused with exit 1; the packaged session contains no `/Users/` or `/home/` path.
     - _Requirements: R14.1, R14.2, R14.3, R14.4_
+
+- [x] 23. Lede that matches what the page shows
+  - Approved by Dima on 2026-11-24 (item 6 of the final check). A cold reader saw "Each stone is a spec task Kiro finished" next to 22 stones filed as unknown.
+  - _Requirements: R2.13_
+
+  - [x] 23.1 Lede text and its test
+    - Change `_GRAVEYARD_LEDE` in `tombstones.py` to the exact R2.13 text and update the expected lede in `tests/test_graveyard.py` (`V3_LEDE`) to match. No other change to the page.
+    - _Requirements: R2.13_

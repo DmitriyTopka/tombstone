@@ -2190,6 +2190,66 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/23",
+      "task_id": "23",
+      "name": "Lede that matches what the page shows",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.7976,
+      "actual": 0.197,
+      "minutes": 0.3911,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_d22a85ed-4085-4e7d-a87a-8d285f4c5077",
+          "turn_id": "15c78b2d-9097-4ca1-9ea1-9c04567b1107",
+          "requests": 8,
+          "estimate": 1.5952,
+          "actual": 0.394,
+          "minutes": 0.7821,
+          "start": "2026-11-24T12:39:04.687000Z",
+          "end": "2026-11-24T12:39:51.614000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/23.1",
+      "task_id": "23.1",
+      "name": "Lede text and its test",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 0.7976,
+      "actual": 0.197,
+      "minutes": 0.3911,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-24",
+      "turns": [
+        {
+          "session_id": "sess_d22a85ed-4085-4e7d-a87a-8d285f4c5077",
+          "turn_id": "15c78b2d-9097-4ca1-9ea1-9c04567b1107",
+          "requests": 8,
+          "estimate": 1.5952,
+          "actual": 0.394,
+          "minutes": 0.7821,
+          "start": "2026-11-24T12:39:04.687000Z",
+          "end": "2026-11-24T12:39:51.614000Z",
+          "share": 0.5,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

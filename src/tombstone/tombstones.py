@@ -2446,8 +2446,8 @@ def _g_register_row(record: dict) -> str:
     )
 
 
-_GRAVEYARD_LEDE = ("Each stone is a spec task Kiro finished or a task the breaker stopped, "
-                   "as tall as its price. "
+_GRAVEYARD_LEDE = ("Each stone is a task: a spec task Kiro finished, work that ticked no checkbox "
+                   "(filed as unknown), or a task the breaker stopped. It is as tall as its price. "
                    "Open a stone for the estimate, the requests and the time.")
 
 _GRAVEYARD_HILLS = (

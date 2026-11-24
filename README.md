@@ -5,6 +5,8 @@
 
 **Who it's for:** a developer on a paid Kiro plan who starts a spec and walks away.
 
+**Built with Kiro:** the spec in `.kiro/specs/tombstone/` (14 requirements in EARS, 23 tasks), 7 command hooks, a steering file, the MCP tool `get_budget` and a Power in `power/`. One requirement followed all the way to the refusal the agent reads: [From spec to hook](#from-spec-to-hook).
+
 Tombstone is a circuit breaker for Kiro specs. You give every spec task a credit cap. When a running task goes past it, Tombstone blocks the agent's next tool call with a plain message, and if the agent keeps going, it ends the `kiro-cli` process for that project. Every finished task gets a tombstone with its real price, and every stopped one leaves a receipt. The breaker itself spends zero credits and never changes your model.
 
 > A user put "HARD STOP: 40 credits OR 40 minutes" in the prompt. The agent ran for 2 h 03 min. ([kirodotdev/Kiro#10999](https://github.com/kirodotdev/Kiro/issues/10999))
@@ -15,7 +17,7 @@ Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.
 
 ![The graveyard of this repo's own build: the headline is the total price, cracked stones are tasks the breaker stopped](docs/img/graveyard.png)
 
-Most graveyards in Kiroween bury code or tasks. This one buries money: every stone is what one Kiro spec task really cost, and every cracked stone is a task the breaker stopped. The 207.81 credits on the page are this repo's own build (195.44 credits over 73 stones) plus the 25 live test runs the breaker stopped (12.05 credits priced, and 0.32 estimated for the one turn Tombstone killed, since Kiro writes no price for a killed turn). Click a cracked stone and its card shows the receipt: why it stopped, the refusal the agent read and its last tool calls. 11 of the 25 stops kept a receipt; the scratch projects of the early runs are gone.
+Most graveyards in Kiroween bury code or tasks. This one buries money: every stone is what one Kiro spec task really cost, and every cracked stone is a task the breaker stopped. The 208.20 credits on the page are this repo's own build (195.83 credits over 75 stones) plus the 25 live test runs the breaker stopped (12.05 credits priced, and 0.32 estimated for the one turn Tombstone killed, since Kiro writes no price for a killed turn). Click a cracked stone and its card shows the receipt: why it stopped, the refusal the agent read and its last tool calls. 11 of the 25 stops kept a receipt; the scratch projects of the early runs are gone. So the page shows 100 stones: 75 from the build and 25 stops. Kiro's own `/usage` counts more, 283.83 credits, because it covers the whole account, with test runs, measurements and the video recording.
 
 - **Prices every spec task** in credits, from the session files Kiro already writes. Nothing leaves your machine.
 - **Stops a runaway turn** past its cap: the `PreToolUse` hook refuses the next tool call, and the agent reads why.
@@ -138,12 +140,12 @@ One line of the spec, followed to the refusal the agent reads:
 3. **Hook** [`.kiro/hooks/tombstone-pre-tool.json`](.kiro/hooks/tombstone-pre-tool.json): trigger `PreToolUse`, a shell command, no agent prompt, so it costs nothing.
 4. **Refusal**: Kiro gets exit code 2, refuses the tool and hands the agent `TOMBSTONE: this turn over budget (est. 0.11 of 0.10). Stop.`
 
-Where each Kiro surface sits: the spec (14 requirements in EARS, 22 tasks), 7 command hooks, a steering file, the MCP tool `get_budget`, and a Power in `power/`.
+Where each Kiro surface sits: the spec (14 requirements in EARS, 23 tasks), 7 command hooks, a steering file, the MCP tool `get_budget`, and a Power in `power/`.
 
 ## What surprised us about Kiro
 
 - **The agent obeys a hook it was told to ignore.** We asked it to work past the cap and removed the steering file. It still stopped at the first refused tool and quoted the rule back. The process kill was built for an agent that keeps going, and we had to remove the hook on purpose to see it fire.
-- **It refuses an endless loop by itself.** A prompt that ordered a never-ending read-only audit was meant to trip the stall detector. Kiro did one pass and then declined to repeat it, so the stall stop never fired in those runs.
+- **It refuses an endless loop by itself.** A prompt that ordered a never-ending read-only audit was meant to trip the stall detector. Kiro did one pass and then declined to repeat it, so the stall stop never fired in those audit runs. It did fire in a separate run with a short quiet window, 9 steps in.
 - **Smart models read the cap.** The agent finds the limit in `tombstone.toml` and often stops before the breaker has to. We kept the cap public.
 - **The CLI changed under us.** Kiro CLI 3.0.0 shipped two days into the build and moved the session files, hooks and price format. We rewrote the requirements and Kiro regenerated `design.md` and `tasks.md` from them.
 
@@ -151,12 +153,12 @@ Where each Kiro surface sits: the spec (14 requirements in EARS, 22 tasks), 7 co
 
 Every line of product code was written by Kiro CLI from the spec in `.kiro/specs/tombstone/`: `requirements.md` in EARS notation, `design.md` and `tasks.md` generated by Kiro from it. A human picked the next task, read the diff and ran the checks. Each task was run with `kiro-cli chat --no-interactive` and priced by Tombstone itself, with its own hooks installed in this repo.
 
-The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 73 tombstones in [tombstones.json](tombstones.json) add up to 195.44 credits of priced turns: 51 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs and the video recording included, used 283.43 credits by `/usage`. 594 tests run in about seven seconds and need no Kiro install.
+The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 75 tombstones in [tombstones.json](tombstones.json) add up to 195.83 credits of priced turns: 53 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs and the video recording included, used 283.83 credits by `/usage`. 594 tests run in about seven seconds and need no Kiro install.
 
 ## How we used Kiro
 
 - **CLI.** Kiro CLI 3.0.0, later 3.1.0, V3 engine, model `auto`.
-- **Spec-driven development.** Twenty-two top-level tasks with subtasks, all done. When the CLI moved to 3.0.0 in the middle of the build, we rewrote the requirements for V3 and Kiro regenerated the design and tasks.
+- **Spec-driven development.** Twenty-three top-level tasks with subtasks, all done. When the CLI moved to 3.0.0 in the middle of the build, we rewrote the requirements for V3 and Kiro regenerated the design and tasks.
 - **Hooks.** Shell command hooks only, no agent hooks, so the breaker costs nothing: `PreToolUse`, `PostToolUse`, `Stop`, `UserPromptSubmit`, `SessionStart` and the two task hooks. All seven run in this repo during its own build: see [`.kiro/hooks/`](.kiro/hooks/), with the caps in [`tombstone.toml`](tombstone.toml).
 - **Steering.** `project.md` holds the stack and the dogfood rules. The `tombstone.md` file that `init` writes asks the agent to call `get_budget` before a task and to stop and ask a human when the budget is short.
 - **MCP.** `get_budget`, a stdio server on the standard library. It answers `initialize` in about 45 ms. This repo starts it from [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json).

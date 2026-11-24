@@ -236,8 +236,8 @@ def _lede(page: str) -> str:
     return re.search(r'<p class="lede" id="lede">(.*?)</p>', page).group(1)
 
 
-V3_LEDE = ("Each stone is a spec task Kiro finished or a task the breaker stopped, "
-           "as tall as its price. "
+V3_LEDE = ("Each stone is a task: a spec task Kiro finished, work that ticked no checkbox "
+           "(filed as unknown), or a task the breaker stopped. It is as tall as its price. "
            "Open a stone for the estimate, the requests and the time.")
 
 
