@@ -46,6 +46,7 @@ def write_stop(
     time: Optional[datetime] = None,
     spec: Optional[str] = None,
     session_id: Optional[str] = None,
+    live: Optional[float] = None,
 ) -> Path:
     """Write ``.tombstone/STOP`` atomically and return its path (R6.1).
 
@@ -68,6 +69,8 @@ def write_stop(
         "time": _iso(time),
         "session_id": session_id,
     }
+    if live is not None:
+        payload["live"] = live
     try:
         write_atomic(target, json.dumps(payload, indent=2) + "\n")
     except OSError:
@@ -619,6 +622,7 @@ def begin_stop(event, *, project: Optional[Path] = None, kiro_home=None,
         requests_at_stop=requests, time=when,
         spec=getattr(event, "spec", None),
         session_id=getattr(event, "session_id", None),
+        live=getattr(event, "live", None),
     )
 
     try:
@@ -634,6 +638,7 @@ def begin_stop(event, *, project: Optional[Path] = None, kiro_home=None,
         "requests_at_stop": requests,
         "estimate": getattr(event, "estimate", None),
         "estimate_label": "est.",
+        "live": getattr(event, "live", None),
         "task_id": getattr(event, "task_id", None),
         "spec": getattr(event, "spec", None),
         "session_id": getattr(event, "session_id", None),

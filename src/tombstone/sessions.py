@@ -674,6 +674,69 @@ def open_turn_progress(path: Path) -> Optional[Progress]:
     return None
 
 
+def _credit_sum(value: object) -> Optional[float]:
+    """``main + delegated`` of a ``creditSplit`` value, None when unusable."""
+    if not isinstance(value, dict):
+        return None
+    total = 0.0
+    for key in ("main", "delegated"):
+        part = value.get(key, 0)
+        if isinstance(part, bool) or not isinstance(part, (int, float)):
+            return None
+        total += float(part)
+    return total
+
+
+def live_credits(path: Path) -> Optional[float]:
+    """Live credits of the open V3 turn from ``creditSplit`` metadata (R4.5).
+
+    The figure is ``main + delegated`` of the latest ``creditSplit`` after the
+    open turn's ``turn_start``, minus the same sum of the last ``creditSplit``
+    before that ``turn_start`` (0 when there is none). Returns None for V2,
+    when no turn is open, or when no ``creditSplit`` follows the turn start.
+    Never raises.
+    """
+    path = Path(path)
+    if detect_format(path) != "v3":
+        return None
+    root = _v3_root(path) or path
+    events = _read_jsonl(root / "messages.jsonl")
+    closed: set[str] = set()
+    start_index: dict[str, int] = {}
+    for index, event in enumerate(events):
+        payload = event.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        turn_id = payload.get("turnId")
+        if not isinstance(turn_id, str):
+            continue
+        if payload.get("type") == "turn_start":
+            start_index[turn_id] = index
+        elif payload.get("type") == "usage_summary":
+            closed.add(turn_id)
+    open_starts = [i for t, i in start_index.items() if t not in closed]
+    if not open_starts:
+        return None
+    start = max(open_starts)
+    before = 0.0
+    after: Optional[float] = None
+    for index, event in enumerate(events):
+        payload = event.get("payload")
+        if not isinstance(payload, dict) or payload.get("type") != "session_metadata" \
+                or payload.get("key") != "creditSplit":
+            continue
+        total = _credit_sum(payload.get("value"))
+        if total is None:
+            continue
+        if index < start:
+            before = total
+        else:
+            after = total
+    if after is None:
+        return None
+    return max(after - before, 0.0)
+
+
 def assistant_counts(path: Path) -> dict[str, int]:
     """Assistant events per turn id of a V3 session (the watcher's unit).
 

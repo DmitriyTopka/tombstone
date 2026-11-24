@@ -308,3 +308,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 23.1 Lede text and its test
     - Change `_GRAVEYARD_LEDE` in `tombstones.py` to the exact R2.13 text and update the expected lede in `tests/test_graveyard.py` (`V3_LEDE`) to match. No other change to the page.
     - _Requirements: R2.13_
+
+- [x] 24. Live credits from Kiro instead of a guess
+  - Approved by Dima on 2026-11-24. The experiment in `experiments/RESULTS.md` showed the breaker missing a 0.33 cap in 3 of 3 runs because the calibrated estimate was 72 percent low. Kiro CLI 3.5.0 already writes the running credit total of a turn (`session_metadata` key `creditSplit`).
+  - _Requirements: R4.5_
+
+  - [x] 24.1 Read `creditSplit` and use it for the cap
+    - In `sessions.py` add a function that returns the live credits of the open V3 turn per R4.5 (None when the session has no `creditSplit`). In the watcher's evaluate path and in the pre-tool hook's cap check, use `max(estimate, live)` as the figure compared with the cap, store `live` in the turn state next to the estimate with basis `live`, and write it into the autopsy and the STOP message ("live 0.60 of 0.33" when live is the deciding figure). Keep everything else as it is; no new config keys.
+    - _Requirements: R4.5_
+
+  - [x] 24.2 Fixture and tests
+    - Teach `tests/fixtures/scrub_session.py` to keep the numeric `value` of `session_metadata` events whose key is `creditSplit` or `contextUsage` (still blank every other text). Scrub the raw session in `~/tombstone-demo/exp_2411/fixture_src/` into `tests/fixtures/v3_live_credits/` and check it holds no `/Users/` or `/home/` path. Tests: the live credits of the fixture's open-turn prefix (cut the file before `usage_summary`) match the last `creditSplit` main; a session without `creditSplit` gives None and the old estimate path is unchanged; with a 0.33 cap the watcher raises over_cap on the prefix that reaches main 0.598 although the calibrated estimate is lower; the hook refuses with the live figure in the message.
+    - _Requirements: R4.5_

@@ -357,6 +357,7 @@ class Observation:
     units: int = 0
     jsonl_size: int = 0
     prior_cost: float = 0.0     # earlier turns of the same task, actual or est.
+    live: Optional[float] = None  # live credits of the open turn (R4.5), or None
 
 
 @dataclass(frozen=True)
@@ -374,6 +375,7 @@ class Event:
     session_id: Optional[str] = None
     turn_id: Optional[str] = None
     quiet_minutes: Optional[float] = None
+    live: Optional[float] = None    # live figure (prior + open turn), when known
 
 
 def _dt(value: object) -> Optional[datetime]:
@@ -434,6 +436,10 @@ def evaluate(state: dict, obs: Observation, cfg, now: datetime) -> Optional[Even
 
     estimate = obs.prior_cost + open_estimate(
         state, obs.units, obs.engine, cfg.avg_request_price)
+    # R4.5: the live figure replaces the estimate when it is higher.
+    live_total = (obs.prior_cost + obs.live) if obs.live is not None else None
+    use_live = live_total is not None and live_total > estimate
+    figure = live_total if use_live else estimate
     stamp = now.isoformat()
 
     def make(kind: str, message: str, detail: str,
@@ -443,14 +449,16 @@ def evaluate(state: dict, obs: Observation, cfg, now: datetime) -> Optional[Even
             project=obs.project, task_id=task_id, spec=spec,
             estimate=round(estimate, 4), requests=obs.units,
             session_id=obs.session_id, turn_id=obs.turn_id, quiet_minutes=quiet,
+            live=round(live_total, 4) if live_total is not None else None,
         )
 
-    if estimate > cfg.task_cap:
+    if figure > cfg.task_cap:
+        basis = "live" if use_live else "est."
         return make(
             "over_cap",
-            f"TOMBSTONE: {label} over budget (est. {_fmt(estimate)} of "
+            f"TOMBSTONE: {label} over budget ({basis} {_fmt(figure)} of "
             f"{_fmt(cfg.task_cap)}). Stop.",
-            f"est. {estimate:.3f} credits over task cap {cfg.task_cap}",
+            f"{basis} {figure:.3f} credits over task cap {cfg.task_cap}",
         )
 
     since = quiet_since(state, turn)
@@ -561,6 +569,10 @@ def poll_once(project: Path, cfg, now: datetime,
         store = tombstones.load_tombstones(project / "tombstones.json")
         records = store.get("tombstones", []) if isinstance(store, dict) else []
 
+    live: Optional[float] = None
+    if open_turn is not None and session is not None and session.engine == "v3":
+        live = sessions.live_credits(session_path)
+
     raised: list[Event] = []
 
     def apply(state: dict) -> None:
@@ -607,11 +619,14 @@ def poll_once(project: Path, cfg, now: datetime,
             session_id=session.session_id, turn_id=open_turn.turn_id,
             units=units, jsonl_size=size,
             prior_cost=_prior_task_cost(records, state, open_turn.turn_id),
+            live=live,
         )
         price, basis = unit_price(state, engine, cfg.avg_request_price)
         turn["requests"] = units
         turn["estimate"] = round(obs.prior_cost + units * price, 4)
         turn["estimate_basis"] = f"est., {basis}"
+        turn["live"] = round(live, 4) if live is not None else None
+        turn["live_basis"] = "live"
 
         event = evaluate(state, obs, cfg, now)
         if event is not None:

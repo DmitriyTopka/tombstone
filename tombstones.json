@@ -2250,6 +2250,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/24",
+      "task_id": "24",
+      "name": "Live credits from Kiro instead of a guess",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 29,
+      "estimate": 1.5012,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_fe4d41bc-d8e1-466f-9e0e-595cfe71c9b4",
+          "turn_id": "fb31f833-ac70-4998-9e15-2105bf038220",
+          "requests": 29,
+          "estimate": 4.5041,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-24T13:32:59.463000Z",
+          "end": null,
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/24.1",
+      "task_id": "24.1",
+      "name": "Read `creditSplit` and use it for the cap",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 29,
+      "estimate": 1.5012,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_fe4d41bc-d8e1-466f-9e0e-595cfe71c9b4",
+          "turn_id": "fb31f833-ac70-4998-9e15-2105bf038220",
+          "requests": 29,
+          "estimate": 4.5041,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-24T13:32:59.463000Z",
+          "end": null,
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/24.2",
+      "task_id": "24.2",
+      "name": "Fixture and tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 29,
+      "estimate": 1.5012,
+      "actual": null,
+      "minutes": null,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": null,
+      "turns": [
+        {
+          "session_id": "sess_fe4d41bc-d8e1-466f-9e0e-595cfe71c9b4",
+          "turn_id": "fb31f833-ac70-4998-9e15-2105bf038220",
+          "requests": 29,
+          "estimate": 4.5041,
+          "actual": null,
+          "minutes": null,
+          "start": "2026-11-24T13:32:59.463000Z",
+          "end": null,
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

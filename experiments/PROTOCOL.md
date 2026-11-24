@@ -27,3 +27,6 @@ Stop the series if the total passes 80 credits.
 
 ## Pilot result and the cap (written before the series)
 Pilot control, 24 Nov: Task A finished on its own in 49 s, 5 requests, 0.987 credits actual, 57 tests passing. It is a normal task, not a runaway. Per the rule above the cap for the breaker and fit groups is 0.33 credits, a third of the pilot.
+
+## Round 2 (written before it ran)
+After round 1 the breaker was changed by Kiro (task 24, R4.5): it now also reads the running credit total Kiro CLI 3.5.0 writes into the session (`creditSplit`) and compares the higher of that and the estimate with the cap. Round 2 repeats the breaker and fit groups exactly as in round 1 (same script, same prompts, same cap 0.33). The round 1 control runs stand as the control.

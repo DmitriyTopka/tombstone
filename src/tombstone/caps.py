@@ -331,7 +331,8 @@ def _is_current(state: dict, task: object) -> bool:
 
 
 def spec_spent(records: list[dict], spec: Optional[str],
-               open_estimate: float = 0.0) -> tuple[float, str]:
+               open_estimate: float = 0.0,
+               open_basis: str = "est.") -> tuple[float, str]:
     """Credits spent on a spec and the basis of that figure (R3.3).
 
     Sums the cost of every record of the spec (``actual``, else ``estimate``)
@@ -354,7 +355,7 @@ def spec_spent(records: list[dict], spec: Optional[str],
             basis = "est."
     if open_estimate > 0:
         total += open_estimate
-        basis = "est."
+        basis = open_basis
     return total, basis
 
 
@@ -407,8 +408,15 @@ def check_task_start(
     open_estimate = 0.0
     if isinstance(turn, dict) and isinstance(turn.get("estimate"), (int, float)):
         open_estimate = float(turn["estimate"])
+    open_basis = "est."
+    # R4.5: the live figure replaces the estimate when it is higher.
+    if isinstance(turn, dict) and isinstance(turn.get("live"), (int, float)) \
+            and not isinstance(turn.get("live"), bool) \
+            and float(turn["live"]) > open_estimate:
+        open_estimate = float(turn["live"])
+        open_basis = "live"
 
-    spent, spent_basis = spec_spent(records, spec, open_estimate)
+    spent, spent_basis = spec_spent(records, spec, open_estimate, open_basis)
     remaining = config.spec_cap - spent
     name = _task_field(task, "name") or ""
     sim = median_similar(records, name, spec=None)

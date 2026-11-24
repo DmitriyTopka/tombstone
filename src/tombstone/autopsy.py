@@ -185,6 +185,8 @@ def write_autopsy(project, stop: dict, session, state: dict,
         f"- Requests at stop: {requests if requests is not None else 'unknown'}",
         "- Cost per request: unknown (no actual cost yet)",
         f"- Estimate at stop (est.): {_fmt(estimate if isinstance(estimate, (int, float)) else None)} credits",
+        *([f"- Live credits at stop (live): {_fmt(stop.get('live'))} credits"]
+          if isinstance(stop.get("live"), (int, float)) else []),
         "- Actual after the turn: pending",
         f"- Quiet project: {_fmt_minutes(quiet)} minutes",
         f"- STOP time: {when.astimezone(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')}",

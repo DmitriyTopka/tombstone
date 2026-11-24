@@ -59,8 +59,29 @@ def scrub_text(value: object) -> object:
     return value
 
 
+# session_metadata keys whose numeric ``value`` is kept (R4.5 live credits).
+NUMERIC_METADATA_KEYS = {"creditSplit", "contextUsage"}
+
+
+def _numbers_only(value: object) -> object:
+    """Keep numbers, blank every other leaf (strings, nulls)."""
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return value
+    if isinstance(value, list):
+        return [_numbers_only(v) for v in value]
+    if isinstance(value, dict):
+        return {k: _numbers_only(v) for k, v in value.items()}
+    if isinstance(value, str):
+        return PLACEHOLDER
+    return value
+
+
 def scrub_payload(payload: dict) -> dict:
     out: dict = {}
+    keep_value = (payload.get("type") == "session_metadata"
+                  and payload.get("key") in NUMERIC_METADATA_KEYS)
     for key, value in payload.items():
         if key in DROP_KEYS:
             continue
@@ -86,6 +107,9 @@ def scrub_payload(payload: dict) -> dict:
             continue
         if key in PATH_KEYS:
             out[key] = _fake_path(0)
+            continue
+        if key == "value" and keep_value:
+            out[key] = _numbers_only(value)
             continue
         if key in TEXT_KEYS:
             out[key] = scrub_text(value)

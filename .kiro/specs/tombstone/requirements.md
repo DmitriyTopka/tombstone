@@ -83,6 +83,7 @@ Acceptance check: on the V3 session from measurement 5 the command prints 0.390 
 - R4.2 WHEN a turn ends THE SYSTEM SHALL read the exact cost and store both estimate and actual in the tombstone.
 - R4.3 WHEN a turn ends THE SYSTEM SHALL update the average request price in project state as the mean of the last 50 priced requests of this project.
 - R4.4 THE SYSTEM SHALL label every on-screen number as `est.` or `actual`.
+- R4.5 WHILE a V3 turn is running AND its session `messages.jsonl` carries `session_metadata` events with key `creditSplit` THE SYSTEM SHALL take the live cost of the open turn as `main + delegated` of the latest `creditSplit` after the turn's `turn_start`, minus the same sum of the last `creditSplit` before that `turn_start` (0 when there is none), label it `live`, and use it in place of the estimate for the cap check whenever it is higher than the estimate; WHEN no `creditSplit` is present THE SYSTEM SHALL keep the R4.1 estimate. Kiro CLI 3.5.0 writes this metadata after every request (measured 24 Nov 2026: the last value equals the turn's `usage_summary` usage).
 
 Acceptance check: on a 10-request turn the estimate at the end of the turn is within 30% of the actual cost.
 
