@@ -24,3 +24,6 @@ One control run first. If Task A naturally costs less than 1 credit, the cap is 
 
 ## Budget
 Stop the series if the total passes 80 credits.
+
+## Pilot result and the cap (written before the series)
+Pilot control, 24 Nov: Task A finished on its own in 49 s, 5 requests, 0.987 credits actual, 57 tests passing. It is a normal task, not a runaway. Per the rule above the cap for the breaker and fit groups is 0.33 credits, a third of the pilot.
