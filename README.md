@@ -22,7 +22,7 @@ Most graveyards in Kiroween bury code or tasks. This one buries money: every sto
 - **Catches a stall**, when the agent keeps calling the model and no project file changes.
 - **Costs zero credits.** No model calls, no agent hooks, no network.
 
-Video, 2:52: [youtu.be/kzdNSIHnfyM](https://youtu.be/kzdNSIHnfyM)  
+Video, 2:50: [youtu.be/LPhH_BCcwaQ](https://youtu.be/LPhH_BCcwaQ)  
 Live graveyard of this build: [dmitriytopka.github.io/tombstone](https://dmitriytopka.github.io/tombstone/)
 
 ```mermaid
