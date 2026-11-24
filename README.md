@@ -40,7 +40,7 @@ flowchart LR
 
 ## Try it in 60 seconds
 
-You don't need Kiro or credits for this part. You need Python 3.11 or newer; the `python3` that ships with macOS is often older, so the commands use [uv](https://docs.astral.sh/uv/). The repo carries the 73 real tombstones from its own build, the 25 turns the breaker stopped in our live tests (`live_stops.json`) and a real V3 session.
+You don't need Kiro or credits for this part. You need Python 3.11 or newer; the `python3` that ships with macOS is often older, so the commands use [uv](https://docs.astral.sh/uv/). The repo carries the 75 real tombstones from its own build, the 25 turns the breaker stopped in our live tests (`live_stops.json`) and a real V3 session.
 
 ```bash
 git clone https://github.com/DmitriyTopka/tombstone && cd tombstone
