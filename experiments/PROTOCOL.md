@@ -36,3 +36,4 @@ Round 2 showed the stop but no saving, because Task A spends most of its money i
 
 ### Round 3 amendment (before any breaker run)
 The first pilot (r3c1, 25 Nov) ran on Kiro's older V2 engine: with `--trust-tools=...` Kiro CLI starts a V2 session (`~/.kiro/sessions/cli/`), with `--trust-all-tools` a V3 one (checked with one-line prompts the same morning). Kiro CLI also updated itself to 3.6.0 overnight; its V3 sessions still carry `creditSplit`. r3c1 is kept and reported (V2, 35 requests, 6.355 credits, 171 s, 60 tests passing) but not used for the comparison. Round 3 goes back to `--trust-all-tools` so every run is V3, like rounds 1 and 2, and the pilot is repeated as r3c2.
+Pilot r3c2 (V3, Kiro CLI 3.6.0): 21 requests, 4.130 credits, 148 s, 67 tests passing. Breaker3 cap fixed at 1.00 credit (about a quarter). Series: r3c2 plus two more control3, then three breaker3.
