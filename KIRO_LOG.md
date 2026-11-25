@@ -248,3 +248,10 @@ Cost: 2.533 credits actual (14 requests), filled by the watcher after the turn.
 ## 2026-11-24 Task 23, a lede that matches the page (approved by Dima)
 A cold reader saw "Each stone is a spec task Kiro finished" next to 22 stones filed as unknown. Added R2.13 and task 23. Kiro: 23.1 new lede text and the two tests that quoted the old one. 594 tests.
 Cost: 0.197 credits actual (8 requests); the turn ticked 23 and 23.1, so it is filed under both, as with tasks 20 to 22. The build graveyard is now 75 stones, 195.83 credits; the page 100 stones, 208.20; `/usage` 283.83.
+
+## 2026-11-24 Task 24, the cap reads Kiro's live total (approved by Dima)
+Round 1 of the cost experiment showed the breaker missing a real overrun: it priced requests at the average of one cheap calibration turn and stayed 72 percent low. Added R4.5 and task 24. Kiro: 24.1 `sessions.live_credits()` reads `creditSplit` (main plus delegated), which Kiro V3 writes into `session_metadata` after each request, and the watcher, the task-start check and the receipt use the larger of the estimate and the live figure; 24.2 a scrubbed fixture in `tests/fixtures/v3_live_credits/` and `tests/test_live_credits.py`. 602 tests.
+Cost: 4.17 credits actual (18 requests), filled by the watcher after the turn; the turn ticked 24, 24.1 and 24.2, so it is filed under all three. The build graveyard is now 78 stones, 200.00 credits; the page 103 stones, 212.37.
+
+## 2026-11-24 and 25 The cost experiment (approved by Dima)
+Run by Claude with `experiments/run.sh` in scratch projects outside the repo, protocol committed before each round. Round 1 (before task 24): 0 of 3 stops. Round 2: 3 of 3 stops, no saving on a short task. Round 3 (Kiro CLI 3.6.0, long task, cap 1.00): 3 of 3 stops, 1.27 credits on average against 5.16 without Tombstone. Details and every run in [experiments/RESULTS.md](experiments/RESULTS.md). `/usage` after: 324.17/4000.

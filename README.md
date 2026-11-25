@@ -3,21 +3,23 @@
 
 **Tombstone stops a Kiro agent when a task goes over its budget.** In a live run on 24 November the cap was 0.10 credits: the breaker tripped at an estimate of 0.114, the agent's next tool call was refused, and the turn ended at 0.126 credits actual.
 
+**On a long task it saves money.** Three runs of the same Kiro task with a 1.00 credit cap cost 1.17 to 1.37 credits; three runs without Tombstone cost 4.13 to 5.83. The breaker tripped in all three, about 74 percent less on average. The stopped runs did not finish the app, which is the point of a cap. Protocol and every run: [experiments/](experiments/RESULTS.md).
+
 **Who it's for:** a developer on a paid Kiro plan who starts a spec and walks away.
 
-**Built with Kiro:** the spec in `.kiro/specs/tombstone/` (14 requirements in EARS, 23 tasks), 7 command hooks, a steering file, the MCP tool `get_budget` and a Power in `power/`. One requirement followed all the way to the refusal the agent reads: [From spec to hook](#from-spec-to-hook).
+**Built with Kiro:** the spec in `.kiro/specs/tombstone/` (14 requirements in EARS, 24 tasks), 7 command hooks, a steering file, the MCP tool `get_budget` and a Power in `power/`. One requirement followed all the way to the refusal the agent reads: [From spec to hook](#from-spec-to-hook).
 
 Tombstone is a circuit breaker for Kiro specs. You give every spec task a credit cap. When a running task goes past it, Tombstone blocks the agent's next tool call with a plain message, and if the agent keeps going, it ends the `kiro-cli` process for that project. Every finished task gets a tombstone with its real price, and every stopped one leaves a receipt. The breaker itself spends zero credits and never changes your model.
 
-> A user put "HARD STOP: 40 credits OR 40 minutes" in the prompt. The agent ran for 2 h 03 min. ([kirodotdev/Kiro#10999](https://github.com/kirodotdev/Kiro/issues/10999))
+> A user of Kiro's autonomous agent put "HARD STOP: 40 credits OR 40 minutes" in the prompt. The agent ran for 2 h 03 min. ([kirodotdev/Kiro#10999](https://github.com/kirodotdev/Kiro/issues/10999), [#11416](https://github.com/kirodotdev/Kiro/issues/11416))
 >
-> A prompt is not a breaker.
+> A prompt is not a breaker. That run was in Kiro Web, which Tombstone does not watch; Tombstone holds the same line for Kiro CLI, outside the model.
 
-Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.0 (V3 engine), the live process kill on 3.5.0, macOS; CI runs the tests on Linux and macOS with Python 3.11 and 3.12. No dependencies outside the standard library.
+Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.0 (V3 engine), the live process kill on 3.5.0, the cost experiment on 3.6.0, macOS; CI runs the tests on Linux and macOS with Python 3.11 and 3.12. No dependencies outside the standard library.
 
 ![The graveyard of this repo's own build: the headline is the total price, cracked stones are tasks the breaker stopped](docs/img/graveyard.png)
 
-Most graveyards in Kiroween bury code or tasks. This one buries money: every stone is what one Kiro spec task really cost, and every cracked stone is a task the breaker stopped. The 208.20 credits on the page are this repo's own build (195.83 credits over 75 stones) plus the 25 live test runs the breaker stopped (12.05 credits priced, and 0.32 estimated for the one turn Tombstone killed, since Kiro writes no price for a killed turn). Click a cracked stone and its card shows the receipt: why it stopped, the refusal the agent read and its last tool calls. 11 of the 25 stops kept a receipt; the scratch projects of the early runs are gone. So the page shows 100 stones: 75 from the build and 25 stops. Kiro's own `/usage` counts more, 283.83 credits, because it covers the whole account, with test runs, measurements and the video recording.
+Most graveyards in Kiroween bury code or tasks. This one buries money: every stone is what one Kiro spec task really cost, and every cracked stone is a task the breaker stopped. The 212.37 credits on the page are this repo's own build (200.00 credits over 78 stones) plus the 25 live test runs the breaker stopped (12.05 credits priced, and 0.32 estimated for the one turn Tombstone killed, since Kiro writes no price for a killed turn). Click a cracked stone and its card shows the receipt: why it stopped, the refusal the agent read and its last tool calls. 11 of the 25 stops kept a receipt; the scratch projects of the early runs are gone. So the page shows 103 stones: 78 from the build and 25 stops. Kiro's own `/usage` counts more, 324.17 credits, because it covers the whole account, with test runs, measurements, the cost experiment and the video recording.
 
 - **Prices every spec task** in credits, from the session files Kiro already writes. Nothing leaves your machine.
 - **Stops a runaway turn** past its cap: the `PreToolUse` hook refuses the next tool call, and the agent reads why.
@@ -40,7 +42,7 @@ flowchart LR
 
 ## Try it in 60 seconds
 
-You don't need Kiro or credits for this part. You need Python 3.11 or newer; the `python3` that ships with macOS is often older, so the commands use [uv](https://docs.astral.sh/uv/). The repo carries the 75 real tombstones from its own build, the 25 turns the breaker stopped in our live tests (`live_stops.json`) and a real V3 session.
+You don't need Kiro or credits for this part. You need Python 3.11 or newer; the `python3` that ships with macOS is often older, so the commands use [uv](https://docs.astral.sh/uv/). The repo carries the 78 real tombstones from its own build, the 25 turns the breaker stopped in our live tests (`live_stops.json`) and a real V3 session.
 
 ```bash
 git clone https://github.com/DmitriyTopka/tombstone && cd tombstone
@@ -126,6 +128,7 @@ The agent's answer after the refusal, from the same run: "The hook comes from yo
 - With the `PreToolUse` hook in place the agent always stopped at the first refused tool, even when the prompt told it to keep going and the steering file was removed, so the kill never had to fire. On 23 November we removed the hook in a scratch project to see the backstop alone: the watcher wrote STOP 8 s into a looping audit, and 7 s later ended the `kiro-cli` tree (3 processes, SIGTERM, exit code 143). The receipt records it: "Step two (kill): yes (ran at 2026-11-23T08:58:46Z; 3 processes terminated, 0 killed)". Kiro writes no price for a killed turn, so that stone carries only the estimate (0.32).
 
 ![The live kill: STOP, then SIGTERM to the kiro-cli tree](docs/img/live_kill.gif)
+- A cap is where the work stops, not a hard ceiling on the bill. Kiro writes the running total after each request, so the stop lands on the first request past the cap, and the agent spends one or two more requests explaining why it stopped. In the long-task experiment the live total at the STOP was 1.03 to 1.05 of a 1.00 cap, and the final bill 1.17 to 1.37. Leave that margin when you set a cap.
 - The Kiro IDE stores its data elsewhere. It is not a source yet.
 - The video was recorded before the runtime state moved from `.kiro/tombstone/` to `.tombstone/` (task 16, so that nothing under `/.kiro` is git-ignored). The receipt path on screen shows the old place.
 - Installing from GitHub works: on 19 November a fresh clone installed with `uv`, priced the fixture session and passed all 563 tests of that day, before task 18 added 11 more (`uv pip install -e ".[dev]"` adds pytest), and `uv tool install git+https://github.com/DmitriyTopka/tombstone` gave a working `tombstone` command. Installing the Power by URL has not been checked yet.
@@ -140,7 +143,7 @@ One line of the spec, followed to the refusal the agent reads:
 3. **Hook** [`.kiro/hooks/tombstone-pre-tool.json`](.kiro/hooks/tombstone-pre-tool.json): trigger `PreToolUse`, a shell command, no agent prompt, so it costs nothing.
 4. **Refusal**: Kiro gets exit code 2, refuses the tool and hands the agent `TOMBSTONE: this turn over budget (est. 0.11 of 0.10). Stop.`
 
-Where each Kiro surface sits: the spec (14 requirements in EARS, 23 tasks), 7 command hooks, a steering file, the MCP tool `get_budget`, and a Power in `power/`.
+Where each Kiro surface sits: the spec (14 requirements in EARS, 24 tasks), 7 command hooks, a steering file, the MCP tool `get_budget`, and a Power in `power/`.
 
 ## What surprised us about Kiro
 
@@ -153,7 +156,7 @@ Where each Kiro surface sits: the spec (14 requirements in EARS, 23 tasks), 7 co
 
 Every line of product code was written by Kiro CLI from the spec in `.kiro/specs/tombstone/`: `requirements.md` in EARS notation, `design.md` and `tasks.md` generated by Kiro from it. A human picked the next task, read the diff and ran the checks. Each task was run with `kiro-cli chat --no-interactive` and priced by Tombstone itself, with its own hooks installed in this repo.
 
-The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 75 tombstones in [tombstones.json](tombstones.json) add up to 195.83 credits of priced turns: 53 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs and the video recording included, used 283.83 credits by `/usage`. 594 tests run in about seven seconds and need no Kiro install.
+The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 78 tombstones in [tombstones.json](tombstones.json) add up to 200.00 credits of priced turns: 56 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs, the cost experiment and the video recording included, used 324.17 credits by `/usage`. 602 tests run in about seven seconds and need no Kiro install.
 
 ## How we used Kiro
 
@@ -185,6 +188,8 @@ On a normal 12-step task with a cap of 0.30 credits, the breaker wrote `STOP` 9 
 The final test pass found that, with the watcher service off, the estimate was never calibrated and came out about twice the real price. The fix moved the median error from about 65 to 26 percent.
 
 We checked by hand that the breaker is free. `/usage` read 222.86 before and after five balance probes, a hook call, a cost report and a `get_budget` call.
+
+Three rounds of a written-before-the-run experiment, with the failures kept in ([experiments/RESULTS.md](experiments/RESULTS.md)). Round 1: the breaker missed 3 of 3, because it had learned its price from one cheap turn. Task 24 then read Kiro's own running total (`creditSplit`) instead. Round 2: it caught 3 of 3 but saved nothing on a five-request task. Round 3, a long task: it caught 3 of 3 and the task cost 1.27 credits on average against 5.16 without it.
 
 ## What we learned
 
