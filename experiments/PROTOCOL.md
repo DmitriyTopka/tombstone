@@ -30,3 +30,6 @@ Pilot control, 24 Nov: Task A finished on its own in 49 s, 5 requests, 0.987 cre
 
 ## Round 2 (written before it ran)
 After round 1 the breaker was changed by Kiro (task 24, R4.5): it now also reads the running credit total Kiro CLI 3.5.0 writes into the session (`creditSplit`) and compares the higher of that and the estimate with the cap. Round 2 repeats the breaker and fit groups exactly as in round 1 (same script, same prompts, same cap 0.33). The round 1 control runs stand as the control.
+
+## Round 3, a long task (written before it ran, 25 November 2026)
+Round 2 showed the stop but no saving, because Task A spends most of its money in one request. Round 3 uses Task C: a todo app built one feature at a time with tests after each, so it makes many requests and there is money left to save after the cap is crossed. Groups `control3` (no Tombstone) and `breaker3` (Tombstone, same calibration turn). Ceiling 20 minutes in both. From round 3 on, Kiro runs with `--trust-tools=fs_read,fs_write,execute_bash` instead of `--trust-all-tools`. One pilot control3 run first; the breaker3 cap is set to about a quarter of its cost and written here before the breaker runs. Then 3 control3 (the pilot counts as the first) and 3 breaker3. Stop if round 3 passes 40 credits.
