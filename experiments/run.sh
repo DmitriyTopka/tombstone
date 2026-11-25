@@ -12,15 +12,15 @@ touch $D/start.marker
 if [ "$G" != control ] && [ "$G" != control3 ]; then
   "$T" init --project . --no-watcher-unit >/dev/null 2>&1; rm -f .kiro/steering/tombstone.md
   "$T" watch --project . > $D/watch.log 2>&1 & WP=$!; sleep 3
-  kiro-cli chat --no-interactive --trust-tools=fs_read,fs_write,execute_bash "Write a file hello.txt containing the word hello. Do not run git." > $D/calib.log 2>&1
+  kiro-cli chat --no-interactive --trust-all-tools "Write a file hello.txt containing the word hello. Do not run git." > $D/calib.log 2>&1
   sleep 20
   sed -i '' "s/^task = 40/task = $CAP/" tombstone.toml
 fi
 PROMPT="$TASK_A"; [ "$G" = fit ] && PROMPT="$TASK_B"; case "$G" in *3) PROMPT="$TASK_C";; esac
 CEIL=600; case "$G" in *3) CEIL=1200;; esac
 S=$(date +%s)
-( sleep $CEIL; pkill -f "kiro-cli.*--trust-tools" ) & GP=$!
-kiro-cli chat --no-interactive --trust-tools=fs_read,fs_write,execute_bash "$PROMPT" > $D/run.log 2>&1; RC=$?
+( sleep $CEIL; pkill -f "kiro-cli.*--trust-all-tools" ) & GP=$!
+kiro-cli chat --no-interactive --trust-all-tools "$PROMPT" > $D/run.log 2>&1; RC=$?
 E=$(date +%s); kill $GP 2>/dev/null
 sleep 40; [ -n "$WP" ] && kill $WP 2>/dev/null
 TESTS=$(cd $D/proj && timeout 60 python3 -m pytest -q 2>&1 | tail -1)
