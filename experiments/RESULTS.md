@@ -41,3 +41,23 @@ The estimate at each stop was 0.09 to 0.11; the live figure was what crossed the
 - **The stop lands one request late.** Kiro writes the running total after a request is finished, and on this task one request writes the whole package and costs about 0.35 to 0.55 credits. The total jumps from under the cap to 0.40 to 0.73 in that one step.
 - **On a task this short, stopping saved almost nothing.** After the STOP the agent made one or two more requests to explain why it stopped, and those are expensive because the context is already large. Task turns cost 0.83 to 0.96 with the breaker against 0.77 to 0.99 without it. In r2b2 the agent stopped before writing tests, in r2b1 and r2b3 the last test run had already started.
 - So this bench shows that the breaker sees the real cost and stops the next tool call. It does not show savings; that needs a task with many requests after the cap is crossed.
+
+## Round 3, a long task (Task C, Kiro CLI 3.6.0, V3 engine)
+
+| Run | Group | Cap | STOP written | Live at the STOP | Credits actual (task turn) | Requests | Seconds | Tests at the end |
+|---|---|---|---|---|---|---|---|---|
+| r3c2 | control3 | none | - | - | 4.130 | 21 | 148 | 67 passed |
+| r3c3 | control3 | none | - | - | 5.834 | 42 | 167 | 55 passed |
+| r3c4 | control3 | none | - | - | 5.503 | 42 | 161 | 54 passed |
+| r3b1 | breaker3 | 1.00 | yes | 1.05 | 1.173 | 13 | 47 | 17 passed |
+| r3b2 | breaker3 | 1.00 | yes | 1.03 | 1.286 | 14 | 53 | 9 passed |
+| r3b3 | breaker3 | 1.00 | yes | 1.03 | 1.365 | 11 | 58 | 20 passed |
+
+Each breaker3 run also had the calibration turn first (2 requests, 0.055 credits). r3c1 (V2 engine, 6.355 credits) is left out, see the amendment in PROTOCOL.md. The five runs after the pilot used 15.37 credits by `/usage` (308.80 to 324.17); round 3 as a whole, with both pilots, about 25.9 of the 40 allowed.
+
+### What round 3 shows
+- **The breaker tripped in 3 of 3 runs, and this time it saved money.** Without Tombstone the task cost 4.13 to 5.83 credits (mean 5.16). With a 1.00 cap it cost 1.17 to 1.37 (mean 1.27, or 1.33 with the calibration turn). That is about 3.8 credits, or 74 percent, less per run.
+- **The live figure crossed the cap by 3 to 5 percent** (1.03 to 1.05): on this task each request is small, so the one-request lag from round 2 costs little.
+- **The agent still spends after the STOP.** It made one or two more requests to explain why it stopped, and the final bill landed 17 to 37 percent over the cap. A cap is a point where the work stops, not a hard ceiling on the bill; set it with that margin in mind.
+- **Stopping means the work is not finished.** The breaker runs ended with 9 to 20 passing tests against 54 to 67 for the full runs. Tombstone does not make a task cheaper, it stops a task that is going over the budget someone chose, and writes the autopsy so a person can decide whether to resume.
+- Small sample: three runs per group, one task, one model setting (`auto`). The control cost varied by 41 percent between runs of the same prompt.
