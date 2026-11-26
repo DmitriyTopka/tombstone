@@ -395,6 +395,10 @@ def _fmt(value: float) -> str:
     return f"{value:.1f}" if value >= 10 else f"{value:.2f}"
 
 
+# The over-cap message; the graveyard page embeds it for the browser (R25.3).
+OVER_CAP_TEMPLATE = "TOMBSTONE: {label} over budget ({basis} {figure} of {cap}). Stop."
+
+
 def pulse_present(turn: dict, now: datetime) -> bool:
     """The session file grew at least once in the last 60 seconds."""
     grew = _dt(turn.get("last_growth_at"))
@@ -456,8 +460,8 @@ def evaluate(state: dict, obs: Observation, cfg, now: datetime) -> Optional[Even
         basis = "live" if use_live else "est."
         return make(
             "over_cap",
-            f"TOMBSTONE: {label} over budget ({basis} {_fmt(figure)} of "
-            f"{_fmt(cfg.task_cap)}). Stop.",
+            OVER_CAP_TEMPLATE.format(label=label, basis=basis, figure=_fmt(figure),
+                                     cap=_fmt(cfg.task_cap)),
             f"{basis} {figure:.3f} credits over task cap {cfg.task_cap}",
         )
 

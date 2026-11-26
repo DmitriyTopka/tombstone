@@ -737,6 +737,81 @@ def live_credits(path: Path) -> Optional[float]:
     return max(after - before, 0.0)
 
 
+def _finite(value: object) -> bool:
+    return isinstance(value, float) and value - value == 0.0
+
+
+def series_from_events(events: list[dict]) -> list[dict]:
+    """Each turn's live series and price from V3 events (R25.2, R25.4).
+
+    A turn starts at its ``turn_start`` and runs up to the next one. Its series
+    is ``main + delegated`` of every ``creditSplit`` in that range, minus the
+    same sum of the last ``creditSplit`` before the turn start (0 when none),
+    the rule of ``live_credits``. The price is the credit sum of the turn's
+    ``usage_summary`` (``_v3_cost``). A turn with no usable ``creditSplit``
+    gets one step at its price (0 when unpriced) and ``live`` False.
+    Returns ``[{"credits": [...], "price": float or None, "live": bool}]``.
+    The browser reader in ``tombstones.py`` mirrors this function.
+    """
+    order: list[str] = []
+    start_at: dict[str, int] = {}
+    prices: dict[str, Optional[float]] = {}
+    splits: list[tuple[int, float]] = []
+    for index, event in enumerate(events):
+        payload = event.get("payload")
+        if not isinstance(payload, dict):
+            continue
+        kind = payload.get("type")
+        turn_id = payload.get("turnId")
+        if kind == "turn_start" and isinstance(turn_id, str):
+            if turn_id not in start_at:
+                order.append(turn_id)
+                start_at[turn_id] = index
+        elif kind == "usage_summary" and isinstance(turn_id, str):
+            cost = _v3_cost(payload)[0]
+            prices[turn_id] = cost if cost is not None and _finite(cost) else None
+        elif kind == "session_metadata" and payload.get("key") == "creditSplit":
+            total = _credit_sum(payload.get("value"))
+            if total is not None and _finite(total):
+                splits.append((index, total))
+    turns: list[dict] = []
+    for position, turn_id in enumerate(order):
+        start = start_at[turn_id]
+        end = start_at[order[position + 1]] if position + 1 < len(order) else len(events)
+        before = 0.0
+        for index, total in splits:
+            if index < start:
+                before = total
+        credits = [max(total - before, 0.0) for index, total in splits
+                   if start < index < end]
+        price = prices.get(turn_id)
+        live = bool(credits)
+        if not live:
+            credits = [price if price is not None else 0.0]
+        turns.append({"credits": credits, "price": price, "live": live})
+    return turns
+
+
+def turn_series(path: Path) -> list[dict]:
+    """``series_from_events`` for a V3 ``sess_*`` directory; ``[]`` for anything else.
+
+    Never raises.
+    """
+    path = Path(path)
+    if detect_format(path) != "v3":
+        return []
+    root = _v3_root(path) or path
+    return series_from_events(_read_jsonl(root / "messages.jsonl"))
+
+
+def first_over(credits: list[float], cap: float) -> Optional[int]:
+    """1-based first step whose live figure is above ``cap`` (the watcher's rule), or None."""
+    for step, figure in enumerate(credits, start=1):
+        if figure > cap:
+            return step
+    return None
+
+
 def assistant_counts(path: Path) -> dict[str, int]:
     """Assistant events per turn id of a V3 session (the watcher's unit).
 

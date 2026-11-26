@@ -2716,7 +2716,8 @@ var slider=document.getElementById("run-cap"),out=document.getElementById("run-c
     ac=null,soundOn=true,unlocked=false;
 var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
 function f(n){return n.toFixed(2);}
-function row(){return rows[+slider.value];}
+var ovr=null,unit=" credits est.";
+function row(){return ovr||rows[+slider.value];}
 function height(c){return Math.round(70+150*Math.min(c/T.total,1));}
 var last=0,earth=document.getElementById("run-earth"),PUSH=900,SETTLE=1000,HEAVE=1500;
 /* R22.2: the break-through. Particles are DOM nodes moved by one requestAnimationFrame loop; never more than MAXP alive. */
@@ -2770,7 +2771,7 @@ function rubble(){var k=kk(),n=2+Math.floor(Math.random()*2),i,sd,top=Math.max(0
   if(top>0){puff(rnd(-50,50)*k,top,rnd(-40,40)*k,rnd(20,70)*k,1.3,.5);}}
 function dig(){if(reduce||!earth){return;}earth.classList.remove("dig");void earth.offsetWidth;
   earth.classList.add("dig");}
-function draw(c){count.textContent=f(c)+" credits est.";setCost(f(c));
+function draw(c){count.textContent=f(c)+unit;setCost(f(c));
   var hh=height(c);curH=hh;stone.style.setProperty("--rh",hh+"px");
   if(earth){earth.style.setProperty("--rh",hh+"px");earth.style.setProperty("--hp",((hh-70)/150).toFixed(3));}
   if(c>last+1e-9){dig();}last=c;}
@@ -2821,9 +2822,12 @@ function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
     if(!reduce){hero.classList.add("scare");}boom();vigHit();stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
     line("","hook exit code 2");line("refusal",r.refusal);
-    line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}
-  else{vigClear();draw(T.total);clear();line("","The cap was never reached. The session finished at "
-    +f(T.total)+" credits est.");}}
+    if(ovr){line("","Tombstone would have written STOP at "+f(r.figure)+" credits, step "+r.stop_at+" of "+T.credits.length+".");
+      line("","This turn went on to "+f(r.went)+" credits.");}
+    else{line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}}
+  else{vigClear();draw(T.total);clear();
+    if(ovr){line("","The cap was never reached. This turn finished at "+f(r.went)+" credits.");}
+    else{line("","The cap was never reached. The session finished at "+f(T.total)+" credits est.");}}}
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
   var i=0,gap=Math.max(PUSH+200,6000/steps);
@@ -2837,8 +2841,15 @@ function label(){out.textContent=f(row().cap)+" credits";
   slider.setAttribute("aria-valuetext",f(row().cap)+" credits");}
 var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start=k;}}
 slider.value=start;label();
+/* R25.3: the "Bury your own session" block plays its series on this same scene; the recorded run restores the demo data */
+function mode(c){var u=root.querySelector(".cunit");unit=c?" credits live":" credits est.";
+  if(u){u.textContent=c?"credits live":"credits est.";}if(!c){ovr=null;T=RUN_DATA;}}
+slider.addEventListener("input",function(){mode(false);});
+btn.addEventListener("click",function(){mode(false);});
 slider.addEventListener("input",function(){label();reset();});
 btn.addEventListener("click",run);
+window.TombstonePlay=function(s){mode(true);T={credits:s.credits,total:s.total};ovr=s.row;
+  out.textContent=f(s.row.cap)+" credits";run();};
 var LEVEL=.35,amb=null,ambBuf=null,ambLoad=null,sfxBuf={},sfxLoad=false;
 function ambData(){if(typeof AMBIENCE!=="string"){return null;}
   var s=atob(AMBIENCE.split(",")[1]),u=new Uint8Array(s.length),i;
@@ -2956,6 +2967,212 @@ def _g_runner(trace: Optional[dict]) -> str:
     )
 
 
+
+
+# --- "Bury your own session" block (R25) -----------------------------------
+
+_BURY_PRIVACY = ("Your file is read in this browser and never sent anywhere. "
+                 "Only credit figures are read; prompts and code are skipped.")
+_BURY_WHERE = "~/.kiro/sessions/<hash>/sess_*/messages.jsonl"
+_BURY_CAPTION = ("For a visitor's file the stop is computed in this browser with the watcher's "
+                 "live-figure rule: the first step whose live figure is above the cap. The "
+                 "recorded run above uses the full watcher.")
+_BURY_NOJS = "This part needs JavaScript. Without it only the recorded run above is shown."
+DEFAULT_SAMPLE_LABEL = "The recorded demo session"
+BURY_MAX_BYTES = 20 * 1024 * 1024
+
+_BURY_CSS = """
+.bury{position:relative;z-index:2;background:#080b14;border-top:1px solid rgba(236,231,218,.14);
+  border-bottom:1px solid rgba(236,231,218,.14);color:var(--bone)}
+.bury-in{max-width:880px;margin:0 auto;padding:36px 20px 44px}
+.bury h2{font-size:26px;margin:0 0 8px}
+.bury p{margin:8px 0;max-width:60em}
+.bury .where,.bury .note,.bury .caption{color:var(--muted);font-size:14px}
+.bury .where code{overflow-wrap:anywhere}
+.bury .row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:14px 0}
+.bury button,.bury select{font:inherit;font-size:16px;min-height:44px;padding:6px 16px;color:var(--bone);
+  background:#141b2a;border:1px solid rgba(236,231,218,.5);border-radius:4px;cursor:pointer;max-width:100%}
+.bury button:hover:not(:disabled){background:#1e2840}
+.bury button:disabled,.bury select:disabled{opacity:.5;cursor:default}
+.bury .drop{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;padding:16px;
+  border:1px dashed rgba(236,231,218,.45);border-radius:6px}
+.bury .drop.over{border-color:var(--ember);background:#1a1014}
+.bury input[type=file]{max-width:100%;color:var(--bone);font:inherit;font-size:15px}
+.bury label{display:flex;flex-wrap:wrap;align-items:center;gap:6px 12px;font-size:16px}
+.bury input[type=range]{width:min(320px,70vw);min-height:32px;accent-color:var(--ember)}
+.bury .status{min-height:1.4em;color:var(--bone)}
+.bury .privacy{color:var(--bone)}
+@media (max-width:640px){.bury-in{padding:28px 14px 36px}.bury select{width:100%}}
+"""
+
+# Browser reader (R25.2). Pure functions, mirrored by sessions.series_from_events.
+# It keeps numbers only: no other field of a line is read into a variable that outlives the call.
+_BURY_READER_JS = """
+function buryIsObj(o){return !!o&&typeof o==="object"&&!Array.isArray(o);}
+function buryCost(p){var s=p.promptTurnSummaries,t=0,found=false,k,e,u;
+  if(!Array.isArray(s)){return null;}
+  for(k=0;k<s.length;k++){e=s[k];if(!buryIsObj(e)){continue;}
+    if(e.unit==="credit"){u=e.usage;if(typeof u==="number"||typeof u==="boolean"){t+=+u;found=true;}}}
+  return found&&isFinite(t)?t:null;}
+function buryCredit(v){var t=0,ks=["main","delegated"],k,x;
+  if(!buryIsObj(v)){return null;}
+  for(k=0;k<2;k++){x=v[ks[k]];if(x===undefined){x=0;}if(typeof x!=="number"){return null;}t+=x;}
+  return isFinite(t)?t:null;}
+function buryRead(text){var lines=String(text).split(/\\r\\n|\\n|\\r/),order=[],start=new Map(),prices=new Map(),
+    splits=[],i,o,p,t,id,c,out=[],j,s,e,before,cr,price,n;
+  for(i=0;i<lines.length;i++){
+    if(!lines[i].trim()){continue;}
+    try{o=JSON.parse(lines[i]);}catch(err){continue;}
+    if(!buryIsObj(o)||!buryIsObj(o.payload)){continue;}
+    p=o.payload;t=p.type;id=p.turnId;
+    if(t==="turn_start"&&typeof id==="string"){if(!start.has(id)){order.push(id);start.set(id,i);}}
+    else if(t==="usage_summary"&&typeof id==="string"){prices.set(id,buryCost(p));}
+    else if(t==="session_metadata"&&p.key==="creditSplit"){c=buryCredit(p.value);if(c!==null){splits.push([i,c]);}}}
+  for(n=0;n<order.length;n++){s=start.get(order[n]);e=n+1<order.length?start.get(order[n+1]):lines.length;
+    before=0;cr=[];
+    for(j=0;j<splits.length;j++){if(splits[j][0]<s){before=splits[j][1];}}
+    for(j=0;j<splits.length;j++){if(splits[j][0]>s&&splits[j][0]<e){cr.push(Math.max(splits[j][1]-before,0));}}
+    price=prices.has(order[n])?prices.get(order[n]):null;
+    if(cr.length){out.push({credits:cr,price:price,live:true});}
+    else{out.push({credits:[price!==null?price:0],price:price,live:false});}}
+  return out;}
+function buryFirstOver(credits,cap){var i;for(i=0;i<credits.length;i++){if(credits[i]>cap){return i+1;}}return null;}
+function buryFmt(v){return v>=10?v.toFixed(1):v.toFixed(2);}
+function buryRefusal(template,figure,cap){
+  return template.split("{figure}").join(buryFmt(figure)).split("{cap}").join(buryFmt(cap));}
+"""
+
+_BURY_UI_JS = """
+(function(){
+var ui=document.getElementById("bury-ui");
+if(!ui||typeof BURY_DATA==="undefined"){return;}
+ui.hidden=false;
+var pick=document.getElementById("bury-turn"),cap=document.getElementById("bury-cap"),
+    capOut=document.getElementById("bury-cap-out"),go=document.getElementById("bury-play"),
+    status=document.getElementById("bury-status"),file=document.getElementById("bury-file"),
+    drop=document.getElementById("bury-drop"),turns=[],src="",
+    reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+function price(t){return t.price!==null&&t.price!==undefined?t.price:t.credits[t.credits.length-1];}
+function note(t){return t.live?"":" This Kiro version writes no live figure for this turn.";}
+function say(text){status.textContent=text;}
+function capFor(t){var x=price(t),top=Math.round((Math.ceil(x/.05-1e-9)+1)*5)/100,mid=Math.round(x/2/.05)*.05;
+  cap.max=Math.max(.1,top).toFixed(2);cap.value=Math.min(Math.max(.05,mid),+cap.max).toFixed(2);
+  capOut.textContent=buryFmt(+cap.value)+" credits";}
+function chosen(){return turns[+pick.value];}
+function show(list,label){var i,best=0,o,t,n;turns=list;src=label;pick.textContent="";
+  if(!list.length){pick.disabled=true;go.disabled=true;say("No Kiro CLI turn found in this file.");return;}
+  for(i=0;i<list.length;i++){t=list[i];n=t.credits.length;o=document.createElement("option");o.value=String(i);
+    o.textContent="Turn "+(i+1)+", "+buryFmt(price(t))+" credits, "+n+(n===1?" step":" steps");pick.appendChild(o);
+    if(price(t)>price(list[best])){best=i;}}
+  pick.value=String(best);pick.disabled=false;go.disabled=false;capFor(list[best]);
+  say(label+": "+list.length+(list.length===1?" turn":" turns")+" found."+note(list[best]));}
+pick.addEventListener("change",function(){capFor(chosen());say(src+"."+note(chosen()));});
+cap.addEventListener("input",function(){capOut.textContent=buryFmt(+cap.value)+" credits";});
+go.addEventListener("click",function(){var t=chosen(),c=+cap.value,at,last,went,total,row,h;
+  if(!t){return;}
+  at=buryFirstOver(t.credits,c);last=t.credits[t.credits.length-1];went=price(t);
+  total=Math.max.apply(null,t.credits.concat([went]));if(!(total>0)){total=1;}
+  row={cap:c,stop_at:at,figure:at?t.credits[at-1]:null,refusal:at?buryRefusal(BURY_DATA.template,t.credits[at-1],c):null,went:went};
+  if(at){say("Tombstone would have written STOP at "+buryFmt(row.figure)+" credits, step "+at+" of "+t.credits.length+". This turn went on to "+buryFmt(went)+" credits.");}
+  else{say("The cap was never reached. This turn finished at "+buryFmt(went)+" credits.");}
+  if(typeof window.TombstonePlay!=="function"){return;}
+  h=document.getElementById("hero");
+  if(h&&h.scrollIntoView){h.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});}
+  window.TombstonePlay({credits:t.credits,total:total,row:row});});
+Array.prototype.forEach.call(document.querySelectorAll("#bury-samples button"),function(b){
+  b.addEventListener("click",function(){var s=BURY_DATA.samples[+b.getAttribute("data-i")];if(s){show(s.turns,s.label);}});});
+function load(files){var f=null,i,r;
+  for(i=0;i<files.length;i++){if(files[i].name==="messages.jsonl"){f=files[i];break;}}
+  for(i=0;!f&&i<files.length;i++){if(files[i].name!=="session.json"){f=files[i];}}
+  if(!f){say("Choose a messages.jsonl file.");return;}
+  if(f.size>BURY_DATA.max_bytes){say("This file is larger than 20 MB. Pick a smaller messages.jsonl.");return;}
+  r=new FileReader();
+  r.onload=function(){show(buryRead(r.result),"Your file");};
+  r.onerror=function(){say("This file could not be read.");};
+  r.readAsText(f);}
+file.addEventListener("change",function(){if(file.files&&file.files.length){load(file.files);}});
+["dragenter","dragover"].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.add("over");});});
+["dragleave","drop"].forEach(function(n){drop.addEventListener(n,function(e){e.preventDefault();drop.classList.remove("over");});});
+drop.addEventListener("drop",function(e){if(e.dataTransfer&&e.dataTransfer.files&&e.dataTransfer.files.length){load(e.dataTransfer.files);}});
+if(BURY_DATA.samples.length){show(BURY_DATA.samples[0].turns,BURY_DATA.samples[0].label);}
+})();
+"""
+
+
+def sample_from_session(label: str, path: Path) -> dict:
+    """One embeddable sample: the label and each turn's numbers, nothing else (R25.4)."""
+    from . import sessions
+    turns = sessions.turn_series(Path(path))
+    if not turns:
+        raise IncludeError(f"{path} is not a Kiro V3 session with a turn")
+    return {"label": str(label), "turns": turns}
+
+
+def load_samples(dirs: list, labels: list) -> list:
+    """``--sample`` / ``--sample-label`` pairs (R25.4). Empty without ``--sample``.
+
+    Labels pair with directories by position; a missing label reads "Sample N".
+    """
+    if len(labels) > len(dirs):
+        raise IncludeError("--sample-label given without a matching --sample")
+    out = []
+    for n, raw in enumerate(dirs):
+        path = Path(raw).expanduser()
+        label = labels[n] if n < len(labels) else f"Sample {n + 1}"
+        out.append(sample_from_session(label, path))
+    return out
+
+
+def default_samples() -> list:
+    """The packaged demo session as the one sample, or [] when it is missing."""
+    from . import demo
+    source = demo.packaged_session()
+    if source is None:
+        return []
+    try:
+        return [sample_from_session(DEFAULT_SAMPLE_LABEL, source)]
+    except IncludeError:
+        return []
+
+
+def _bury_data(samples: list) -> dict:
+    from . import stop, watcher
+    template = stop.refusal_text({"message": watcher.OVER_CAP_TEMPLATE.format(
+        label="this turn", basis="live", figure="{figure}", cap="{cap}")})
+    return {"template": template, "max_bytes": BURY_MAX_BYTES, "samples": samples}
+
+
+def _g_bury(samples: list) -> str:
+    """The block of R25.1. Controls are hidden until the script runs (R25.5)."""
+    esc = functools.partial(html.escape, quote=True)
+    buttons = "".join(
+        f'<button type="button" data-i="{n}">{esc(s["label"])}</button>'
+        for n, s in enumerate(samples))
+    samples_row = (f'<div class="row" id="bury-samples" role="group" aria-label="Samples">'
+                   f"{buttons}</div>" if buttons else "")
+    return (
+        '<section class="bury" id="bury" aria-labelledby="buryh">\n<div class="bury-in">\n'
+        '<h2 id="buryh">Bury your own session</h2>\n'
+        '<p>Pick a sample or give it a Kiro CLI session, choose a turn and a cap, and watch '
+        'Tombstone stop it on the stone above.</p>\n'
+        f'<noscript><p class="note">{esc(_BURY_NOJS)}</p></noscript>\n'
+        '<div id="bury-ui" hidden>\n'
+        f"{samples_row}"
+        '<div class="drop" id="bury-drop"><label for="bury-file">Your messages.jsonl</label>'
+        '<input id="bury-file" type="file" accept=".jsonl,.json,application/json">'
+        '<span>or drop it here</span></div>\n'
+        f'<p class="where">It lives at <code>{esc(_BURY_WHERE)}</code>.</p>\n'
+        '<div class="row"><label for="bury-turn">Turn <select id="bury-turn" disabled></select></label>'
+        '<label for="bury-cap">Cap <input id="bury-cap" type="range" min="0.05" max="2" '
+        'step="0.05" value="0.75" aria-label="Cap in credits"> '
+        '<output id="bury-cap-out" for="bury-cap">0.75 credits</output></label>'
+        '<button id="bury-play" type="button" disabled>Play it on the stone</button></div>\n'
+        '<p class="status" id="bury-status" role="status"></p>\n'
+        '</div>\n'
+        f'<p class="privacy">{esc(_BURY_PRIVACY)}</p>\n'
+        f'<p class="caption">{esc(_BURY_CAPTION)}</p>\n'
+        '</div>\n</section>\n'
+    )
 
 
 # --- the hero: a night graveyard scene around the breaker (R16) -------------
@@ -3309,7 +3526,8 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
                      included: Optional[dict] = None,
                      receipts: Optional[dict] = None,
                      video: Optional[str] = None, repo: Optional[str] = None,
-                     devpost: Optional[str] = None) -> str:
+                     devpost: Optional[str] = None,
+                     samples: Optional[list] = None) -> str:
     """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
 
     Headstones, plots, the stopped row, unmarked graves and the register are
@@ -3422,6 +3640,9 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
 
     register_rows = sorted(
         rows, key=lambda r: (_g_num(r.get("actual")) is None, -(_g_num(r.get("actual")) or 0.0)))
+    if samples is None:
+        samples = default_samples()
+    bury = _g_bury(samples) if run_trace else ""
     header = _g_header(rows, _GRAVEYARD_KICKER_LIVE if on_page else _GRAVEYARD_KICKER,
                        video, repo, devpost)
     footer_links = ""
@@ -3435,9 +3656,10 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{esc(header['title'])}</title>\n"
-        f"<style>\n{_GRAVEYARD_CSS}\n{_RUN_CSS}\n{_HERO_CSS}\n{_scene_css()}\n</style>\n</head>\n<body>\n"
+        f"<style>\n{_GRAVEYARD_CSS}\n{_RUN_CSS}\n{_HERO_CSS}\n{_BURY_CSS}\n{_scene_css()}\n</style>\n</head>\n<body>\n"
         '<div class="fog" aria-hidden="true"></div>\n'
         f"{_g_hero(run_trace, video, repo, devpost)}"
+        f"{bury}"
         f"{header['html']}"
         "<main>\n"
         f'<section class="ground" id="ground" aria-label="Tasks by plot">'
@@ -3472,6 +3694,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<form method="dialog"><button>Close</button></form></dialog>\n'
         f"<script>\n{_GRAVEYARD_JS}\n"
         f"{(_ambience_js() + 'var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}"
+        f"{('var BURY_DATA=' + _run_json(_bury_data(samples)) + ';' + _BURY_READER_JS + _BURY_UI_JS) if bury else ''}"
         "\n</script>\n"
         f"</body>\n</html>\n"
     )
@@ -3577,7 +3800,8 @@ def write_graveyard(project: Path, out: Optional[Path] = None,
                     includes: Optional[list] = None,
                     autopsy_dirs: Optional[list] = None,
                     video: Optional[str] = None, repo: Optional[str] = None,
-                    devpost: Optional[str] = None) -> Path:
+                    devpost: Optional[str] = None,
+                    samples: Optional[list] = None) -> Path:
     """Render ``tombstones.json`` of ``project`` and write the page.
 
     Default target is ``.tombstone/graveyard.html``. Reads the store
@@ -3589,7 +3813,7 @@ def write_graveyard(project: Path, out: Optional[Path] = None,
     records, included = merge_includes(store.get("tombstones") or [], includes or [])
     receipts = _collect_receipts(project, records, autopsy_dirs)
     page = render_graveyard(records, read_plot_names(project), included, receipts,
-                            video, repo, devpost)
+                            video, repo, devpost, samples)
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
     if out is None and not guard(project, target):

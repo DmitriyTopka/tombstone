@@ -551,6 +551,15 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
         print(f"tombstone graveyard: {exc}", file=sys.stderr)
         return 1
 
+    sample_dirs = getattr(args, "sample", None) or []
+    try:
+        samples = tombstones.load_samples(
+            sample_dirs, getattr(args, "sample_label", None) or []) \
+            if sample_dirs or getattr(args, "sample_label", None) else None
+    except tombstones.IncludeError as exc:
+        print(f"tombstone graveyard: {exc}", file=sys.stderr)
+        return 1
+
     _reconcile_pending_quietly(project)
 
     out = Path(args.out) if args.out else None
@@ -558,7 +567,7 @@ def cmd_graveyard(args: argparse.Namespace) -> int:
         target = tombstones.write_graveyard(
             project, out, loaded, getattr(args, "autopsies", None) or [],
             getattr(args, "video", None) or None, getattr(args, "repo", None) or None,
-            getattr(args, "devpost", None) or None)
+            getattr(args, "devpost", None) or None, samples)
     except OSError as exc:
         print(f"tombstone graveyard: could not write: {exc}", file=sys.stderr)
         return 1
@@ -1493,6 +1502,10 @@ def build_parser() -> argparse.ArgumentParser:
                            help="link to the demo video, drawn in the page header")
     graveyard.add_argument("--repo", default=None, metavar="URL",
                            help="link to the repository, drawn in the page header")
+    graveyard.add_argument("--sample", action="append", default=[], metavar="DIR",
+                           help="a Kiro V3 sess_* directory offered in 'Bury your own session' (repeatable)")
+    graveyard.add_argument("--sample-label", action="append", default=[], metavar="TEXT",
+                           help="label of the matching --sample (repeatable)")
     graveyard.add_argument("--project", default=None,
                            help="project root (default: found from the working directory)")
     graveyard.set_defaults(func=cmd_graveyard)

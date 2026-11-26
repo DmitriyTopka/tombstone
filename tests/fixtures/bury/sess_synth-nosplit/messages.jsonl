@@ -1,0 +1,5 @@
+{"id":"e0","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"turn_start","turnId":"n1"}}
+{"id":"e1","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"assistant","turnId":"n1"}}
+{"id":"e2","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"usage_summary","turnId":"n1","requestIds":["r"],"promptTurnSummaries":[{"unit":"credit","usage":0.42},{"unit":"tokens","usage":999}]}}
+{"id":"e3","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"turn_start","turnId":"n2"}}
+{"id":"e4","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"assistant","turnId":"n2"}}

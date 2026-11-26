@@ -524,18 +524,18 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - The link shows only with the option, is escaped and carries the same `rel` as the other links; the summary text carries the real count; the list sits inside a closed `<details>`; existing tests pass.
     - _Requirements: R24.1, R24.2_
 
-- [ ] 36. Bury your own session
+- [x] 36. Bury your own session
   - Council of 2026-11-26 evening, item 1, approved by Dima. Four of five advisers: the costume plays only the author's recording, so a judge never sees it work on data they picked. Gate: if the suite is not green, or the page breaks at 375 px, without JS, or goes over 1.5 MB by 2026-11-30 evening, the block is not published. The existing "Run the agent" player is not changed.
   - _Requirements: R25.1, R25.2, R25.3, R25.4, R25.5_
 
-  - [ ] 36.1 Series from a session in Python
+  - [x] 36.1 Series from a session in Python
     - The `sessions.py` function of R25.4, reusing `live_credits` and `_v3_cost` logic, and the `--sample`/`--sample-label` options of `tombstone graveyard`; embed numbers and labels only.
     - _Requirements: R25.2, R25.4_
 
-  - [ ] 36.2 The block and the browser reader
+  - [x] 36.2 The block and the browser reader
     - R25.1 to R25.3 and R25.5 in `render_graveyard`, reusing the R15 scene for playback; the refusal template comes from Python.
     - _Requirements: R25.1, R25.2, R25.3, R25.5_
 
-  - [ ] 36.3 Tests
+  - [x] 36.3 Tests
     - The JS reader gives the same series, price and stop step as the Python function on the packaged demo session and on synthetic fixtures (turn without creditSplit, two turns, creditSplit before turn_start, broken lines), run with `node` and skipped when `node` is missing; the embedded sample JSON holds only numbers and labels; the page has no fetch, XMLHttpRequest, sendBeacon, WebSocket or new Image; noscript line present; size under 1.5 MB; all existing tests pass.
     - _Requirements: R25.2, R25.3, R25.4, R25.5_

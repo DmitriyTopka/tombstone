@@ -1,0 +1,18 @@
+{"id":"e0","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":0.1,"delegated":0.05,"auxiliary":0.5},"executionId":""}}
+{"id":"e1","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"turn_start","turnId":"t1"}}
+{"id":"e2","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"user","content":"x"}}
+{"id":"e3","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":0.2,"delegated":0.05,"auxiliary":0.5},"executionId":""}}
+{"id":"e4","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":0.35,"delegated":0.05,"auxiliary":0.5},"executionId":""}}
+{"id":"e5","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"assistant","turnId":"t1"}}
+{ this line is broken
+{"id":"e6","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":0.6,"delegated":0.1,"auxiliary":0.5},"executionId":""}}
+{"id":"e7","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":"bad","delegated":0}}}
+{"id":"e8","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"usage_summary","turnId":"t1","requestIds":["r"],"promptTurnSummaries":[{"unit":"credit","usage":0.55},{"unit":"tokens","usage":999}]}}
+
+{"id":"e9","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"turn_start","turnId":"t2"}}
+{"id":"e10","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":0.8,"delegated":0.1,"auxiliary":0.5},"executionId":""}}
+{"id":"e11","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"session_metadata","key":"creditSplit","value":{"main":1.2,"delegated":0.3,"auxiliary":0.5},"executionId":""}}
+{"id":"e12","timestamp":"2000-01-01T00:00:00Z","payload":{"type":"usage_summary","turnId":"t2","requestIds":["r"],"promptTurnSummaries":[{"unit":"credit","usage":0.8},{"unit":"tokens","usage":999}]}}
+[1,2,3]
+42
+{"id":"half

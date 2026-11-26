@@ -25,8 +25,9 @@ def _visible(page: str) -> str:
     """Page text a reader sees: no title, style, script or tag attributes."""
     # The "Run the agent" block (R15) quotes the hook's refusal text, which says "turn".
     # The hero (R16) holds that block; the heading "The graveyard of this build" is R16.4.
+    # The "Bury your own session" block (R25) must say "turn" and "prompts" by its spec.
     page = re.sub(r"<title>.*?</title>|<style>.*?</style>|<script>.*?</script>"
-                  r'|<header class="hero[^"]*".*?</header>|<h2 id="pasth"[^>]*>.*?</h2>',
+                  r'|<header class="hero[^"]*".*?</header>|<section class="bury".*?</section>|<h2 id="pasth"[^>]*>.*?</h2>',
                   "", page, flags=re.S)
     return re.sub(r"<[^>]+>", " ", page)
 
