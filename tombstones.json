@@ -2970,6 +2970,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/29.4",
+      "task_id": "29.4",
+      "name": "A clean split and no earth before the break",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 4.5174,
+      "actual": 1.5607,
+      "minutes": 1.435,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_52086355-5aaf-4839-9583-e0f3f225a3c5",
+          "turn_id": "4cc96544-6463-4de5-b231-4c7f8b0f9948",
+          "requests": 10,
+          "estimate": 4.5174,
+          "actual": 1.5607,
+          "minutes": 1.435,
+          "start": "2026-11-26T13:52:56.748000Z",
+          "end": "2026-11-26T13:54:22.849000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

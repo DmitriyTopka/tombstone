@@ -2585,11 +2585,6 @@ _RUN_CSS = """
 .runner button.snd{font-size:15px;padding:6px 14px;color:var(--muted);border-color:rgba(236,231,218,.25)}
 .runner button.snd[aria-pressed=true]{color:var(--bone)}
 .sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
-.runner .scrack{position:absolute;left:0;top:0;width:100%;height:100%;overflow:visible;
-  pointer-events:none;opacity:0}
-.runner .scrack path{fill:none;stroke:var(--ember);stroke-width:2;vector-effect:non-scaling-stroke;
-  stroke-linejoin:round;stroke-dasharray:1;filter:drop-shadow(0 0 4px rgba(255,59,59,.9))}
-.runner.stopped .scrack{opacity:.85}
 .runner .scene{display:flex;flex-wrap:wrap;gap:20px 32px;align-items:flex-end}
 .runner .meter{font-size:15px;color:var(--muted);min-width:180px}
 .runner .meter b{display:block;font-size:34px;color:var(--bone);font-weight:600}
@@ -2677,8 +2672,6 @@ def _g_soil(hp: float) -> str:
     return f'<div class="soil" aria-hidden="true">{svg}{lumps}</div><div class="shed" aria-hidden="true">{falls}</div>'
 
 
-# R17.3: the crack starts at the top of the arch (y=0) and runs down the middle of the face.
-_CRACK_D = "M51 0 L45 13 L56 27 L43 44 L55 61 L46 78 L52 100"
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
 
 _HERO_JS = """
@@ -2734,7 +2727,7 @@ function boom(){if(!soundOn||!ac){return;}
   og.gain.setValueAtTime(.9,t+.05);og.gain.exponentialRampToValueAtTime(.001,t+.7);
   o.connect(og);og.connect(ac.destination);o.start(t+.05);o.stop(t+.75);}catch(e){}}
 function reset(){if(timer){clearTimeout(timer);timer=null;}
-  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
+  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
@@ -2750,7 +2743,7 @@ function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   function tick(){i+=1;draw(T.credits[i-1]);
     if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
     timer=setTimeout(tick,gap);}
-  if(earth){earth.classList.add("heave");}
+  if(earth){earth.classList.add("on","heave");}
   timer=setTimeout(function(){if(earth){earth.classList.remove("heave");}tick();},HEAVE);}
 function label(){out.textContent=f(row().cap)+" credits";
   slider.setAttribute("aria-valuetext",f(row().cap)+" credits");}
@@ -2826,14 +2819,10 @@ def _g_runner(trace: Optional[dict]) -> str:
         '<div class="scene"><div class="meter">Spent so far'
         f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
         f"{shown:.2f} credits est.</b></div>"
-        f'<div class="grave"><div class="earth" id="run-earth" style="--rh:{height}px;--hp:{hp:.3f}">'
+        f'<div class="grave"><div class="earth on" id="run-earth" style="--rh:{height}px;--hp:{hp:.3f}">'
         f'<div id="run-stone" class="{cls}" '
         f'style="--rh:{height}px;--cl:{clip_l};--cr:{clip_r}" role="img" '
         'aria-label="Headstone that rises with the spend">'
-        '<svg class="scrack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
-        f'<path class="glow" pathLength="1" d="{_CRACK_D}"/>'
-        f'<path class="cut" pathLength="1" d="{_CRACK_D}"/>'
-        '</svg>'
         f'<div class="half hl">{half(True)}</div>'
         f'<div class="half hr" aria-hidden="true">{half(False)}</div>'
         f'</div>{_g_soil(hp)}</div></div>'
@@ -2921,10 +2910,6 @@ _HERO_CSS = """
   font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#070a10}
 .hero .hstone .cunit{display:block;font-size:calc(var(--k) * 8px);font-size:8cqw;letter-spacing:.1em;
   white-space:nowrap;text-transform:uppercase;opacity:.85;margin-top:.3em}
-.hero .hstone .scrack{left:16%;top:0;width:68%;height:86%;overflow:visible}
-.hero .runner.stopped .hstone .scrack{opacity:1}
-.hero .hstone .scrack .glow{stroke:rgba(255,48,48,.7);stroke-width:13;filter:blur(3.5px)}
-.hero .hstone .scrack .cut{stroke:#06080c;stroke-width:5;filter:none}
 .hero .hstone{z-index:2}
 .hero .hstone .half{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,1.5,.4,1)}
 .hero .hstone .hl{transform-origin:30% 100%}.hero .hstone .hr{transform-origin:70% 100%;opacity:0}
@@ -2943,7 +2928,11 @@ _HERO_CSS = """
   mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%)}
 .hero .gsvg .mound,.hero .gsvg .heap{transform-box:fill-box;transform-origin:50% 100%;
   transition:transform .5s ease-out,opacity .4s}
-.hero .gsvg .heap{transform:scale(calc(.8 + .2 * var(--hp,1)),calc(.4 + .6 * var(--hp,1)))}
+.hero .gsvg .heap{transform:scale(calc(.15 + .85 * var(--hp,1)),calc(.05 + .95 * var(--hp,1)))}
+/* at rest (no .on) there is no mound, heap or soil crack; the run adds them */
+.hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .soil .lump{opacity:0}
+.hero .earth.on .gsvg .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .soil .lump{opacity:1}
+.hero .earth.on .gsvg .mound{opacity:1}
 .hero .gsvg .scr path{fill:none;stroke:#0a0603;stroke-width:1.1;stroke-linejoin:round;stroke-dasharray:1;
   stroke-dashoffset:0;vector-effect:non-scaling-stroke}
 .hero .clump{position:absolute;border-radius:48% 52% 45% 55% / 55% 45% 55% 45%;
@@ -2961,15 +2950,12 @@ _HERO_CSS = """
   .hero .f3 svg{animation-duration:46s}
   @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .hero.scare::after{animation:flash 1s ease-out both}
-  .hero.scare .scrack path{animation:crackrun .5s ease-out both}
-  .hero.scare .scrack .glow{animation:crackrun .5s ease-out both,crackpulse 1.1s ease-in-out .5s 1 both}
-  @keyframes crackpulse{0%{opacity:.5}40%{opacity:1}100%{opacity:.8}}
   .hero.scare .grave{animation:tremor .4s linear .05s both}
   .hero .earth.dig .hstone{animation:hshake .24s linear}
   .hero .earth.dig .fall{animation:shed .95s ease-in calc(var(--t) * 1s) both}
   .hero .earth.heave .hstone{top:calc(228px * var(--k));transition:none}
   .hero .earth.heave .mound{animation:swell .9s ease-out both}
-  .hero .earth.heave .heap{opacity:0}
+  .hero .earth.on.heave .gsvg .heap,.hero .earth.on.heave .gsvg .tear,.hero .earth.on.heave .soil .lump{opacity:0}
   .hero .earth.heave .scr path{animation:open .6s ease-out .25s both}
   .hero .earth.heave .soil{animation:hshake .2s linear 4}
   @keyframes swell{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
@@ -2979,7 +2965,6 @@ _HERO_CSS = """
     80%{opacity:1;transform:translate(calc(var(--dx) * .8 * var(--k) * 1px),calc(var(--fd) - 3px)) rotate(calc(var(--dx) * 8deg))}
     100%{opacity:0;transform:translate(calc(var(--dx) * 1.1 * var(--k) * 1px),var(--fd)) rotate(calc(var(--dx) * 11deg))}}
   @keyframes flash{0%{opacity:0}18%{opacity:.3}100%{opacity:0}}
-  @keyframes crackrun{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
   @keyframes tremor{0%,100%{transform:none}20%{transform:translate(-3px,1px)}
     40%{transform:translate(3px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
   @keyframes hshake{0%,100%{transform:none}25%{transform:translate(-2px,1px)}

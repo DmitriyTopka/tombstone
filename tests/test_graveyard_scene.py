@@ -65,7 +65,7 @@ def test_headstone_height_at_the_stop_matches_the_r15_scale():
     expected = round(70 + 150 * min(row["figure"] / trace["total"], 1))
     assert f'style="--rh:{expected}px;' in page
     assert "Math.round(70+150*Math.min(c/T.total,1))" in page
-    assert 'class="hstone crack-1"' in page and 'class="scrack"' in page
+    assert 'class="hstone crack-1"' in page and 'class="scrack"' not in page
     assert 'id="run-stone-cost"' in page and "credits est." in page
 
 
@@ -96,13 +96,27 @@ def test_carved_text_fits_inside_the_blank_face():
     assert 'class="cunit"' in _page()
 
 
-def test_crack_starts_at_the_top_of_the_stone_and_crosses_the_face():
+def test_no_line_stroke_or_glow_in_the_gap_after_the_split():
     page = _page()
-    d = re.search(r'<path class="cut" pathLength="1" d="([^"]+)"', page).group(1)
-    pts = [tuple(map(float, m)) for m in re.findall(r"[ML]([\d.]+) ([\d.]+)", d)]
-    assert pts[0][1] == 0 and pts[-1][1] == 100
-    assert all(35 <= x <= 65 for x, _ in pts)
-    assert 'viewBox="0 0 100 100"' in page and "@keyframes crackpulse" in page
+    css = _css(page)
+    for gone in ("scrack", 'class="glow"', 'class="cut"', "crackpulse", "crackrun"):
+        assert gone not in page, gone
+    assert "scrack" not in css and "_CRACK_D" not in page
+    assert 'class="half hl"' in page and 'class="half hr"' in page
+
+
+def test_earth_is_hidden_at_rest_and_builds_with_the_run():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    assert ".hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .soil .lump{opacity:0}" in css
+    assert ".hero .earth.on .gsvg .heap" in css and ".hero .earth.on .gsvg .mound{opacity:1}" in css
+    assert ".hero .earth.on.heave .gsvg .heap" in css
+    js = _script(page).replace("\n", "")
+    reset = js.split("function reset(){", 1)[1].split("function finish", 1)[0]
+    assert '"heave","dig","on"' in reset
+    assert 'earth.classList.add("on","heave")' in js
+    # noscript and reduced-motion final state: the heap is on in the server render
+    assert 'class="earth on" id="run-earth"' in page
 
 
 # --- Task 29: the headstone breaks through the earth (R18) -------------------
@@ -129,7 +143,7 @@ def test_earth_elements_exist_in_the_hero():
 
 def test_heap_grows_with_the_final_height():
     css = _css(_page()).replace("\n", "")
-    assert "calc(.4 + .6 * var(--hp,1))" in css
+    assert "calc(.05 + .95 * var(--hp,1))" in css
     assert '(hh-70)/150' in _script(_page())
 
 
@@ -149,7 +163,7 @@ def test_stop_and_split_come_after_the_last_rise_step():
     js = _script(_page()).replace("\n", "")
     assert "SETTLE=450" in js
     assert "if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}" in js
-    assert 'earth.classList.add("heave")' in js and "},HEAVE);" in js
+    assert 'earth.classList.add("on","heave")' in js and "},HEAVE);" in js
     finish = js.split("function finish(r){", 1)[1].split("function run()", 1)[0]
     assert 'line("stop","STOP")' in finish and 'hero.classList.add("scare")' in finish
     # the stop and the split are never reached from inside the rise loop
