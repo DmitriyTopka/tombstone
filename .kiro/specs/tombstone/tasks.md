@@ -444,3 +444,15 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 30.5 Bones to the side, a glowing figure
     - Dima's review and a browser check by Claude on 2026-11-26 after 30.4 (1280x800, after a run to the 0.75 stop): the stone is grey and the heap is low now, good; but (1) the carved figure is still not visible anywhere on the stone, at any step; (2) Dima wants the skull and bones away from the stone, in the foreground at the side among the old graves; (3) Dima wants the figure to glow, white or blue-white, not dark carved letters. Implement R19.7 and R19.8 and find why the figure is invisible (layering under the halves, clipping, opacity, colour or the 60 percent rule) and fix it. Add tests: the figure element is above the stone halves in the stacking order, visible (opacity 1, non-zero size) after the first step and after the split, and has the glow styles; the bones box does not intersect the stone, heap or hand boxes and sits in the left 30 percent of the hero at 1280 px.
     - _Requirements: R19.7, R19.8_
+
+- [ ] 31. A night ambience behind the sound toggle
+  - Approved by Dima on 2026-11-26 ("Новый мрачный"). Dima generated the ambience in Suno; Claude downloaded it from his account and re-encoded it to mono AAC 64 kbps, 13.8 s loop, 114 KB, in `src/tombstone/data/scene/ambience.m4a`.
+  - _Requirements: R20.1, R20.2, R20.3_
+
+  - [ ] 31.1 Play, loop, fade and duck
+    - Wire the existing "Sound off"/"Sound on" toggle to the ambience per R20.1 and R20.2, reusing the Web Audio context of the R16.3 crack sound; embed the file once per R20.3; add the credit line.
+    - _Requirements: R20.1, R20.2, R20.3_
+
+  - [ ] 31.2 Tests
+    - The audio data URI is present exactly once and is audio/mp4; no `<audio autoplay>` and no playback before the toggle; the toggle starts and stops the loop with fades and the stop ducks it; the credit line is present; the page is under 1.2 MB with no external requests; existing tests still pass (update only the size limit and those the change breaks).
+    - _Requirements: R20.1, R20.2, R20.3_
