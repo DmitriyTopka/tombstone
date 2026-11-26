@@ -2622,11 +2622,59 @@ _FALLS = [(-12, 2, 6, -22, 0), (8, 0, 5, 18, .04), (22, 6, 4, 30, .1), (-30, 14,
           (34, 16, 5, 26, .14), (-52, 40, 8, -40, .02), (52, 40, 6, 36, .08),
           (-60, 48, 5, -26, .18), (58, 50, 4, 22, .12), (0, -2, 3, 6, .2), (-20, 8, 3, -14, .16),
           (44, 28, 3, 20, .22)]
-_LUMPS = [(10, 17, 9), (27, 12, 6), (44, 20, 4), (190, 14, 7), (205, 20, 10), (222, 11, 5)]
-_SOIL_CRACKS = ["M96 49 L88 54 L90 60 L80 66", "M154 49 L163 55 L159 61 L170 68",
-                "M70 48 L62 52 L64 58 L52 62 L54 69", "M182 48 L191 53 L188 60 L200 64",
-                "M118 52 L113 58 L119 64 L112 70", "M134 53 L139 60 L133 66",
-                "M112 30 L108 38 L113 45", "M140 31 L145 39 L141 46"]
+_LUMPS = [(3, 5, 6), (20, 11, 8), (40, 4, 5), (66, 2, 4), (176, 3, 5), (203, 9, 7),
+          (222, 3, 9), (237, 12, 5)]
+# 4 to 5 irregular fissures radiating from the stone foot across the ground (y 48 to 70),
+# each with its own length and angle; the stroke fades to nothing at the far end
+_SOIL_CRACKS = [
+    ("M84 49 L76 51.5 L79 54 L66 57 L60 56 L49 60.5 L38 60", 1.5),
+    ("M168 49 L177 52 L174 56 L188 58 L194 63 L211 62 L224 66", 1.7),
+    ("M106 50 L102 56 L106 60 L98 66 L99 70", 1.3),
+    ("M146 50 L151 56 L146 61 L154 67", 1.2),
+    ("M64 57 L67 63 L61 68", .9),
+]
+_HEAP_H = 57.0
+
+
+def _heap_env(x: float) -> float:
+    """Smooth heap height (SVG units above the ground line) at x, peak _HEAP_H at the centre."""
+    t = abs(x - 125.0) / 118.0
+    return 0.0 if t >= 1 else _HEAP_H * (1 - t ** 2.3) ** 1.1
+
+
+def _g_heap() -> tuple[str, str]:
+    """Irregular lumpy silhouette of the loose-earth heap, plus its lit lumps and small stones.
+
+    The heap is about 1.6 times the stone width (235 of 147 units) and about 26 percent of the
+    stone's visible height at full size. Light comes from the upper right.
+    """
+    rnd = random.Random(29)
+    ground = 49.0
+    pts = []
+    for i in range(30):
+        x = 7 + i * (236 / 29)
+        e = _heap_env(x)
+        pts.append((x, ground - e * (1 + rnd.uniform(-.13, .11)) if 0 < i < 29 else ground))
+    top = min(y for _, y in pts)
+    k = (ground - (ground - _HEAP_H)) / (ground - top)
+    pts = [(x, ground - (ground - y) * min(k, 1.0)) for x, y in pts]
+    d = f"M{pts[0][0]:.1f} {ground:.0f}"
+    for (x0, y0), (x1, y1) in zip(pts[1:], pts[2:] + [pts[-1]]):
+        d += f" Q{x0:.1f} {y0:.1f} {(x0 + x1) / 2:.1f} {(y0 + y1) / 2:.1f}"
+    d += f" L{pts[-1][0]:.1f} {ground:.0f}Z"
+    extra = ""
+    for i in range(3, 27, 3):  # lit upper-right face and shaded lower-left face of the lumps
+        x, y = pts[i]
+        extra += (f'<ellipse cx="{x + 4:.1f}" cy="{y + 4:.1f}" rx="6.5" ry="2.6" fill="#c4d0ee" '
+                  f'fill-opacity=".16" transform="rotate(-24 {x + 4:.1f} {y + 4:.1f})"/>')
+        extra += (f'<ellipse cx="{x - 5:.1f}" cy="{y + 9:.1f}" rx="7" ry="3.4" fill="#0b0604" '
+                  f'fill-opacity=".28" transform="rotate(-24 {x - 5:.1f} {y + 9:.1f})"/>')
+    for x, f, r in ((84, .5, 3.1), (101, .72, 2.2), (158, .45, 3.6), (176, .78, 2.4),
+                    (139, .66, 2.0), (112, .35, 2.6)):  # small stones set into the heap
+        y = ground - _heap_env(x) * f
+        extra += (f'<ellipse cx="{x}" cy="{y:.1f}" rx="{r * 1.2:.1f}" ry="{r:.1f}" fill="url(#peb)" '
+                  f'transform="rotate(-12 {x} {y:.1f})"/>')
+    return d, extra
 
 
 def _g_soil(hp: float) -> str:
@@ -2640,8 +2688,14 @@ def _g_soil(hp: float) -> str:
         h = rnd.randint(4, 9)
         blades.append(f"M{x} 48 L{x - 2} {48 - h} L{x + 1} {48 - h // 2 - 1} L{x + 2} {48 - h + 1} L{x + 3} 48Z")
     tufts = "".join(blades)
-    heap = ("M14 48 C40 47 52 25 78 23 C96 22 108 31 125 32 C142 31 154 22 172 23 "
-            "C198 25 210 47 236 48Z")
+    heap, heap_extra = _g_heap()
+    fissure_defs = ""
+    for n, (d, _w) in enumerate(_SOIL_CRACKS):
+        nums = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", d)]
+        fissure_defs += (f'<linearGradient id="fis{n}" gradientUnits="userSpaceOnUse" x1="{nums[0]}" '
+                         f'y1="{nums[1]}" x2="{nums[-2]}" y2="{nums[-1]}"><stop offset="0" stop-color="#050302"/>'
+                         '<stop offset=".55" stop-color="#0a0603" stop-opacity=".85"/>'
+                         '<stop offset="1" stop-color="#0a0603" stop-opacity="0"/></linearGradient>')
     mound = "M30 48 C62 47 84 32 125 30 C166 32 188 47 220 48Z"
     svg = (
         '<svg class="gsvg" viewBox="0 0 250 70" preserveAspectRatio="none" focusable="false">'
@@ -2652,17 +2706,25 @@ def _g_soil(hp: float) -> str:
         '<feComposite in="l" in2="SourceGraphic" operator="in" result="lit"/>'
         '<feBlend in="SourceGraphic" in2="lit" mode="multiply"/></filter>'
         '<linearGradient id="blade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f8a78"/>'
-        '<stop offset=".45" stop-color="#34472a"/><stop offset="1" stop-color="#141c10"/></linearGradient></defs>'
+        '<stop offset=".45" stop-color="#34472a"/><stop offset="1" stop-color="#141c10"/></linearGradient>'
+        + fissure_defs + '</defs>'
         f'<path class="tufts" d="{tufts}" fill="url(#blade)"/>'
         f'<path class="mound" d="{mound}" fill="#5b3f2b" filter="url(#soilf)"/>'
-        '<g class="scr">' + "".join(f'<path pathLength="1" d="{d}"/>' for d in _SOIL_CRACKS) + "</g>"
+        '<g class="scr">' + "".join(
+            f'<path pathLength="1" d="{d}" stroke="url(#fis{n})" stroke-width="{w}"/>'
+            for n, (d, w) in enumerate(_SOIL_CRACKS)) + "</g>"
         '<g class="tear"><path d="M44 48 L47 37 L53 43 L57 33 L64 47Z" fill="#5b3f2b" filter="url(#soilf)" '
         'transform="rotate(-14 54 48)"/><path d="M186 48 L192 34 L198 42 L203 36 L207 48Z" fill="#5b3f2b" '
         'filter="url(#soilf)" transform="rotate(14 196 48)"/>'
         '<path d="M45 40 L47 33 L50 39 L53 31 L56 40Z M190 38 L193 31 L196 37 L199 32 L202 40Z" '
         'fill="url(#blade)"/></g></svg>')
-    front = ('<svg class="gsvg" viewBox="0 0 250 70" preserveAspectRatio="none" focusable="false">'
-             f'<path class="heap" d="{heap}" fill="#5b3f2b" filter="url(#soilf)"/></svg>')
+    front = ('<svg class="gsvg hv" viewBox="0 -40 250 110" preserveAspectRatio="none" focusable="false">'
+             '<defs><linearGradient id="heapg" x1=".85" y1="0" x2=".2" y2="1">'
+             '<stop offset="0" stop-color="#8d6b4d"/><stop offset=".35" stop-color="#5f4430"/>'
+             '<stop offset="1" stop-color="#1b110a"/></linearGradient>'
+             '<radialGradient id="peb" cx=".7" cy=".25" r=".85"><stop offset="0" stop-color="#b9c2d6"/>'
+             '<stop offset=".5" stop-color="#6b7184"/><stop offset="1" stop-color="#262a36"/></radialGradient></defs>'
+             f'<g class="heap"><path d="{heap}" fill="url(#heapg)" filter="url(#soilf)"/>{heap_extra}</g></svg>')
     lumps = "".join(
         f'<i class="clump lump" style="--x:{x};--y:{y};--s:{s}"></i>' for x, y, s in _LUMPS)
     falls = "".join(
@@ -2934,16 +2996,18 @@ _HERO_CSS = """
   mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%)}
 .hero .gsvg .mound,.hero .gsvg .heap{transform-box:fill-box;transform-origin:50% 100%;
   transition:transform .5s ease-out,opacity .4s}
-.hero .gsvg .heap{transform:scale(calc(.15 + .85 * var(--hp,1)),calc(.05 + .95 * var(--hp,1)))}
+.hero .gsvg.hv{height:calc(var(--k) * 110px);-webkit-mask-image:none;mask-image:none}
+/* the heap grows with each rise step: about 24 to 26 percent of the visible stone height, 1.6 stone widths at full size */
+.hero .gsvg .heap{transform:scale(calc(.7 + .3 * var(--hp,1)),calc(.3 + .7 * var(--hp,1)))}
 /* at rest (no .on) there is no mound, heap or soil crack; the run adds them */
 .hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump{opacity:0}
 .hero .earth.on .gsvg .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .gsvg .tufts,.hero .earth.on .soil .lump{opacity:1}
 .hero .earth.on .gsvg .mound{opacity:1}
-.hero .gsvg .scr path{fill:none;stroke:#0a0603;stroke-width:1.1;stroke-linejoin:round;stroke-dasharray:1;
+.hero .gsvg .scr path{fill:none;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;
   stroke-dashoffset:0;vector-effect:non-scaling-stroke}
 .hero .clump{position:absolute;border-radius:48% 52% 45% 55% / 55% 45% 55% 45%;
   width:calc(var(--s) * var(--k) * 1px);height:calc(var(--s) * var(--k) * .8px);
-  background:radial-gradient(circle at 34% 24%,#9aa3bc 0,#5b4634 24%,#2f2016 60%,#120b06 100%);
+  background:radial-gradient(circle at 68% 24%,#9aa3bc 0,#5b4634 24%,#2f2016 60%,#120b06 100%);
   box-shadow:0 1px 1px rgba(0,0,0,.7)}
 .hero .lump{left:calc(var(--x) * var(--k) * 1px);bottom:calc(var(--y) * var(--k) * 1px)}
 .hero .shed{position:absolute;left:50%;top:calc((228px - var(--rh)) * var(--k));width:0;height:0;z-index:4;

@@ -3060,6 +3060,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/29.7",
+      "task_id": "29.7",
+      "name": "A real heap and natural soil cracks",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 2.4596,
+      "actual": 1.8811,
+      "minutes": 1.6545,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_8f63380d-c64f-4d57-baaa-fd7f07d355c8",
+          "turn_id": "d32828db-7bd4-456a-8327-1aad0033bae8",
+          "requests": 8,
+          "estimate": 2.4596,
+          "actual": 1.8811,
+          "minutes": 1.6545,
+          "start": "2026-11-26T14:00:25.448000Z",
+          "end": "2026-11-26T14:02:04.716000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

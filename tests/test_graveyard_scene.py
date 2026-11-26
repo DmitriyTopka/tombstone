@@ -143,7 +143,7 @@ def test_earth_elements_exist_in_the_hero():
 
 def test_heap_grows_with_the_final_height():
     css = _css(_page()).replace("\n", "")
-    assert "calc(.05 + .95 * var(--hp,1))" in css
+    assert "scale(calc(.7 + .3 * var(--hp,1)),calc(.3 + .7 * var(--hp,1)))" in css
     assert '(hh-70)/150' in _script(_page())
 
 
@@ -216,7 +216,7 @@ def test_stone_clip_bottom_is_the_ground_line_and_cracks_sit_behind_the_stone():
     assert 228 + 220 - int(bottom.group(1)) == ground
     assert ".hero .earth:not(.on) .hstone,.hero .earth.heave .hstone{clip-path:inset(0 0 100% 0)}" in css
     # heap path base sits on the ground line
-    assert re.search(r'M14 48 C.*236 48Z', page)
+    assert re.search(r'<g class="heap"><path d="M7\.0 49 Q.* L243\.0 49Z"', page)
     hero = page.split('<header class="hero', 1)[1].split("</header>", 1)[0]
     back, front = hero.split('<div class="soil back"', 1)[1].split('<div class="soil" ', 1)
     for cls in ('class="scr"', 'class="tear"', 'class="mound"', 'class="tufts"'):
@@ -224,3 +224,55 @@ def test_stone_clip_bottom_is_the_ground_line_and_cracks_sit_behind_the_stone():
     assert 'class="heap"' in front and 'class="heap"' not in back
     z = {m.group(1): int(m.group(2)) for m in re.finditer(r"\.hero (\.soil\.back|\.hstone|\.soil)\{[^}]*?z-index:(\d+)", css)}
     assert z[".soil.back"] < z[".hstone"] < z[".soil"]
+
+
+# --- Task 29.7: a real heap and natural soil cracks (R18.1, R18.3) ------------
+
+def test_heap_is_a_lumpy_mound_of_the_right_size():
+    from tombstone.tombstones import _HEAP_H, _g_heap, _heap_env
+    d, extra = _g_heap()
+    nums = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", d)]
+    xs, ys = nums[0::2], nums[1::2]
+    # about 1.6 times the 147 unit stone width
+    assert 1.5 * 147 <= max(xs) - min(xs) <= 1.7 * 147
+    # 22 to 30 percent of the full visible stone height (220 units)
+    height = 49 - min(ys)
+    assert 0.22 * 220 <= height <= 0.30 * 220 and height <= _HEAP_H + 0.01
+    # irregular: the silhouette departs from the smooth envelope in several places
+    off = [abs((49 - y) - _heap_env(x)) for x, y in zip(xs[1:-1], ys[1:-1]) if _heap_env(x) > 5]
+    assert sum(o > 1.5 for o in off) >= 5
+    # small stones and light and shade on the lumps
+    assert extra.count('fill="url(#peb)"') >= 4 and "#c4d0ee" in extra and "#0b0604" in extra
+    css = _css(_page()).replace("\n", "")
+    # grows with each rise step, never below 22 percent of the visible height (rh 70 to 220)
+    for rh in (70, 100, 150, 220):
+        hp = (rh - 70) / 150
+        assert 0.22 <= (0.3 + 0.7 * hp) * _HEAP_H / rh <= 0.30
+
+
+def test_soil_cracks_are_a_few_irregular_fading_fissures_behind_the_heap():
+    from tombstone.tombstones import _SOIL_CRACKS
+    assert 3 <= len(_SOIL_CRACKS) <= 5
+    lengths = {len(re.findall(r"L", d)) for d, _ in _SOIL_CRACKS}
+    widths = {w for _, w in _SOIL_CRACKS}
+    assert len(lengths) >= 3 and len(widths) >= 3
+    page = _page()
+    hero = page.split('<header class="hero', 1)[1].split("</header>", 1)[0]
+    back = hero.split('<div class="soil back"', 1)[1].split('<div class="soil" ', 1)[0]
+    scr = back.split('<g class="scr">', 1)[1].split("</g>", 1)[0]
+    assert scr.count("<path") == len(_SOIL_CRACKS)
+    assert 'stroke="url(#fis0)"' in scr
+    # each fissure fades to nothing at its far end
+    fades = re.findall(r'<linearGradient id="fis\d"[^>]*>.*?</linearGradient>', back)
+    assert len(fades) == len(_SOIL_CRACKS) and all('stop-opacity="0"' in f for f in fades)
+    # no more identical stitches: every fissure starts at a different angle
+    firsts = {tuple(re.findall(r"-?\d+(?:\.\d+)?", d)[2:4]) for d, _ in _SOIL_CRACKS}
+    assert len(firsts) == len(_SOIL_CRACKS)
+    assert 'class="heap"' not in back
+
+
+def test_loose_clumps_lie_on_the_grass_outside_the_heap():
+    from tombstone.tombstones import _LUMPS
+    assert len(_LUMPS) >= 6
+    assert any(x < 30 for x, _, _ in _LUMPS) and any(x > 200 for x, _, _ in _LUMPS)
+    assert all(y <= 14 for _, y, _ in _LUMPS)
