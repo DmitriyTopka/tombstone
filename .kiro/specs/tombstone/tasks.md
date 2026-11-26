@@ -468,3 +468,23 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 32.2 Tests
     - Each of the six effects is embedded exactly once; each is scheduled on its event (ground heave, every rise step, clods, first hand break-through, split, hand sink) and only when sound is on; the synthesized crack is gone; the credit line is updated; page under 1.35 MB with no external requests; existing tests still pass (update only the size limit and those the change breaks).
     - _Requirements: R21.1, R21.2, R21.3_
+
+- [ ] 33. Music from the start, a violent break-through, no milky haze
+  - Dima's review of the recorded run with sound on 2026-11-26: the music must start from the start; the break-through of the stone should be stronger; there is a white haze over the screen. Claude found the haze: the three `.fogl` fog layers (opacity 0.42 to 0.5) wash the lower half of the photo; the dust `.burst` is a white radial gradient.
+  - _Requirements: R22.1, R22.2, R22.3_
+
+  - [ ] 33.1 Sound on by default
+    - Per R22.1: default the toggle to on, start the ambience on the first pointerdown, touchstart or keydown anywhere (once), keep the effects of R21 unchanged.
+    - _Requirements: R22.1_
+
+  - [ ] 33.2 The break-through
+    - Per R22.2: ground swells and tremor, real-time fissures, the eruption of photographed clods and grass with gravity and spin, dark soil dust, jerky rise with tremor, wobble and tumbling clods, the hand's spray; requestAnimationFrame, at most 40 particles, reduced motion.
+    - _Requirements: R22.2_
+
+  - [ ] 33.3 Clear the haze
+    - Per R22.3: fog only in the lowest third, at most 0.18 opacity, textured, cool blue-grey; the dust and the flash never white.
+    - _Requirements: R22.3_
+
+  - [ ] 33.4 Tests
+    - Sound defaults to on and starts on the first interaction, never before; the eruption spawns 15 to 25 clods and never more than 40 particles; the dust colour is not white; each fog layer has opacity at most 0.18 and sits in the lowest third; reduced motion shows the final state; existing tests still pass (update only those the change breaks).
+    - _Requirements: R22.1, R22.2, R22.3_
