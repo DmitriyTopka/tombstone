@@ -2690,6 +2690,7 @@ def _g_soil(hp: float) -> str:
 
 
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
+_AUDIO_CREDIT = "Night ambience generated with Suno."
 
 _HERO_JS = """
 (function(){
@@ -2735,7 +2736,7 @@ function clear(){verdict.textContent="";}
 function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
   p.textContent=text;verdict.appendChild(p);}
 function boom(){if(!soundOn||!ac){return;}
-  try{var t=ac.currentTime,n=Math.floor(ac.sampleRate*.2),b=ac.createBuffer(1,n,ac.sampleRate),
+  duck();try{var t=ac.currentTime,n=Math.floor(ac.sampleRate*.2),b=ac.createBuffer(1,n,ac.sampleRate),
     d=b.getChannelData(0),i,src=ac.createBufferSource(),hp=ac.createBiquadFilter(),
     g=ac.createGain(),o=ac.createOscillator(),og=ac.createGain();
   for(i=0;i<n;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);}
@@ -2770,12 +2771,33 @@ var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start
 slider.value=start;label();
 slider.addEventListener("input",function(){label();reset();});
 btn.addEventListener("click",run);
+var LEVEL=.35,amb=null,ambBuf=null,ambLoad=null;
+function ambData(){if(typeof AMBIENCE!=="string"){return null;}
+  var s=atob(AMBIENCE.split(",")[1]),u=new Uint8Array(s.length),i;
+  for(i=0;i<s.length;i++){u[i]=s.charCodeAt(i);}return u.buffer;}
+function ambStop(a,t,fade){try{a.g.gain.cancelScheduledValues(t);a.g.gain.setValueAtTime(a.g.gain.value,t);
+  a.g.gain.linearRampToValueAtTime(0,t+fade);a.src.stop(t+fade+.05);}catch(e){}}
+function ambPlay(){if(!ac||!ambBuf||!soundOn||amb){return;}
+  try{var t=ac.currentTime,src=ac.createBufferSource(),g=ac.createGain();
+  src.buffer=ambBuf;src.loop=true;g.gain.setValueAtTime(0,t);
+  g.gain.linearRampToValueAtTime(LEVEL,t+1.5);src.connect(g);g.connect(ac.destination);
+  src.start(t);amb={src:src,g:g};}catch(e){amb=null;}}
+function ambOn(){if(ambBuf){ambPlay();return;}if(ambLoad||!ac){return;}
+  try{var raw=ambData();if(!raw){return;}
+  ambLoad=ac.decodeAudioData(raw,function(b){ambBuf=b;ambPlay();},function(){ambLoad=null;});
+  if(ambLoad&&ambLoad.catch){ambLoad.catch(function(){});}}catch(e){ambLoad=null;}}
+function ambOff(){if(amb&&ac){var a=amb;amb=null;ambStop(a,ac.currentTime,.5);}}
+function duck(){if(!amb||!ac){return;}
+  try{var t=ac.currentTime,v=amb.g.gain;v.cancelScheduledValues(t);v.setValueAtTime(v.value,t);
+  v.linearRampToValueAtTime(LEVEL*.15,t+.1);v.setValueAtTime(LEVEL*.15,t+1);
+  v.linearRampToValueAtTime(LEVEL,t+1.8);}catch(e){}}
 if(snd){snd.addEventListener("click",function(){soundOn=!soundOn;
   snd.setAttribute("aria-pressed",soundOn?"true":"false");
   snd.textContent=soundOn?"Sound on":"Sound off";
   if(soundOn&&!ac){try{var C=window.AudioContext||window.webkitAudioContext;
     if(C){ac=new C();}}catch(e){ac=null;}}
-  if(ac&&ac.state==="suspended"){ac.resume();}});}
+  if(ac&&ac.state==="suspended"){ac.resume();}
+  if(soundOn){ambOn();}else{ambOff();}});}
 reset();
 })();
 """
@@ -3092,6 +3114,18 @@ def _scene_uri(name: str) -> str:
     return "data:image/webp;base64," + base64.b64encode(raw).decode("ascii")
 
 
+@functools.lru_cache(maxsize=None)
+def _ambience_js() -> str:
+    """The night ambience (R20.3) as one JS data URI string, embedded once ("" if missing)."""
+    import base64
+    from importlib import resources
+    try:
+        raw = resources.files("tombstone").joinpath("data", "scene", "ambience.m4a").read_bytes()
+    except (OSError, ModuleNotFoundError):
+        return ""
+    return 'var AMBIENCE="data:audio/mp4;base64,' + base64.b64encode(raw).decode("ascii") + '";\n'
+
+
 def _scene_css() -> str:
     """The two photographs as CSS custom properties (R17.1, R17.4)."""
     props = "".join(f'--{var}:url("{uri}");' for var, name in
@@ -3312,7 +3346,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         "<footer>Every number on this page comes from tombstones.json, written by "
         "Tombstone's hooks while Kiro worked. Credits are Kiro credits as the session "
         "files report them.</footer>\n"
-        f'<p class="credit">{esc(_SCENE_CREDIT)}</p>\n'
+        f'<p class="credit">{esc(_SCENE_CREDIT)} {esc(_AUDIO_CREDIT)}</p>\n'
         '<dialog id="card" aria-labelledby="ct"><h3 id="ct"></h3><p class="meta" id="cm"></p>'
         '<dl id="cd"></dl><p class="prompt" id="cp" hidden></p><p class="gap" id="cg"></p>'
         '<section id="cr" class="receipt" aria-labelledby="crh" hidden><h4 id="crh">Receipt</h4>'
@@ -3321,7 +3355,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<p class="rl">Last tool calls</p><ol id="crc"></ol></div></section>'
         '<form method="dialog"><button>Close</button></form></dialog>\n'
         f"<script>\n{_GRAVEYARD_JS}\n"
-        f"{('var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}\n{_HERO_JS}"
+        f"{(_ambience_js() + 'var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}\n{_HERO_JS}"
         "\n</script>\n"
         f"</body>\n</html>\n"
     )

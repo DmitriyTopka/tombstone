@@ -39,8 +39,8 @@ def test_data_uris_and_nothing_outside_the_page():
         "http://www.w3.org/2000/svg", "")
 
 
-def test_page_stays_under_1_1_mb():
-    assert len(_page().encode("utf-8")) < 1100 * 1024
+def test_page_stays_under_1_2_mb():
+    assert len(_page().encode("utf-8")) < 1200 * 1024
 
 
 def test_credit_line_is_at_the_bottom():
@@ -335,9 +335,9 @@ def test_reduced_motion_and_noscript_show_hand_sunk_and_bones_shown():
     assert 'class="earth on" id="run-earth"' in page and " hup" not in page.split('id="run-earth"', 1)[0][-40:]
 
 
-def test_page_is_one_file_with_no_external_requests_and_under_1_1_mb():
+def test_page_is_one_file_with_no_external_requests_and_under_1_2_mb():
     page = _page()
-    assert len(page.encode("utf-8")) < 1100 * 1024
+    assert len(page.encode("utf-8")) < 1200 * 1024
     assert not re.search(r"<(?:link|script)[^>]+(?:src|href)=[\"']https?:", page)
 
 
@@ -509,3 +509,51 @@ def test_bones_lie_in_the_left_foreground_away_from_stone_heap_and_hand():
     # at 390 px they would overlap the caption, so they are hidden there (R19.7 allows it)
     phone = _css(page).split("@media (max-width:640px){\n  .hero{--k:", 1)[1].split("\n}", 1)[0]
     assert ".hero .bones{display:none}" in phone
+
+
+# --- Task 31: night ambience behind the sound toggle (R20.1 to R20.3) ---
+
+def _ambience_b64() -> str:
+    import base64
+    raw = resources.files("tombstone").joinpath("data", "scene", "ambience.m4a").read_bytes()
+    return base64.b64encode(raw).decode("ascii")
+
+
+def test_ambience_is_embedded_once_as_audio_mp4_and_never_autoplays():
+    page = _page()
+    assert page.count(_ambience_b64()) == 1
+    assert page.count("data:audio/mp4;base64,") == 1
+    assert "<audio" not in page and "autoplay" not in page
+    assert "<source" not in page
+
+
+def test_ambience_starts_only_from_the_toggle_click():
+    script = _page().split("var AMBIENCE=", 1)[1]
+    script = script.split(";\n", 1)[1]
+    # decoding and playing are reached only through ambOn, which only the click handler calls
+    assert script.count("ambOn()") == 2  # definition and the one call
+    handler = script.split('snd.addEventListener("click"', 1)[1]
+    assert "if(soundOn){ambOn();}else{ambOff();}" in handler
+    assert "soundOn=false" in script  # sound is off by default
+
+
+def test_ambience_loops_with_fades_and_ducks_under_the_crack():
+    script = _page().split("var AMBIENCE=", 1)[1]
+    assert "src.loop=true" in script
+    assert "linearRampToValueAtTime(LEVEL,t+1.5)" in script  # fade in about 1.5 s
+    assert "ambStop(a,ac.currentTime,.5)" in script  # fade out about 0.5 s, then stop
+    assert "a.src.stop(" in script
+    boom = script.split("function boom(){", 1)[1].split("function reset", 1)[0]
+    assert "duck();" in boom  # the stop ducks the ambience under the crack and thud
+    duck = script.split("function duck(){", 1)[1].split("if(snd)", 1)[0]
+    assert "setValueAtTime(LEVEL*.15,t+1)" in duck and "linearRampToValueAtTime(LEVEL,t+" in duck
+    # one Web Audio context shared by the crack and the ambience, and the reduced-motion path keeps sound
+    assert script.count("new C()") == 1
+    assert "prefers-reduced-motion" in script and "if(!reduce){hero.classList.add(\"scare\");boom();}" in script
+
+
+def test_ambience_credit_line_is_at_the_bottom():
+    page = _page()
+    assert "Night ambience generated with Suno." in page
+    assert page.count('<p class="credit">') == 1
+    assert page.index("Night ambience generated with Suno.") > page.index("</main>")

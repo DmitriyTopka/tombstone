@@ -3270,6 +3270,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/31",
+      "task_id": "31",
+      "name": "A night ambience behind the sound toggle",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 0.9364,
+      "actual": 0.4073,
+      "minutes": 0.3756,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_fcce6a28-422d-4746-b282-f5836add641a",
+          "turn_id": "5eef23ed-ff79-4985-b2c7-093ae9e47378",
+          "requests": 9,
+          "estimate": 2.8096,
+          "actual": 1.2219,
+          "minutes": 1.127,
+          "start": "2026-11-26T15:10:39.172000Z",
+          "end": "2026-11-26T15:11:46.792000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/31.1",
+      "task_id": "31.1",
+      "name": "Play, loop, fade and duck",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 0.9364,
+      "actual": 0.4073,
+      "minutes": 0.3756,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_fcce6a28-422d-4746-b282-f5836add641a",
+          "turn_id": "5eef23ed-ff79-4985-b2c7-093ae9e47378",
+          "requests": 9,
+          "estimate": 2.8096,
+          "actual": 1.2219,
+          "minutes": 1.127,
+          "start": "2026-11-26T15:10:39.172000Z",
+          "end": "2026-11-26T15:11:46.792000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/31.2",
+      "task_id": "31.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 0.9364,
+      "actual": 0.4073,
+      "minutes": 0.3756,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_fcce6a28-422d-4746-b282-f5836add641a",
+          "turn_id": "5eef23ed-ff79-4985-b2c7-093ae9e47378",
+          "requests": 9,
+          "estimate": 2.8096,
+          "actual": 1.2219,
+          "minutes": 1.127,
+          "start": "2026-11-26T15:10:39.172000Z",
+          "end": "2026-11-26T15:11:46.792000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
