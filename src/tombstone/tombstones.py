@@ -2633,52 +2633,12 @@ _SOIL_CRACKS = [
     ("M146 50 L151 56 L146 61 L154 67", 1.2),
     ("M64 57 L67 63 L61 68", .9),
 ]
-_HEAP_H = 57.0
-
-
-def _heap_env(x: float) -> float:
-    """Smooth heap height (SVG units above the ground line) at x, peak _HEAP_H at the centre."""
-    t = abs(x - 125.0) / 118.0
-    return 0.0 if t >= 1 else _HEAP_H * (1 - t ** 2.3) ** 1.1
-
-
-def _g_heap() -> tuple[str, str]:
-    """Irregular lumpy silhouette of the loose-earth heap, plus its lit lumps and small stones.
-
-    The heap is about 1.6 times the stone width (235 of 147 units) and about 26 percent of the
-    stone's visible height at full size. Light comes from the upper right.
-    """
-    rnd = random.Random(29)
-    ground = 49.0
-    pts = []
-    for i in range(30):
-        x = 7 + i * (236 / 29)
-        e = _heap_env(x)
-        pts.append((x, ground - e * (1 + rnd.uniform(-.13, .11)) if 0 < i < 29 else ground))
-    top = min(y for _, y in pts)
-    k = (ground - (ground - _HEAP_H)) / (ground - top)
-    pts = [(x, ground - (ground - y) * min(k, 1.0)) for x, y in pts]
-    d = f"M{pts[0][0]:.1f} {ground:.0f}"
-    for (x0, y0), (x1, y1) in zip(pts[1:], pts[2:] + [pts[-1]]):
-        d += f" Q{x0:.1f} {y0:.1f} {(x0 + x1) / 2:.1f} {(y0 + y1) / 2:.1f}"
-    d += f" L{pts[-1][0]:.1f} {ground:.0f}Z"
-    extra = ""
-    for i in range(3, 27, 3):  # lit upper-right face and shaded lower-left face of the lumps
-        x, y = pts[i]
-        extra += (f'<ellipse cx="{x + 4:.1f}" cy="{y + 4:.1f}" rx="6.5" ry="2.6" fill="#c4d0ee" '
-                  f'fill-opacity=".16" transform="rotate(-24 {x + 4:.1f} {y + 4:.1f})"/>')
-        extra += (f'<ellipse cx="{x - 5:.1f}" cy="{y + 9:.1f}" rx="7" ry="3.4" fill="#0b0604" '
-                  f'fill-opacity=".28" transform="rotate(-24 {x - 5:.1f} {y + 9:.1f})"/>')
-    for x, f, r in ((84, .5, 3.1), (101, .72, 2.2), (158, .45, 3.6), (176, .78, 2.4),
-                    (139, .66, 2.0), (112, .35, 2.6)):  # small stones set into the heap
-        y = ground - _heap_env(x) * f
-        extra += (f'<ellipse cx="{x}" cy="{y:.1f}" rx="{r * 1.2:.1f}" ry="{r:.1f}" fill="url(#peb)" '
-                  f'transform="rotate(-12 {x} {y:.1f})"/>')
-    return d, extra
+# R19.1: the clods are photographs, embedded once each as CSS custom properties
+_CLOD_COUNT = 8
 
 
 def _g_soil(hp: float) -> str:
-    """Mound, soil cracks, torn edges, grass tufts, heap, lumps and falling clumps."""
+    """Mound, soil cracks, torn edges, grass tufts, photo heap, lumps and falling clods."""
     rnd = random.Random(18)
     for _ in range(31):  # keep the random stream, so tufts and blades stay as drawn before
         rnd.choice((-1.5, -.5, 0, .8, 1.6))
@@ -2688,7 +2648,6 @@ def _g_soil(hp: float) -> str:
         h = rnd.randint(4, 9)
         blades.append(f"M{x} 48 L{x - 2} {48 - h} L{x + 1} {48 - h // 2 - 1} L{x + 2} {48 - h + 1} L{x + 3} 48Z")
     tufts = "".join(blades)
-    heap, heap_extra = _g_heap()
     fissure_defs = ""
     for n, (d, _w) in enumerate(_SOIL_CRACKS):
         nums = [float(v) for v in re.findall(r"-?\d+(?:\.\d+)?", d)]
@@ -2718,20 +2677,16 @@ def _g_soil(hp: float) -> str:
         'filter="url(#soilf)" transform="rotate(14 196 48)"/>'
         '<path d="M45 40 L47 33 L50 39 L53 31 L56 40Z M190 38 L193 31 L196 37 L199 32 L202 40Z" '
         'fill="url(#blade)"/></g></svg>')
-    front = ('<svg class="gsvg hv" viewBox="0 -40 250 110" preserveAspectRatio="none" focusable="false">'
-             '<defs><linearGradient id="heapg" x1=".85" y1="0" x2=".2" y2="1">'
-             '<stop offset="0" stop-color="#8d6b4d"/><stop offset=".35" stop-color="#5f4430"/>'
-             '<stop offset="1" stop-color="#1b110a"/></linearGradient>'
-             '<radialGradient id="peb" cx=".7" cy=".25" r=".85"><stop offset="0" stop-color="#b9c2d6"/>'
-             '<stop offset=".5" stop-color="#6b7184"/><stop offset="1" stop-color="#262a36"/></radialGradient></defs>'
-             f'<g class="heap"><path d="{heap}" fill="url(#heapg)" filter="url(#soilf)"/>{heap_extra}</g></svg>')
     lumps = "".join(
-        f'<i class="clump lump" style="--x:{x};--y:{y};--s:{s}"></i>' for x, y, s in _LUMPS)
+        f'<i class="ph clump lump c{n % _CLOD_COUNT}" style="--x:{x};--y:{y};--s:{s};--r:{(n * 67) % 150 - 70}deg"></i>'
+        for n, (x, y, s) in enumerate(_LUMPS))
     falls = "".join(
-        f'<i class="clump fall" style="--x:{x};--y:{y};--s:{s};--dx:{dx};--t:{t}"></i>'
-        for x, y, s, dx, t in _FALLS)
-    return (f'<div class="soil back" aria-hidden="true">{svg}</div>'
-            f'<div class="soil" aria-hidden="true">{front}{lumps}</div><div class="shed" aria-hidden="true">{falls}</div>')
+        f'<i class="ph clump fall c{(n * 3 + 1) % _CLOD_COUNT}" '
+        f'style="--x:{x};--y:{y};--s:{s};--dx:{dx};--t:{t}"></i>'
+        for n, (x, y, s, dx, t) in enumerate(_FALLS))
+    # R19.1: the photographed heap, hollow middle behind the stone (back copy), rest in front
+    return (f'<div class="soil back" aria-hidden="true">{svg}<i class="ph heap hb"></i></div>'
+            f'<div class="soil" aria-hidden="true"><i class="ph heap hf"></i>{lumps}</div><div class="shed" aria-hidden="true">{falls}</div>')
 
 
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
@@ -2773,6 +2728,8 @@ function draw(c){count.textContent=f(c)+" credits est.";setCost(f(c));
   var hh=height(c);stone.style.setProperty("--rh",hh+"px");
   if(earth){earth.style.setProperty("--rh",hh+"px");earth.style.setProperty("--hp",((hh-70)/150).toFixed(3));}
   if(c>last+1e-9){dig();}last=c;}
+function hand(i,n){if(!earth){return;}earth.classList.add("hup");
+  earth.style.setProperty("--hl",Math.min(1,.3+.7*(i-1)/Math.max(1,n-1)).toFixed(3));}
 function setCost(t){var all=stone.querySelectorAll(".cost"),i;for(i=0;i<all.length;i++){all[i].textContent=t;}}
 function clear(){verdict.textContent="";}
 function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
@@ -2789,9 +2746,9 @@ function boom(){if(!soundOn||!ac){return;}
   og.gain.setValueAtTime(.9,t+.05);og.gain.exponentialRampToValueAtTime(.001,t+.7);
   o.connect(og);og.connect(ac.destination);o.start(t+.05);o.stop(t+.75);}catch(e){}}
 function reset(){if(timer){clearTimeout(timer);timer=null;}
-  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
+  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("hup","full");earth.style.setProperty("--hl","0");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
-function finish(r){var steps=r.stop_at;
+function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
     if(!reduce){hero.classList.add("scare");boom();}stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
@@ -2802,7 +2759,7 @@ function finish(r){var steps=r.stop_at;
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
   var i=0,gap=6000/steps;
-  function tick(){i+=1;draw(T.credits[i-1]);
+  function tick(){i+=1;draw(T.credits[i-1]);if(i>=2){hand(i,steps);}
     if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
     timer=setTimeout(tick,gap);}
   if(earth){earth.classList.add("on","heave");}
@@ -2828,6 +2785,12 @@ def _run_json(trace: dict) -> str:
     """Inline JSON for a script tag: ``<``, ``>``, ``&`` and line separators escaped."""
     text = json.dumps(trace, separators=(",", ":"), ensure_ascii=True)
     return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
+def _g_hand_bones() -> str:
+    """The photographed hand (R19.2) and bones (R19.3); both hidden until the run."""
+    return ('<div class="hand" aria-hidden="true"><i class="ph hi"></i></div>'
+            '<i class="ph bones" aria-hidden="true"></i>')
 
 
 def _g_runner(trace: Optional[dict]) -> str:
@@ -2857,14 +2820,13 @@ def _g_runner(trace: Optional[dict]) -> str:
     hp = (height - 70) / 150
     left, right = _split_clips()
     clip_l, clip_r = f"{left}", f"{right}"
-    uri = _scene_uri("headstone.webp")
     dust = ('<svg class="dust" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
             '<path class="d1" d="M17 18 C18 4 36 1 50 1 C64 1 82 4 83 18 M6 20 L16 18 M84 18 L94 20"/>'
             '<path class="d2" d="M17 20 C18 7 36 3 50 3 C64 3 82 7 83 20 M10 24 L16 21 M84 21 L90 24"/></svg>')
 
     def half(first: bool) -> str:
         cost_attr = 'class="cost" id="run-stone-cost"' if first else 'class="cost cr"'
-        return (f'<img class="hs" alt="" src="{uri}">'
+        return ('<span class="hs"></span>'
                 f'<span class="carve"><span {cost_attr}>{shown:.2f}</span>'
                 f'<span class="cunit">credits est.</span></span>{dust}')
 
@@ -2882,7 +2844,7 @@ def _g_runner(trace: Optional[dict]) -> str:
         f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
         f"{shown:.2f} credits est.</b></div>"
         f'<div class="grave"><div class="earth on" id="run-earth" style="--rh:{height}px;--hp:{hp:.3f}">'
-        f'<div id="run-stone" class="{cls}" '
+        f'{_g_hand_bones()}<div id="run-stone" class="{cls}" '
         f'style="--rh:{height}px;--cl:{clip_l};--cr:{clip_r}" role="img" '
         'aria-label="Headstone that rises with the spend">'
         f'<div class="half hl">{half(True)}</div>'
@@ -2965,15 +2927,15 @@ _HERO_CSS = """
 .hero .hstone{position:absolute;left:50%;margin-left:calc(var(--k) * -73px);width:calc(var(--k) * 147px);
   height:calc(var(--k) * 220px);top:calc((228px - var(--rh)) * var(--k));
   transition:top .5s cubic-bezier(.3,.7,.3,1);cursor:default}
-.hero .hstone .hs{display:block;width:100%;height:100%;user-select:none;-webkit-user-drag:none;
+.hero .hstone .hs{display:block;width:100%;height:100%;user-select:none;background:var(--img-stone) center/100% 100% no-repeat;
   filter:brightness(.92) contrast(1.08) saturate(.65) sepia(.4) hue-rotate(172deg)
     drop-shadow(0 0 10px rgba(140,168,222,.16));transition:filter .8s ease}
 .hero.stopped .hstone .hs{filter:brightness(.78) contrast(1.12) saturate(.6) sepia(.4) hue-rotate(172deg)
     drop-shadow(0 0 12px rgba(255,59,59,.28))}
-.hero .hstone .carve{position:absolute;left:22%;right:22%;top:24%;text-align:center;container-type:inline-size;
+.hero .hstone .carve{position:absolute;left:29%;right:29%;top:49%;text-align:center;container-type:inline-size;
   font-family:Georgia,"Times New Roman",serif;color:#070a10;pointer-events:none;
   text-shadow:0 1px 0 rgba(190,205,232,.4),0 -1px 0 rgba(0,0,0,.5)}
-/* the carve box is 56% of the stone, at most 70% of the blank face; type sizes follow its width */
+/* the carve box is 42% of the stone, centred in the sunken panel (x 20 to 80 percent, y 31 to 78 percent); at most 70% of the panel; type sizes follow its width */
 .hero .hstone .cost{display:block;margin:0;font-size:calc(var(--k) * 22px);font-size:27cqw;line-height:1.05;
   font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#070a10}
 .hero .hstone .cunit{display:block;font-size:calc(var(--k) * 8px);font-size:8cqw;letter-spacing:.1em;
@@ -2994,22 +2956,46 @@ _HERO_CSS = """
 .hero .gsvg{position:absolute;left:0;bottom:0;width:100%;height:100%;overflow:visible;
   -webkit-mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%);
   mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%)}
-.hero .gsvg .mound,.hero .gsvg .heap{transform-box:fill-box;transform-origin:50% 100%;
+.hero .gsvg .mound{transform-box:fill-box;transform-origin:50% 100%;transition:transform .5s ease-out,opacity .4s}
+/* R19.1: the photographed heap, about 1.6 stone widths (235 of 147 units) at full size, 20 percent at the first step;
+   the back copy sits behind the stone (its hollow middle), the front copy only covers the stone's foot */
+.hero .heap{--im:var(--img-heap);left:calc(var(--k) * 7.5px);bottom:calc(var(--k) * 14px);width:calc(var(--k) * 235px);
+  aspect-ratio:640/428;transform-origin:50% 100%;transform:scale(calc(.2 + .8 * var(--hp,1)));
   transition:transform .5s ease-out,opacity .4s}
-.hero .gsvg.hv{height:calc(var(--k) * 110px);-webkit-mask-image:none;mask-image:none}
-/* the heap grows with each rise step: about 24 to 26 percent of the visible stone height, 1.6 stone widths at full size */
-.hero .gsvg .heap{transform:scale(calc(.7 + .3 * var(--hp,1)),calc(.3 + .7 * var(--hp,1)))}
+.hero .heap.hf{-webkit-mask-image:linear-gradient(180deg,transparent 58%,#000 80%);mask-image:linear-gradient(180deg,transparent 58%,#000 80%)}
 /* at rest (no .on) there is no mound, heap or soil crack; the run adds them */
-.hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump{opacity:0}
-.hero .earth.on .gsvg .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .gsvg .tufts,.hero .earth.on .soil .lump{opacity:1}
+.hero .gsvg .mound,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump,.hero .soil .heap{opacity:0}
+.hero .earth.on .soil .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .gsvg .tufts,.hero .earth.on .soil .lump{opacity:1}
 .hero .earth.on .gsvg .mound{opacity:1}
+/* R19.4: every photograph is toned to the cold moon: darker, less saturated, bluish, lit from the upper right */
+.hero .ph{position:absolute;background:var(--im) center/100% 100% no-repeat;
+  filter:brightness(.8) contrast(1.06) saturate(.55) sepia(.35) hue-rotate(172deg) drop-shadow(0 0 8px rgba(140,168,222,.14))}
+.hero .ph::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(210deg,rgba(175,198,240,.34),rgba(175,198,240,0) 48%);
+  -webkit-mask:var(--im) center/100% 100% no-repeat;mask:var(--im) center/100% 100% no-repeat}
 .hero .gsvg .scr path{fill:none;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;
   stroke-dashoffset:0;vector-effect:non-scaling-stroke}
-.hero .clump{position:absolute;border-radius:48% 52% 45% 55% / 55% 45% 55% 45%;
-  width:calc(var(--s) * var(--k) * 1px);height:calc(var(--s) * var(--k) * .8px);
-  background:radial-gradient(circle at 68% 24%,#9aa3bc 0,#5b4634 24%,#2f2016 60%,#120b06 100%);
-  box-shadow:0 1px 1px rgba(0,0,0,.7)}
-.hero .lump{left:calc(var(--x) * var(--k) * 1px);bottom:calc(var(--y) * var(--k) * 1px)}
+.hero .clump{width:calc(var(--s) * var(--k) * 2px)}
+.hero .c0{--im:var(--clod0);aspect-ratio:90/77}.hero .c1{--im:var(--clod1);aspect-ratio:90/75}
+.hero .c2{--im:var(--clod2);aspect-ratio:90/67}.hero .c3{--im:var(--clod3);aspect-ratio:90/91}
+.hero .c4{--im:var(--clod4);aspect-ratio:90/69}.hero .c5{--im:var(--clod5);aspect-ratio:90/113}
+.hero .c6{--im:var(--clod6);aspect-ratio:90/94}.hero .c7{--im:var(--clod7);aspect-ratio:90/106}
+.hero .lump{left:calc(var(--x) * var(--k) * 1px);bottom:calc(var(--y) * var(--k) * 1px);transform:rotate(var(--r,0deg))}
+/* R19.2: the skeletal hand claws up beside the stone; the wrapper ends at the ground line, so its foot is never seen */
+.hero .hand{position:absolute;left:calc(var(--k) * 2px);bottom:calc(var(--k) * 22px);width:calc(var(--k) * 72px);
+  height:calc(var(--k) * 99px);overflow:hidden;z-index:2;pointer-events:none;opacity:0}
+.hero .earth.hup .hand{opacity:1}
+.hero .hand .hi{--im:var(--img-hand);left:0;bottom:calc(var(--k) * -14px);width:100%;height:calc(var(--k) * 110px);
+  transform-origin:50% 100%;transform:translateY(calc((1 - var(--hl,0)) * 100%));
+  transition:transform .22s cubic-bezier(.4,1.8,.5,1)}
+/* at the split the hand goes limp and sinks back into the earth within 0.8 s */
+.hero.stopped .hand .hi{transform:translateY(105%) rotate(11deg);opacity:0;transition:transform .8s ease-in,opacity .8s ease-in}
+/* R19.3: the bones on the grass to the right of the heap, about 60 percent of the stone width (88 of 147 units) */
+.hero .bones{--im:var(--img-bones);left:calc(var(--k) * 162px);bottom:0;width:calc(var(--k) * 88px);aspect-ratio:360/355;
+  z-index:4;opacity:0;pointer-events:none;transition:opacity .9s ease-out}
+.hero.stopped .bones,.hero .earth.full .bones{opacity:1}
+.hero .bones::before{content:"";position:absolute;left:5%;right:5%;bottom:-6%;height:55%;border-radius:50%;opacity:0;
+  background:radial-gradient(closest-side,rgba(118,122,138,.6),rgba(118,122,138,0))}
 .hero .shed{position:absolute;left:50%;top:calc((228px - var(--rh)) * var(--k));width:0;height:0;z-index:4;
   pointer-events:none}
 .hero .fall{left:calc(var(--x) * var(--k) * 1px);top:calc(var(--y) * var(--k) * 1px);opacity:0;
@@ -3025,9 +3011,11 @@ _HERO_CSS = """
   .hero .earth.dig .fall{animation:shed .95s ease-in calc(var(--t) * 1s) both}
   .hero .earth.heave .hstone{top:calc(228px * var(--k));transition:none}
   .hero .earth.heave .mound{animation:swell .9s ease-out both}
-  .hero .earth.on.heave .gsvg .heap,.hero .earth.on.heave .gsvg .tear,.hero .earth.on.heave .soil .lump{opacity:0}
+  .hero .earth.on.heave .soil .heap,.hero .earth.on.heave .gsvg .tear,.hero .earth.on.heave .soil .lump{opacity:0}
   .hero .earth.heave .scr path{animation:open .6s ease-out .25s both}
   .hero .earth.heave .soil{animation:hshake .2s linear 4}
+  .hero.stopped .bones::before,.hero .earth.full .bones::before{animation:puff 1.2s ease-out both}
+  @keyframes puff{0%{opacity:.85;transform:scale(.3)}100%{opacity:0;transform:scale(1.7) translateY(-25%)}}
   @keyframes swell{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
   @keyframes open{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
   @keyframes shed{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:1}
@@ -3044,7 +3032,8 @@ _HERO_CSS = """
   .hero .fogl,.hero .burst,.hero .hstone,.hero .hs,.hero .photo{transition:none}
   .hero::after{display:none}
   .hero .shed{display:none}
-  .hero .hstone .half,.hero .gsvg .mound,.hero .gsvg .heap{transition:none}
+  .hero .hstone .half,.hero .gsvg .mound,.hero .heap,.hero .hand .hi,.hero .bones{transition:none}
+  .hero .bones::before{display:none}
 }
 @media (max-width:900px){
   .hero .runner .scene{grid-template-columns:1fr;justify-items:center;gap:6px}
@@ -3080,7 +3069,7 @@ def _scene_uri(name: str) -> str:
     import base64
     from importlib import resources
     try:
-        raw = resources.files("tombstone").joinpath("data", "scene", name).read_bytes()
+        raw = resources.files("tombstone").joinpath("data", "scene", *name.split("/")).read_bytes()
     except (OSError, ModuleNotFoundError):
         return ""
     return "data:image/webp;base64," + base64.b64encode(raw).decode("ascii")
@@ -3091,6 +3080,10 @@ def _scene_css() -> str:
     props = "".join(f'--{var}:url("{uri}");' for var, name in
                     (("scene-d", "scene_desktop.webp"), ("scene-m", "scene_mobile.webp"))
                     if (uri := _scene_uri(name)))
+    # R19.5: every other image once, reused through var() by the stone halves, heap, hand, bones, clods
+    names = [("img-stone", "headstone.webp"), ("img-heap", "heap.webp"), ("img-hand", "hand_reach.webp"),
+             ("img-bones", "bones.webp")] + [(f"clod{n}", f"clods/clod_{n}.webp") for n in range(_CLOD_COUNT)]
+    props += "".join(f'--{var}:url("{uri}");' for var, name in names if (uri := _scene_uri(name)))
     return f".hero{{{props}}}" if props else ""
 
 

@@ -3090,6 +3090,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/30",
+      "task_id": "30",
+      "name": "Photographed earth, a skeletal hand and old bones",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 1.1519,
+      "actual": 1.1595,
+      "minutes": 0.8696,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_02e06d5d-8d5a-4093-acc4-a0ec987540a6",
+          "turn_id": "de5506b0-c598-44b7-80b6-55b91b87273d",
+          "requests": 13,
+          "estimate": 4.6077,
+          "actual": 4.638,
+          "minutes": 3.4782,
+          "start": "2026-11-26T14:19:31.928000Z",
+          "end": "2026-11-26T14:23:00.619000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/30.1",
+      "task_id": "30.1",
+      "name": "Photo heap and clods, single embedding",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 1.1519,
+      "actual": 1.1595,
+      "minutes": 0.8696,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_02e06d5d-8d5a-4093-acc4-a0ec987540a6",
+          "turn_id": "de5506b0-c598-44b7-80b6-55b91b87273d",
+          "requests": 13,
+          "estimate": 4.6077,
+          "actual": 4.638,
+          "minutes": 3.4782,
+          "start": "2026-11-26T14:19:31.928000Z",
+          "end": "2026-11-26T14:23:00.619000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/30.2",
+      "task_id": "30.2",
+      "name": "The hand and the bones",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 1.1519,
+      "actual": 1.1595,
+      "minutes": 0.8696,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_02e06d5d-8d5a-4093-acc4-a0ec987540a6",
+          "turn_id": "de5506b0-c598-44b7-80b6-55b91b87273d",
+          "requests": 13,
+          "estimate": 4.6077,
+          "actual": 4.638,
+          "minutes": 3.4782,
+          "start": "2026-11-26T14:19:31.928000Z",
+          "end": "2026-11-26T14:23:00.619000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/30.3",
+      "task_id": "30.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 13,
+      "estimate": 1.1519,
+      "actual": 1.1595,
+      "minutes": 0.8696,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_02e06d5d-8d5a-4093-acc4-a0ec987540a6",
+          "turn_id": "de5506b0-c598-44b7-80b6-55b91b87273d",
+          "requests": 13,
+          "estimate": 4.6077,
+          "actual": 4.638,
+          "minutes": 3.4782,
+          "start": "2026-11-26T14:19:31.928000Z",
+          "end": "2026-11-26T14:23:00.619000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
