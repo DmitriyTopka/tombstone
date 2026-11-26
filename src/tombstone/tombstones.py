@@ -2692,21 +2692,6 @@ def _g_soil(hp: float) -> str:
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
 _AUDIO_CREDIT = "Night ambience generated with Suno, sound effects with ElevenLabs."
 
-_HERO_JS = """
-(function(){
-var h=document.getElementById("hero"),p=h&&h.querySelector(".photo"),mm=window.matchMedia;
-if(!p||!mm||!mm("(hover:hover) and (pointer:fine) and (min-width:768px)").matches||
-   mm("(prefers-reduced-motion:reduce)").matches){return;}
-var raf=0,x=0,y=0;
-function set(){raf=0;p.style.transform="translate3d("+x.toFixed(1)+"px,"+y.toFixed(1)+"px,0)";}
-h.addEventListener("pointermove",function(e){if(e.pointerType==="touch"){return;}
-  var r=h.getBoundingClientRect();
-  x=((e.clientX-r.left)/r.width-.5)*-24;y=((e.clientY-r.top)/r.height-.5)*-24;
-  if(!raf){raf=requestAnimationFrame(set);}});
-h.addEventListener("pointerleave",function(){x=0;y=0;if(!raf){raf=requestAnimationFrame(set);}});
-})();
-"""
-
 _RUN_JS = """
 (function(){
 var root=document.getElementById("runner");
@@ -2722,7 +2707,7 @@ var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)
 function f(n){return n.toFixed(2);}
 function row(){return rows[+slider.value];}
 function height(c){return Math.round(70+150*Math.min(c/T.total,1));}
-var last=0,earth=document.getElementById("run-earth"),SETTLE=450,HEAVE=1500;
+var last=0,earth=document.getElementById("run-earth"),PUSH=900,SETTLE=1000,HEAVE=1500;
 /* R22.2: the break-through. Particles are DOM nodes moved by one requestAnimationFrame loop; never more than MAXP alive. */
 var MAXP=40,BURST_CLODS=[15,25],BURST_TUFTS=6,BURST_DUST=8,fx=document.getElementById("run-fx"),
     live=[],fxRaf=0,fxT=0,shk={m:0,t:0,d:1},fis=null,curH=70;
@@ -2772,49 +2757,68 @@ function rubble(){var k=kk(),n=2+Math.floor(Math.random()*2),i,sd,top=Math.max(0
   for(i=0;i<n;i++){sd=Math.random()<.5?-1:1;
     clod(sd*rnd(48,66)*k,top-rnd(0,8)*k,rnd(2.5,5),sd*rnd(60,170)*k,rnd(60,260)*k,rnd(0,10)*k,1);}
   if(top>0){puff(rnd(-50,50)*k,top,rnd(-40,40)*k,rnd(20,70)*k,1.3,.5);}}
-function spray(n){var k=kk(),x=-145*k,i;
-  for(i=0;i<n;i++){clod(x+rnd(-14,14)*k,rnd(0,24)*k,rnd(2,3.5),rnd(-150,150)*k,rnd(320,650)*k,rnd(-4,2)*k,0);}
-  puff(x,4*k,rnd(-50,50)*k,rnd(30,90)*k,1,.6);}
 function dig(){if(reduce||!earth){return;}earth.classList.remove("dig");void earth.offsetWidth;
   earth.classList.add("dig");}
 function draw(c){count.textContent=f(c)+" credits est.";setCost(f(c));
   var hh=height(c);curH=hh;stone.style.setProperty("--rh",hh+"px");
   if(earth){earth.style.setProperty("--rh",hh+"px");earth.style.setProperty("--hp",((hh-70)/150).toFixed(3));}
   if(c>last+1e-9){dig();}last=c;}
-function hand(i,n){if(!earth){return;}if(!earth.classList.contains("hup")){sfx("hand_emerge",.8,1,0);spray(5);}else{spray(2);}earth.classList.add("hup");
-  earth.style.setProperty("--hl",Math.min(1,.3+.7*(i-1)/Math.max(1,n-1)).toFixed(3));}
 function setCost(t){var all=stone.querySelectorAll(".cost"),i;for(i=0;i<all.length;i++){all[i].textContent=t;}}
 function clear(){verdict.textContent="";}
 function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
   p.textContent=text;verdict.appendChild(p);}
 function boom(){if(!soundOn||!ac){return;}
-  duck();sfx("stone_split",1,1,0);if(!reduce){sfx("hand_sink",.8,1,.25);}}
+  duck();sfx("stone_split",1,1,0);}
 function sfx(name,vol,rate,delay){var b=sfxBuf[name];if(!soundOn||!ac||!b){return;}
-  try{var t=ac.currentTime+(delay||0),src=ac.createBufferSource(),g=ac.createGain(),
-    d=b.duration/rate,f=Math.min(.3,d/3);
-  src.buffer=b;src.playbackRate.value=rate;g.gain.setValueAtTime(name==="stone_grind"?0:vol,t);
-  if(name==="stone_grind"){g.gain.linearRampToValueAtTime(vol,t+f);
-    g.gain.setValueAtTime(vol,t+d-f);g.gain.linearRampToValueAtTime(0,t+d);}
+  try{var t=ac.currentTime+(delay||0),src=ac.createBufferSource(),g=ac.createGain();
+  src.buffer=b;src.playbackRate.value=rate;g.gain.setValueAtTime(vol,t);
   src.connect(g);g.connect(ac.destination);src.start(t);duck();}catch(e){}}
-function stepSound(){sfx("stone_grind",rnd(.5,.65),rnd(.94,1.06),0);sfx("earth_crumble",rnd(.22,.3),rnd(.95,1.05),.05);}
-function reset(){if(timer){clearTimeout(timer);timer=null;}fxClear();
-  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("hup","full");earth.style.setProperty("--hl","0");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
+function stepSound(){sfx("earth_crumble",rnd(.22,.3),rnd(.95,1.05),.05);}
+/* R23.2: one looping stone_slide source for the whole run; its gain follows the measured upward speed of the stone each frame */
+var SLIDE_VOL=.6,SLIDE_VMAX=40,slide=null,slY=null,slT=0,slRaf=0,slEnd=false;
+function slideGain(v,k){var n=Math.min(1,Math.max(0,v)/(SLIDE_VMAX*k));return n<.04?0:n;}
+function slideStart(){if(reduce||!soundOn||!ac||slide||!sfxBuf.stone_slide){return;}
+  try{var src=ac.createBufferSource(),g=ac.createGain();src.buffer=sfxBuf.stone_slide;src.loop=true;
+  g.gain.value=0;src.connect(g);g.connect(ac.destination);src.start();slide={src:src,g:g};
+  slY=null;slT=0;slEnd=false;if(!slRaf){slRaf=requestAnimationFrame(slideFrame);}}catch(e){slide=null;}}
+function slideStop(){var s=slide;slide=null;slEnd=false;if(!s||!ac){return;}
+  try{var t=ac.currentTime;s.g.gain.cancelScheduledValues(t);s.g.gain.setTargetAtTime(0,t,.05);s.src.stop(t+.4);}catch(e){}}
+function slideFrame(now){slRaf=0;if(!slide||!ac){return;}
+  var y=parseFloat(getComputedStyle(stone).top)||0,k=kk(),v=0,n,t=ac.currentTime;
+  if(slY!==null&&now>slT){v=(slY-y)/((now-slT)/1000);}
+  slY=y;slT=now;n=slideGain(v,k);
+  try{slide.g.gain.setTargetAtTime(n*SLIDE_VOL,t,.05);slide.src.playbackRate.setTargetAtTime(.94+.12*n,t,.05);}catch(e){}
+  if(slEnd&&n===0){slideStop();return;}
+  slRaf=requestAnimationFrame(slideFrame);}
+/* R22.4: the damage vignette. Strength is 0 below 40 percent of the cap, then ease-in up to 1 at the cap; from 80 percent it beats, faster toward the cap */
+var VIG_FROM=.4,VIG_BEAT=.8,vig=document.getElementById("run-vig");
+function vigStrength(c,cap){var q=cap>0?c/cap:0;if(!(q>VIG_FROM)){return 0;}q=Math.min(1,(q-VIG_FROM)/(1-VIG_FROM));return q*q;}
+function vigPeriod(c,cap){var q=cap>0?c/cap:0;if(!(q>=VIG_BEAT)){return 0;}return 1.6-1.0*Math.min(1,(q-VIG_BEAT)/(1-VIG_BEAT));}
+function vigSet(c,cap,final){if(!vig){return;}var st=vigStrength(c,cap),pe=final||reduce?0:vigPeriod(c,cap);
+  vig.style.setProperty("--vg",st.toFixed(3));vig.classList.toggle("beat",pe>0);
+  if(pe>0){vig.style.setProperty("--bp",pe.toFixed(2)+"s");}}
+function vigHit(){if(!vig){return;}vig.style.setProperty("--vg","1");vig.classList.remove("beat","hit");
+  if(!reduce){void vig.offsetWidth;vig.classList.add("hit");}}
+function vigClear(){if(!vig){return;}vig.classList.remove("beat","hit");vig.style.setProperty("--vg","0");}
+function reset(){if(timer){clearTimeout(timer);timer=null;}fxClear();slideStop();vigClear();
+  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("full");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
+  if(slide){slEnd=true;}
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
-    if(!reduce){hero.classList.add("scare");}boom();stone.className="hstone crack-1";
+    if(!reduce){hero.classList.add("scare");}boom();vigHit();stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
     line("","hook exit code 2");line("refusal",r.refusal);
     line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}
-  else{draw(T.total);clear();line("","The cap was never reached. The session finished at "
+  else{vigClear();draw(T.total);clear();line("","The cap was never reached. The session finished at "
     +f(T.total)+" credits est.");}}
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
-  var i=0,gap=6000/steps;
-  function tick(){i+=1;draw(T.credits[i-1]);stepSound();shake(2,.3);rubble();if(i>=2){hand(i,steps);}
+  var i=0,gap=Math.max(PUSH+200,6000/steps);
+  function tick(){i+=1;draw(T.credits[i-1]);vigSet(T.credits[i-1],r.cap,false);stepSound();shake(2,.3);rubble();
     if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
     timer=setTimeout(tick,gap);}
-  wake();fissures();
+  wake();slideStart();fissures();
   if(earth){earth.classList.add("on","heave");}sfx("ground_break",.9,1,0);swells();
   timer=setTimeout(function(){if(earth){earth.classList.remove("heave");}erupt();tick();},HEAVE);}
 function label(){out.textContent=f(row().cap)+" credits";
@@ -2860,6 +2864,7 @@ EVS.forEach(function(n){document.addEventListener(n,unlock,true);});
 if(snd){snd.addEventListener("click",function(){soundOn=!soundOn;
   snd.setAttribute("aria-pressed",soundOn?"true":"false");
   snd.textContent=soundOn?"Sound on":"Sound off";
+  if(!soundOn){slideStop();}
   wake();
   if(soundOn){ambOn();}else{ambOff();}});}
 reset();
@@ -2871,15 +2876,6 @@ def _run_json(trace: dict) -> str:
     """Inline JSON for a script tag: ``<``, ``>``, ``&`` and line separators escaped."""
     text = json.dumps(trace, separators=(",", ":"), ensure_ascii=True)
     return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
-
-
-def _g_hand_bones() -> str:
-    """The photographed hand (R19.2), hidden until the run.
-
-    The bones (R19.7) are not here: they lie in the hero's lower left corner,
-    outside the earth box whose clip would cut them off.
-    """
-    return '<div class="hand" aria-hidden="true"><i class="ph hi"></i></div>'
 
 
 def _g_runner(trace: Optional[dict]) -> str:
@@ -2932,7 +2928,7 @@ def _g_runner(trace: Optional[dict]) -> str:
         f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
         f"{shown:.2f} credits est.</b></div>"
         f'<div class="grave"><div class="earth on" id="run-earth" style="--rh:{height}px;--hp:{hp:.3f}">'
-        f'{_g_hand_bones()}<div id="run-stone" class="{cls}" '
+        f'<div id="run-stone" class="{cls}" '
         f'style="--rh:{height}px;--cl:{clip_l};--cr:{clip_r}" role="img" '
         'aria-label="Headstone that rises with the spend">'
         f'<div class="half hl">{half}</div>'
@@ -2953,9 +2949,10 @@ _HERO_CSS = """
 .hero{--k:1.3;position:relative;isolation:isolate;overflow:hidden;color:var(--bone);
   min-height:clamp(640px,100vh,900px);min-height:clamp(640px,100svh,900px);
   display:flex;flex-direction:column;justify-content:flex-end;background:#04060e}
-.hero .photo{position:absolute;inset:-16px;z-index:0;pointer-events:none;translate:var(--tx,0) var(--ty,0);
+/* R22.5: the photo never moves: no translate, no transform, no transition */
+.hero .photo{position:absolute;inset:0;z-index:0;pointer-events:none;
   background:#04060e var(--scene-d) 50% 100%/cover no-repeat;
-  filter:saturate(.92) brightness(.96);transition:transform .3s ease-out;will-change:transform}
+  filter:saturate(.92) brightness(.96)}
 .hero .shade{position:absolute;inset:0;z-index:2;pointer-events:none;
   background:linear-gradient(180deg,rgba(3,5,12,.84) 0,rgba(3,5,12,.62) 22%,rgba(3,5,12,.2) 40%,rgba(3,5,12,0) 56%),
     radial-gradient(ellipse 125% 95% at 50% 62%,transparent 52%,rgba(2,3,8,.6) 100%),
@@ -2976,6 +2973,10 @@ _HERO_CSS = """
 .hero.stopped .burst{opacity:.8}
 .hero::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
   background:#8a0f12;opacity:0}
+/* R22.4: the damage vignette; strength --vg comes from spend / cap (script), the beat speeds up toward the cap */
+.hero .vig{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:var(--vg,0);transition:opacity .6s ease;
+  background:radial-gradient(ellipse 80% 75% at 50% 50%,rgba(110,0,8,0) 42%,rgba(120,2,10,.5) 72%,rgba(138,6,14,.9) 100%)}
+.hero.stopped .vig{--vg:1}
 .hero .toplinks{position:absolute;top:18px;right:max(18px,3vw);z-index:6;margin:0;font-size:14px;
   display:flex;gap:16px;letter-spacing:.03em}
 .hero .toplinks a{color:var(--bone);opacity:.8;text-decoration:none;border-bottom:1px solid rgba(236,231,218,.35)}
@@ -3009,13 +3010,15 @@ _HERO_CSS = """
   margin:0 auto}
 /* the ground line is y=48 of the 70 unit soil box, 22 units above the box bottom; the stone is clipped there */
 .hero .hstone{clip-path:inset(0 -60% calc((242px - var(--rh)) * var(--k)) -60%)}
-.hero .earth:not(.on) .hstone,.hero .earth.heave .hstone{clip-path:inset(0 0 100% 0)}
+.hero .earth:not(.on) .hstone{clip-path:inset(0 0 100% 0)}
+/* while the ground swells the stone waits below the ground line; same length unit as the rise so the clip can ease with it (R23.3) */
+.hero .earth.heave .hstone{clip-path:inset(0 -60% calc(242px * var(--k)) -60%)}
 .hero .soil.back{z-index:1}
 /* at rest the stone is fully below the ground line; the .earth box (overflow:hidden) clips it, no band is drawn */
 .hero .earth:not(.on) .hstone{top:calc(228px * var(--k));transition:none}
 .hero .hstone{position:absolute;left:50%;margin-left:calc(var(--k) * -73px);width:calc(var(--k) * 147px);
   height:calc(var(--k) * 220px);top:calc((228px - var(--rh)) * var(--k));
-  transition:top .26s cubic-bezier(.25,.9,.3,1.08);cursor:default}
+  transition:top .9s cubic-bezier(.45,0,.55,1),clip-path .9s cubic-bezier(.45,0,.55,1);cursor:default}
 .hero .hstone .hs{display:block;width:100%;height:100%;user-select:none;background:var(--img-stone) center/100% 100% no-repeat;
   position:relative;filter:brightness(1.45) contrast(1.04) saturate(.75) drop-shadow(0 0 10px rgba(140,168,222,.16));
   transition:filter .8s ease}
@@ -3082,16 +3085,7 @@ _HERO_CSS = """
 .hero .c4{--im:var(--clod4);aspect-ratio:90/69}.hero .c5{--im:var(--clod5);aspect-ratio:90/113}
 .hero .c6{--im:var(--clod6);aspect-ratio:90/94}.hero .c7{--im:var(--clod7);aspect-ratio:90/106}
 .hero .lump{left:calc(var(--x) * var(--k) * 1px);bottom:calc(var(--y) * var(--k) * 1px);transform:rotate(var(--r,0deg))}
-/* R19.2, R19.6: the skeletal hand (60 units visible, 0.27 of the stone height, 53 wide) claws up to the left of the stone; the wrapper ends at the ground line, so its foot is never seen */
-.hero .hand{position:absolute;left:calc(var(--k) * -46px);bottom:calc(var(--k) * 22px);width:calc(var(--k) * 53px);
-  height:calc(var(--k) * 60px);overflow:hidden;z-index:2;pointer-events:none;opacity:0}
-.hero .earth.hup .hand{opacity:1}
-.hero .hand .hi{--im:var(--img-hand);left:0;bottom:calc(var(--k) * -12.7px);width:100%;height:calc(var(--k) * 72.7px);
-  transform-origin:50% 100%;transform:translateY(calc((1 - var(--hl,0)) * 100%));
-  transition:transform .22s cubic-bezier(.4,1.8,.5,1)}
-/* at the split the hand goes limp and sinks back into the earth within 0.8 s */
-.hero.stopped .hand .hi{transform:translateY(105%) rotate(11deg);opacity:0;transition:transform .8s ease-in,opacity .8s ease-in}
-/* R19.7: the bones lie in the lower left foreground among the old graves, away from the stone, heap, hand, counter and caption;
+/* R19.7: the bones lie in the lower left foreground among the old graves, away from the stone, heap, counter and caption;
    1.1 times the R19.6 size (98 x 82 units) because they are closer to the camera; visible at rest */
 .hero .bones{--im:var(--img-bones);left:1.5%;bottom:4px;width:calc(var(--k) * 108px);height:calc(var(--k) * 90px);
   z-index:4;pointer-events:none}
@@ -3116,6 +3110,10 @@ _HERO_CSS = """
   .hero .f3 svg{animation-duration:46s}
   @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .hero.scare::after{animation:flash 1s ease-out both}
+  .hero .vig.beat{animation:heartbeat var(--bp,1.6s) ease-in-out infinite}
+  .hero .vig.hit{animation:vighit .6s ease-out both}
+  @keyframes heartbeat{0%,100%{opacity:var(--vg,0)}18%{opacity:calc(var(--vg,0) * .55)}30%{opacity:var(--vg,0)}44%{opacity:calc(var(--vg,0) * .7)}}
+  @keyframes vighit{0%{opacity:.2}12%{opacity:1;transform:scale(1.06)}100%{opacity:var(--vg,1);transform:none}}
   .hero.scare .grave{animation:tremor .4s linear .05s both}
   .hero .earth.dig .hstone{animation:wobble .6s ease-out}
   .hero .earth.dig .fall{animation:shed .95s ease-in calc(var(--t) * 1s) both}
@@ -3142,11 +3140,11 @@ _HERO_CSS = """
     50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,0)}}
 }
 @media (prefers-reduced-motion:reduce){
-  .hero .fogl,.hero .burst,.hero .hstone,.hero .hs,.hero .photo{transition:none}
+  .hero .fogl,.hero .burst,.hero .hstone,.hero .hs,.hero .vig{transition:none}
   .hero::after{display:none}
   .hero .shed{display:none}
   .hero .fx{display:none}
-  .hero .hstone .half,.hero .gsvg .mound,.hero .heap,.hero .hand .hi,.hero .bones{transition:none}
+  .hero .hstone .half,.hero .gsvg .mound,.hero .heap,.hero .bones{transition:none}
   .hero .bones::before{display:none}
 }
 @media (max-width:900px){
@@ -3190,7 +3188,7 @@ def _scene_uri(name: str) -> str:
     return "data:image/webp;base64," + base64.b64encode(raw).decode("ascii")
 
 
-_SFX_NAMES = ("ground_break", "stone_grind", "earth_crumble", "hand_emerge", "stone_split", "hand_sink")
+_SFX_NAMES = ("ground_break", "stone_slide", "earth_crumble", "stone_split")
 
 
 @functools.lru_cache(maxsize=None)
@@ -3218,8 +3216,8 @@ def _scene_css() -> str:
     props = "".join(f'--{var}:url("{uri}");' for var, name in
                     (("scene-d", "scene_desktop.webp"), ("scene-m", "scene_mobile.webp"))
                     if (uri := _scene_uri(name)))
-    # R19.5: every other image once, reused through var() by the stone halves, heap, hand, bones, clods
-    names = [("img-stone", "headstone.webp"), ("img-heap", "heap.webp"), ("img-hand", "hand_reach.webp"),
+    # R19.5: every other image once, reused through var() by the stone halves, heap, bones, clods
+    names = [("img-stone", "headstone.webp"), ("img-heap", "heap.webp"),
              ("img-bones", "bones.webp")] + [(f"clod{n}", f"clods/clod_{n}.webp") for n in range(_CLOD_COUNT)]
     props += "".join(f'--{var}:url("{uri}");' for var, name in names if (uri := _scene_uri(name)))
     return f".hero{{{props}}}" if props else ""
@@ -3255,7 +3253,8 @@ def _g_scene() -> str:
     return ('<div class="photo" aria-hidden="true"></div>\n'
             f'{fog}{_fog_svg("f1", fog_blobs_a)}<div class="shade" aria-hidden="true"></div>'
             f'{_fog_svg("f2", fog_blobs_b)}{_fog_svg("f3", fog_blobs_a[::-1])}'
-            '<div class="burst" aria-hidden="true"></div>')
+            '<div class="burst" aria-hidden="true"></div>\n'
+            '<div class="vig" id="run-vig" aria-hidden="true"></div>')
 
 
 def _g_hero(trace: Optional[dict], video: Optional[str] = None,
@@ -3446,7 +3445,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<p class="rl">Last tool calls</p><ol id="crc"></ol></div></section>'
         '<form method="dialog"><button>Close</button></form></dialog>\n'
         f"<script>\n{_GRAVEYARD_JS}\n"
-        f"{(_ambience_js() + 'var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}\n{_HERO_JS}"
+        f"{(_ambience_js() + 'var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}"
         "\n</script>\n"
         f"</body>\n</html>\n"
     )

@@ -27,8 +27,8 @@ def test_package_data_resolves_through_the_package():
 
 def test_data_uris_and_nothing_outside_the_page():
     page = _page()
-    # R19.5: two background photos, stone, heap, hand, bones and 8 clods, each exactly once
-    assert page.count("data:image/webp;base64,") == 14
+    # R19.5: two background photos, stone, heap, bones and 8 clods, each exactly once (R23.1: no hand)
+    assert page.count("data:image/webp;base64,") == 13
     assert "--scene-d:url(" in page and "--scene-m:url(" in page
     assert "<img" not in page
     for url in re.findall(r"url\(([^)]{0,40})", page):
@@ -75,8 +75,7 @@ def test_motion_phone_and_noscript_rules():
     assert "@media (prefers-reduced-motion:reduce)" in css
     assert ".hero .hstone,.hero .hs" in css.replace("\n", "") or ".hero .hstone" in css
     assert "max-width:767px" in css and "--k:.74" in css
-    assert "(hover:hover) and (pointer:fine) and (min-width:768px)" in page
-    assert 'e.pointerType==="touch"' in page and "*-24" in page
+    assert "(hover:hover) and (pointer:fine) and (min-width:768px)" not in page  # R22.5: no parallax
     assert "<noscript>" in page and "0.75 credits" in page
     assert "if(reduce||!earth){return;}" in page
 
@@ -161,7 +160,7 @@ def test_split_uses_two_halves_of_the_same_headstone_image():
 
 def test_stop_and_split_come_after_the_last_rise_step():
     js = _script(_page()).replace("\n", "")
-    assert "SETTLE=450" in js
+    assert "SETTLE=1000" in js and "PUSH=900" in js
     assert "if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}" in js
     assert 'earth.classList.add("on","heave")' in js and "},HEAVE);" in js
     finish = js.split("function finish(r){", 1)[1].split("function run()", 1)[0]
@@ -214,7 +213,9 @@ def test_stone_clip_bottom_is_the_ground_line_and_cracks_sit_behind_the_stone():
     assert bottom
     # stone top is (228 - rh), its height 220, so its visible bottom is 448 - rh - inset
     assert 228 + 220 - int(bottom.group(1)) == ground
-    assert ".hero .earth:not(.on) .hstone,.hero .earth.heave .hstone{clip-path:inset(0 0 100% 0)}" in css
+    assert ".hero .earth:not(.on) .hstone{clip-path:inset(0 0 100% 0)}" in css
+    # while the ground swells the clip uses the same unit as the rise, hiding everything below the ground line
+    assert ".hero .earth.heave .hstone{clip-path:inset(0 -60% calc(242px * var(--k)) -60%)}" in css
     hero = page.split('<header class="hero', 1)[1].split("</header>", 1)[0]
     back, front = hero.split('<div class="soil back"', 1)[1].split('<div class="soil" ', 1)
     for cls in ('class="scr"', 'class="tear"', 'class="mound"', 'class="tufts"'):
@@ -266,7 +267,7 @@ def test_loose_clods_lie_on_the_grass_outside_the_heap():
 
 # --- Task 30: photographed earth, a skeletal hand and old bones (R19) --------
 
-_IMAGES = ("headstone", "heap", "hand_reach", "bones") + tuple(f"clods/clod_{n}" for n in range(8))
+_IMAGES = ("headstone", "heap", "bones") + tuple(f"clods/clod_{n}" for n in range(8))
 
 
 def _raw_b64(name: str) -> str:
@@ -279,7 +280,7 @@ def test_each_image_is_embedded_exactly_once():
     page = _page()
     for name in _IMAGES + ("scene_desktop", "scene_mobile"):
         assert page.count(_raw_b64(name)) == 1, name
-    for var in ("img-stone", "img-heap", "img-hand", "img-bones", "clod0", "clod7"):
+    for var in ("img-stone", "img-heap", "img-bones", "clod0", "clod7"):
         assert page.count(f"--{var}:url(") == 1, var
 
 
@@ -295,44 +296,30 @@ def test_no_svg_heap_or_clump_elements_remain():
     assert len(set(re.findall(r"--s:(\d+)", hero))) >= 4
 
 
-def test_hand_is_hidden_at_rest_bones_are_shown_and_both_toned_to_the_moon():
+def test_bones_are_shown_and_toned_to_the_moon():
     page = _page()
     css = _css(page).replace("\n", "")
-    assert re.search(r"\.hero \.hand\{[^}]*overflow:hidden[^}]*opacity:0\}", css)
     # R19.7 replaces the R19.3 fade-in: the bones are part of the cemetery at rest
     bones = re.search(r"\.hero \.bones\{[^}]*\}", css).group(0)
     assert "opacity:0" not in bones
-    assert ".hero .earth.hup .hand{opacity:1}" in css
     tone = re.search(r"\.hero \.ph\{[^}]*filter:([^;]*);", css).group(1)
     assert "brightness(.8)" in tone and "saturate(.55)" in tone and "hue-rotate(172deg)" in tone
     assert "linear-gradient(210deg" in css  # highlight from the upper right
-    assert 'class="hand"' in page and 'class="ph bones"' in page
+    assert 'class="ph bones"' in page
     # the stone's carved figure is centred in the sunken panel (x 20 to 80 percent)
     assert "left:29%;right:29%" in css
-
-
-def test_hand_rises_from_the_second_step_and_sinks_at_the_split():
-    js = _script(_page()).replace("\n", "")
-    tick = js.split("function tick(){", 1)[1].split("if(earth){earth.classList.add", 1)[0]
-    assert "if(i>=2){hand(i,steps);}" in tick and "finish(r)" in tick
-    assert 'earth.classList.add("hup")' in js
-    reset = js.split("function reset(){", 1)[1].split("function finish", 1)[0]
-    assert '"hup","full"' in reset
-    css = _css(_page()).replace("\n", "")
-    sink = re.search(r"\.hero\.stopped \.hand \.hi\{[^}]*transition:transform \.8s", css)
-    assert sink and "translateY(105%)" in sink.group(0) and "opacity:0" in sink.group(0)
-    # bones come with the end of the run, together with the full heap
+    js = _script(page).replace("\n", "")
     finish = js.split("function finish(r){", 1)[1].split("function run()", 1)[0]
-    assert 'earth.classList.add("full")' in finish
+    assert 'earth.classList.add("full")' in finish  # bones come with the end of the run
 
 
-def test_reduced_motion_and_noscript_show_hand_sunk_and_bones_shown():
+def test_reduced_motion_and_noscript_show_the_split_stone_and_bones():
     page = _page()
     css = _css(page).replace("\n", "")
     assert '<header class="hero stopped"' in page
     reduce = css.split("@media (prefers-reduced-motion:reduce){  .hero .fogl", 1)[1].split("@media (max-width:900px)", 1)[0]
-    assert ".hero .hand .hi" in reduce and ".hero .bones" in reduce and ".hero .heap" in reduce
-    assert 'class="earth on" id="run-earth"' in page and " hup" not in page.split('id="run-earth"', 1)[0][-40:]
+    assert ".hero .bones" in reduce and ".hero .heap" in reduce
+    assert 'class="earth on" id="run-earth"' in page
 
 
 def test_page_is_one_file_with_no_external_requests_and_under_1_35_mb():
@@ -363,9 +350,6 @@ def test_scale_ratios_follow_real_world_proportions_at_both_widths():
     heap_h = _units(css, ".hero .heap", "height")
     heap_bottom = _units(css, ".hero .heap", "bottom")
     above = heap_h - (ground - heap_bottom)
-    hand_w = _units(css, ".hero .hand", "width")
-    hand_h = _units(css, ".hero .hand", "height")
-    hand_left = _units(css, ".hero .hand", "left")
     bones_w = _units(css, ".hero .bones", "width")
     bones_h = _units(css, ".hero .bones", "height")
     earth_w = _units(css, ".hero .earth", "width")
@@ -375,8 +359,6 @@ def test_scale_ratios_follow_real_world_proportions_at_both_widths():
         W, H = stone_w * scale, stone_h * scale
         assert 0.20 <= above * scale / H <= 0.25
         assert 1.6 <= heap_w * scale / W <= 1.8
-        assert 0.25 <= hand_h * scale / H <= 0.30 and hand_w * scale / W <= 0.45
-        assert hand_left + hand_w <= stone_left  # left of the stone, no overlap
         # R19.7: about 1.1 times the R19.6 size, they lie closer to the camera
         assert 0.65 * 1.05 <= bones_w * scale / W <= 0.80 * 1.15
         assert 0.15 * 1.05 <= skull * bones_h * scale / H <= 0.20 * 1.15
@@ -481,9 +463,6 @@ def _hero_boxes(width: float) -> dict:
         "heap": (ex + u(".hero .heap", "left"), caption + u(".hero .heap", "bottom"),
                  ex + u(".hero .heap", "left") + u(".hero .heap", "width"),
                  caption + u(".hero .heap", "bottom") + u(".hero .heap", "height")),
-        "hand": (ex + u(".hero .hand", "left"), caption + u(".hero .hand", "bottom"),
-                 ex + u(".hero .hand", "left") + u(".hero .hand", "width"),
-                 caption + u(".hero .hand", "bottom") + u(".hero .hand", "height")),
     }
     bones = _rule(css, ".hero .bones")
     bl = float(re.search(r"left:([\d.]+)%", bones).group(1)) / 100 * width
@@ -492,13 +471,13 @@ def _hero_boxes(width: float) -> dict:
     return boxes
 
 
-def test_bones_lie_in_the_left_foreground_away_from_stone_heap_and_hand():
+def test_bones_lie_in_the_left_foreground_away_from_stone_and_heap():
     page = _page()
     width = 1280.0
     boxes = _hero_boxes(width)
     bl, bb, br, bt = boxes["bones"]
     assert br <= 0.30 * width and bl >= 0  # the left 30 percent of the hero
-    for name in ("stone", "heap", "hand"):
+    for name in ("stone", "heap"):
         l, b, r, t = boxes[name]
         assert br <= l or bl >= r or bt <= b or bb >= t, name
     # outside the earth box (its clip would cut them) and directly in the hero, visible at rest
@@ -522,7 +501,7 @@ def _ambience_b64() -> str:
 def test_ambience_is_embedded_once_as_audio_mp4_and_never_autoplays():
     page = _page()
     assert page.count(_ambience_b64()) == 1
-    assert page.count("data:audio/mp4;base64,") == 7  # ambience plus six effects
+    assert page.count("data:audio/mp4;base64,") == 5  # ambience plus four effects
     assert "<audio" not in page and "autoplay" not in page
     assert "<source" not in page
 
@@ -563,7 +542,7 @@ def test_ambience_credit_line_is_at_the_bottom():
 
 # --- Task 32: sound for every movement (R21.1 to R21.3) ---
 
-_SFX = ("ground_break", "stone_grind", "earth_crumble", "hand_emerge", "stone_split", "hand_sink")
+_SFX = ("ground_break", "stone_slide", "earth_crumble", "stone_split")
 
 
 def _sfx_b64(name: str) -> str:
@@ -591,11 +570,9 @@ def test_effects_are_scheduled_on_their_events():
     tick = s.split("function tick(){", 1)[1].split("if(i>=steps)", 1)[0]
     assert "stepSound();" in tick
     step = s.split("function stepSound(){", 1)[1].split("\n", 1)[0]
-    assert 'sfx("stone_grind"' in step and 'sfx("earth_crumble"' in step and "rnd(" in step
-    hand = s.split("function hand(i,n){", 1)[1].split("\n", 1)[0]
-    assert '!earth.classList.contains("hup")' in hand and 'sfx("hand_emerge"' in hand
+    assert 'sfx("earth_crumble"' in step and "rnd(" in step and "stone_grind" not in s
     boom = s.split("function boom(){", 1)[1].split("function rnd", 1)[0]
-    assert 'sfx("stone_split"' in boom and 'sfx("hand_sink"' in boom and "if(!reduce)" in boom
+    assert 'sfx("stone_split"' in boom
     assert "duck();" in boom
 
 
@@ -610,9 +587,8 @@ def test_effects_play_only_with_sound_on_and_duck_the_ambience():
 def test_reduced_motion_plays_only_the_split():
     s = _run_script()
     assert 'if(!reduce){hero.classList.add("scare");}boom();' in s
-    assert "if(reduce){finish(r);return;}" in s  # no step, heave or hand effects on that path
-    boom = s.split("function boom(){", 1)[1].split("function rnd", 1)[0]
-    assert boom.index("stone_split") < boom.index("if(!reduce)") < boom.index("hand_sink")
+    assert "if(reduce){finish(r);return;}" in s  # no step, heave or slide on that path
+    assert "function slideStart(){if(reduce||" in s
 
 
 def test_synthesized_crack_is_gone():
@@ -651,12 +627,12 @@ def test_sound_defaults_to_on_and_starts_on_the_first_interaction_only():
     assert "new C()" in top.split("function wake(){", 1)[1].split("var EVS", 1)[0]
     assert s.count("ambOn();") == 2  # the unlock and the toggle, nothing else
     assert top.count("wake();") >= 1
-    assert "wake();fissures();" in s  # "Release the agent" also wakes a suspended context
+    assert "wake();slideStart();fissures();" in s  # "Release the agent" also wakes a suspended context
 
 
 def test_effects_of_r21_are_unchanged():
     s = _run_script()
-    for name in _SFX:
+    for name in ("ground_break", "earth_crumble", "stone_split"):
         assert 'sfx("' + name + '"' in s, name
 
 
@@ -672,7 +648,7 @@ def test_eruption_spawns_15_to_25_clods_and_never_more_than_40_particles():
     assert "erupt();tick();" in s
 
 
-def test_eruption_has_swells_tremor_fissures_wobble_and_hand_spray():
+def test_eruption_has_swells_tremor_fissures_and_wobble():
     page = _page()
     s = _run_script()
     css = _css(page).replace("\n", "")
@@ -680,7 +656,6 @@ def test_eruption_has_swells_tremor_fissures_wobble_and_hand_spray():
     assert "Math.min(3,m)" in s  # tremor of at most 3 px
     assert "strokeDashoffset" in s and "fissures();" in s
     assert "shake(2,.3);rubble();" in s.split("function tick(){", 1)[1].split("if(i>=steps)", 1)[0]
-    assert "spray(5)" in s and "spray(2)" in s
     wob = css.split("@keyframes wobble{", 1)[1].split("}}", 1)[0]
     degs = [abs(float(d)) for d in re.findall(r"rotate\((-?[\d.]+)deg\)", wob)]
     assert degs and max(degs) <= 1.5
@@ -725,3 +700,157 @@ def test_reduced_motion_shows_the_final_state_without_particles():
     assert "if(reduce){finish(r);return;}" in s
     assert "function shake(m,d){if(reduce){return;}" in s
     assert "wobble" not in reduce and "swell" not in reduce
+
+
+# --- Task 34: damage vignette, a still camera, no hand, sound bound to motion (R22.4, R22.5, R23) ---
+
+def _js_fn(src: str, name: str) -> str:
+    return "function " + name + "(" + src.split("function " + name + "(", 1)[1].split("\nfunction ", 1)[0].split("\n/*", 1)[0]
+
+
+def _node_eval(expr: str):
+    """Evaluate the vignette and slide helpers of the page script in node, or skip without node."""
+    import json
+    import shutil
+    import subprocess
+
+    import pytest
+    node = shutil.which("node")
+    if not node:
+        pytest.skip("node is not installed")
+    s = _run_script()
+    funcs = "\n".join(_js_fn(s, n) for n in ("vigStrength", "vigPeriod", "slideGain"))
+    consts = "var VIG_FROM=.4,VIG_BEAT=.8,SLIDE_VMAX=40;"
+    out = subprocess.run([node, "-e", consts + funcs + "\nconsole.log(JSON.stringify(" + expr + "))"],
+                         capture_output=True, text=True, check=True, timeout=20).stdout
+    return json.loads(out)
+
+
+def test_vignette_strength_is_zero_below_40_percent_and_rises_monotonically():
+    qs = [i / 100 for i in range(0, 131)]
+    st = _node_eval("[%s].map(function(q){return vigStrength(q,1);})" % ",".join(map(str, qs)))
+    assert all(v == 0 for q, v in zip(qs, st) if q <= 0.4)
+    rising = [v for q, v in zip(qs, st) if 0.4 <= q <= 1]
+    assert all(b > a for a, b in zip(rising, rising[1:]))
+    assert abs(max(st) - 1) < 1e-9 and st[100] == 1 and st[130] == 1
+    assert st[70] < 0.5 * st[100]  # ease-in: slow at first, strong near the cap
+    assert _node_eval("vigStrength(1,0)") == 0  # no division by a zero cap
+
+
+def test_vignette_beats_from_80_percent_and_faster_near_the_cap():
+    per = _node_eval("[.5,.79,.8,.9,1,1.2].map(function(q){return vigPeriod(q,1);})")
+    assert per[0] == 0 and per[1] == 0
+    assert per[2] > per[3] > per[4] > 0 and per[5] == per[4]
+    s = _run_script()
+    css = _css(_page()).replace("\n", "")
+    assert "heartbeat" in css and ".hero .vig.beat{animation:heartbeat var(--bp" in css
+    assert "var VIG_FROM=.4,VIG_BEAT=.8" in s
+
+
+def test_vignette_peaks_at_the_stop_stays_and_is_absent_when_the_cap_is_not_reached():
+    s = _run_script().replace("\n", "")
+    finish = s.split("function finish(r){", 1)[1].split("function run()", 1)[0]
+    stopped = finish.split("if(steps){", 1)[1].split("else{", 1)[0]
+    cleared = finish.split("else{", 1)[1]
+    assert "vigHit();" in stopped and "vigClear();" in cleared
+    assert 'vig.style.setProperty("--vg","1")' in s.split("function vigHit(){", 1)[1].split("function vigClear", 1)[0]
+    # it persists until the next run or a slider move: only reset() clears it, and the slider calls reset()
+    assert "vigClear();" in s.split("function reset(){", 1)[1].split("function finish", 1)[0]
+    assert 'slider.addEventListener("input",function(){label();reset();});' in s
+    assert "vigSet(T.credits[i-1],r.cap,false);" in s.split("function tick(){", 1)[1].split("if(i>=steps)", 1)[0]
+    css = _css(_page()).replace("\n", "")
+    assert re.search(r"\.hero \.vig\{[^}]*pointer-events:none[^}]*opacity:var\(--vg,0\)", css)
+    assert ".hero.stopped .vig{--vg:1}" in css  # the static stopped state keeps it
+    assert "@keyframes vighit{0%{opacity:.2}12%{opacity:1" in css
+    # deep red at the edges, clear in the centre, never white
+    grad = re.search(r"\.hero \.vig\{[^}]*background:(radial-gradient\([^;]*\))", css).group(1)
+    assert "rgba(110,0,8,0) 42%" in grad
+    for r, g, b in re.findall(r"rgba\((\d+),(\d+),(\d+)", grad):
+        assert int(r) > 100 and int(g) < 20 and int(b) < 20
+    # reduced motion: no pulsing, no transition; the beat and hit animations live in the no-preference block
+    anim = css.split("@media (prefers-reduced-motion:no-preference){  .hero .runner:not(.stopped)", 1)[1].split("@media (prefers-reduced-motion:reduce)", 1)[0]
+    assert ".hero .vig.beat{" in anim and ".hero .vig.hit{" in anim
+    reduce = css.split("@media (prefers-reduced-motion:reduce){  .hero .fogl", 1)[1].split("@media (max-width:900px)", 1)[0]
+    assert "heartbeat" not in reduce and ".hero .vig" in reduce
+    assert "vig=document.getElementById(\"run-vig\")" in s and 'id="run-vig"' in _page()
+
+
+def test_photo_never_moves():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    photo = re.search(r"\.hero \.photo\{([^}]*)\}", css).group(1)
+    for bad in ("translate", "transform", "transition", "will-change", "scale", "inset:-"):
+        assert bad not in photo, bad
+    assert "pointermove" not in page and "pointerleave" not in page
+    assert "getBoundingClientRect" not in page.split("var RUN_DATA=", 1)[0]
+    s = _run_script()
+    assert "querySelector(\".photo\")" not in s and ".photo" not in s
+    # the only transform driver is the short tremor on the scene and fog, at most 3 px
+    assert "Math.min(3,m)" in s
+
+
+def test_no_hand_is_embedded_and_no_hand_sounds_remain():
+    import base64
+    page = _page()
+    bare = re.sub(r"data:[A-Za-z0-9/+;=,-]+", "", page)  # without the base64 payloads
+    css = _css(bare)
+    assert 'class="hand"' not in bare and "hand_reach" not in bare and "img-hand" not in bare
+    assert ".hand" not in css and "hup" not in bare and "--hl" not in bare
+    sfx = resources.files("tombstone").joinpath("data", "scene", "sfx")
+    for name in ("hand_emerge", "hand_sink"):
+        assert '"' + name + '"' not in page and base64.b64encode(sfx.joinpath(name + ".m4a").read_bytes()).decode() not in page
+    assert "function hand(" not in page and "function spray(" not in page
+    hand_img = resources.files("tombstone").joinpath("data", "scene", "hand_reach.webp").read_bytes()
+    assert base64.b64encode(hand_img).decode() not in page
+
+
+def test_stone_slide_is_embedded_once_and_stone_grind_is_not():
+    page = _page()
+    assert page.count(_sfx_b64("stone_slide")) == 1
+    assert page.count('"stone_slide":"data:audio/mp4;base64,') == 1
+    assert _sfx_b64("stone_grind") not in page and "stone_grind" not in page
+    s = _run_script()
+    assert s.count("createBufferSource()") == 3  # ambience, one-shot effects, the one slide loop
+    assert s.count("src.buffer=sfxBuf.stone_slide;src.loop=true;") == 1
+    assert "wake();slideStart();" in s  # started once per run, not once per step
+    assert "slideStart" not in s.split("function tick(){", 1)[1].split("if(i>=steps)", 1)[0]
+    assert "slideStart" not in s.split("function stepSound(){", 1)[1].split("\n", 1)[0]
+
+
+def test_slide_gain_follows_the_stone_speed_and_is_zero_when_still():
+    gains = _node_eval("[0,-5,.5,1,10,20,40,80].map(function(v){return slideGain(v,1);})")
+    assert gains[0] == 0 and gains[1] == 0 and gains[2] == 0 and gains[3] == 0  # still or sliding down: silent
+    assert 0 < gains[4] < gains[5] < gains[6] and gains[6] == gains[7] == 1  # louder with speed, capped
+    assert _node_eval("slideGain(20,2)") < gains[5]  # speed is scaled by the size of the scene
+    s = _run_script().replace("\n", "")
+    frame = s.split("function slideFrame(now){", 1)[1].split("function ", 1)[0]
+    assert "getComputedStyle(stone).top" in frame and "slideGain(v,k)" in frame
+    assert "requestAnimationFrame(slideFrame)" in frame  # every frame
+    assert "slide.g.gain.setTargetAtTime(n*SLIDE_VOL,t,.05)" in frame  # about 0.15 s (3 time constants) to silence
+    assert "playbackRate.setTargetAtTime(.94+.12*n" in frame
+    stop = s.split("function slideStop(){", 1)[1].split("function slideFrame", 1)[0]
+    assert "setTargetAtTime(0,t,.05)" in stop and "src.stop(" in stop
+    assert "function slideStart(){if(reduce||!soundOn||" in s  # reduced motion and sound off: no movement sound
+    toggle = s.split('snd.addEventListener("click"', 1)[1]
+    assert "if(!soundOn){slideStop();}" in toggle
+
+
+def test_each_rise_step_lasts_0_8_to_1_0_s_inside_the_step_interval():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    rule = re.search(r"\.hero \.hstone\{position:absolute;[^}]*transition:top ([\d.]+)s (cubic-bezier\([^)]*\)),clip-path ([\d.]+)s \2", css)
+    assert rule, "the stone rises by a timed transition of top and clip-path together"
+    dur = float(rule.group(1))
+    assert 0.8 <= dur <= 1.0 and float(rule.group(3)) == dur
+    x1, y1, x2, y2 = (float(v) for v in re.findall(r"[\d.]+", rule.group(2)))
+    assert y1 == 0 and y2 == 1 and 0 < x1 < 1 and 0 < x2 < 1  # ease in and ease out
+    s = _run_script().replace("\n", "")
+    assert f"PUSH={int(dur * 1000)}" in s
+    assert "gap=Math.max(PUSH+200,6000/steps)" in s  # the push fits inside every step interval
+    assert "SETTLE=1000" in s and int(re.search(r"SETTLE=(\d+)", s).group(1)) >= int(dur * 1000)
+    assert "earth_crumble" in s.split("function stepSound(){", 1)[1].split("\n", 1)[0]  # tied to the clods
+    # no step is shorter than the push at the default pace
+    from tombstone import demo
+    steps = len(demo.trace()["credits"])
+    assert max(6000 / steps, dur * 1000 + 200) >= dur * 1000 + 200
+    assert steps * (dur + 0.2) <= 10  # a run stays inside the 4 to 10 s of R15.3

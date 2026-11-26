@@ -489,18 +489,18 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Sound defaults to on and starts on the first interaction, never before; the eruption spawns 15 to 25 clods and never more than 40 particles; the dust colour is not white; each fog layer has opacity at most 0.18 and sits in the lowest third; reduced motion shows the final state; existing tests still pass (update only those the change breaks).
     - _Requirements: R22.1, R22.2, R22.3_
 
-- [ ] 34. Damage vignette, a still camera, no hand, the stone's sound follows the stone
+- [x] 34. Damage vignette, a still camera, no hand, the stone's sound follows the stone
   - Dima's review on 2026-11-26: the screen should turn red at the edges like taking damage in a first-person game, more the closer to the stop, and stay red at the stop; the camera must not move (the pointer parallax reads as a pan); the hand is not needed; the grinding sound must move with the stone, not play as a separate drag. Claude generated a seamless stone-slide loop with ElevenLabs and levelled it (spread 15 dB to 3 dB): `src/tombstone/data/scene/sfx/stone_slide.m4a`.
   - _Requirements: R22.4, R22.5, R23.1, R23.2, R23.3_
 
-  - [ ] 34.1 Damage vignette and a still camera
+  - [x] 34.1 Damage vignette and a still camera
     - R22.4 (vignette driven by spend/cap, heartbeat pulse from 80 percent, hard peak at the stop and it stays until the next run or slider move, none if the cap is never reached) and R22.5 (remove the parallax, only the short tremor remains).
     - _Requirements: R22.4, R22.5_
 
-  - [ ] 34.2 No hand; sound bound to motion
+  - [x] 34.2 No hand; sound bound to motion
     - R23.1 (remove the hand, its spray, its sounds and its image embedding), R23.2 (one looping stone_slide source, gain from the stone's measured upward speed each frame, silent when still, fade within 0.15 s; drop stone_grind) and R23.3 (each step a 0.8 to 1.0 s eased push inside the step interval).
     - _Requirements: R23.1, R23.2, R23.3_
 
-  - [ ] 34.3 Tests
+  - [x] 34.3 Tests
     - The vignette strength is 0 below 40 percent of the cap, increases monotonically with spend, pulses from 80 percent, peaks and persists after the stop, and is absent when the cap is not reached; no parallax code or pointer-driven transform on the photo; no hand image, hand element or hand sounds embedded; stone_slide is embedded once and stone_grind is not; the slide gain is driven by the stone's speed and is zero when the stone is still; the step rise lasts 0.8 to 1.0 s; existing tests still pass (update only those the change breaks).
     - _Requirements: R22.4, R22.5, R23.1, R23.2, R23.3_

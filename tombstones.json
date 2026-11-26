@@ -3600,6 +3600,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/34",
+      "task_id": "34",
+      "name": "Damage vignette, a still camera, no hand, the stone's sound follows the stone",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 1.8042,
+      "actual": 1.5831,
+      "minutes": 1.1185,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_2325632d-bd7a-4f56-8069-0612270bd103",
+          "turn_id": "604c336a-02ea-4ba7-80de-9ea587669ead",
+          "requests": 22,
+          "estimate": 7.217,
+          "actual": 6.3325,
+          "minutes": 4.4741,
+          "start": "2026-11-26T15:54:35.802000Z",
+          "end": "2026-11-26T15:59:04.245000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/34.1",
+      "task_id": "34.1",
+      "name": "Damage vignette and a still camera",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 1.8042,
+      "actual": 1.5831,
+      "minutes": 1.1185,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_2325632d-bd7a-4f56-8069-0612270bd103",
+          "turn_id": "604c336a-02ea-4ba7-80de-9ea587669ead",
+          "requests": 22,
+          "estimate": 7.217,
+          "actual": 6.3325,
+          "minutes": 4.4741,
+          "start": "2026-11-26T15:54:35.802000Z",
+          "end": "2026-11-26T15:59:04.245000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/34.2",
+      "task_id": "34.2",
+      "name": "No hand; sound bound to motion",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 1.8042,
+      "actual": 1.5831,
+      "minutes": 1.1185,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_2325632d-bd7a-4f56-8069-0612270bd103",
+          "turn_id": "604c336a-02ea-4ba7-80de-9ea587669ead",
+          "requests": 22,
+          "estimate": 7.217,
+          "actual": 6.3325,
+          "minutes": 4.4741,
+          "start": "2026-11-26T15:54:35.802000Z",
+          "end": "2026-11-26T15:59:04.245000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/34.3",
+      "task_id": "34.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 1.8042,
+      "actual": 1.5831,
+      "minutes": 1.1185,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_2325632d-bd7a-4f56-8069-0612270bd103",
+          "turn_id": "604c336a-02ea-4ba7-80de-9ea587669ead",
+          "requests": 22,
+          "estimate": 7.217,
+          "actual": 6.3325,
+          "minutes": 4.4741,
+          "start": "2026-11-26T15:54:35.802000Z",
+          "end": "2026-11-26T15:59:04.245000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
