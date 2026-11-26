@@ -2717,19 +2717,71 @@ var slider=document.getElementById("run-cap"),out=document.getElementById("run-c
     stone=document.getElementById("run-stone"),cost=document.getElementById("run-stone-cost"),
     verdict=document.getElementById("run-verdict"),timer=null,
     hero=document.getElementById("hero")||root,snd=document.getElementById("run-sound"),
-    ac=null,soundOn=false;
+    ac=null,soundOn=true,unlocked=false;
 var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
 function f(n){return n.toFixed(2);}
 function row(){return rows[+slider.value];}
 function height(c){return Math.round(70+150*Math.min(c/T.total,1));}
-var last=0,earth=document.getElementById("run-earth"),SETTLE=450,HEAVE=950;
+var last=0,earth=document.getElementById("run-earth"),SETTLE=450,HEAVE=1500;
+/* R22.2: the break-through. Particles are DOM nodes moved by one requestAnimationFrame loop; never more than MAXP alive. */
+var MAXP=40,BURST_CLODS=[15,25],BURST_TUFTS=6,BURST_DUST=8,fx=document.getElementById("run-fx"),
+    live=[],fxRaf=0,fxT=0,shk={m:0,t:0,d:1},fis=null,curH=70;
+function rnd(a,b){return a+Math.random()*(b-a);}
+function kk(){return earth?earth.offsetWidth/250:1;}
+function spawn(o){if(reduce||!fx||live.length>=MAXP){return null;}
+  var e=document.createElement("i");e.className=o.cls;if(o.s){e.style.setProperty("--s",o.s.toFixed(2));}
+  fx.appendChild(e);o.e=e;o.age=0;o.rot=o.rot||0;o.rest=0;live.push(o);loop();return o;}
+function loop(){if(!fxRaf){fxT=0;fxRaf=requestAnimationFrame(frame);}}
+function shake(m,d){if(reduce){return;}shk.m=Math.min(3,m);shk.d=shk.t=d;loop();}
+function jolt(x,y){hero.style.setProperty("--tx",x.toFixed(1)+"px");hero.style.setProperty("--ty",y.toFixed(1)+"px");}
+function frame(now){fxRaf=0;var dt=fxT?Math.min(.034,(now-fxT)/1000):.016,i,p,u,k=kk(),g=2400*k;fxT=now;
+  for(i=live.length-1;i>=0;i--){p=live[i];p.age+=dt;u=1;
+    if(p.life){u=p.age/p.life;p.x+=p.vx*dt;p.y+=p.vy*dt;p.vx*=.97;p.vy*=.97;p.rot+=(p.vr||0)*dt;
+      p.sc=p.s0+(p.s1-p.s0)*u;p.op=p.a*(1-u)*(u<.15?u/.15:1);}
+    else{p.vy-=g*dt;p.x+=p.vx*dt;p.y+=p.vy*dt;p.rot+=p.vr*dt;p.sc=1;p.op=1;
+      if(p.y<=p.floor&&p.vy<0){p.y=p.floor;
+        if(p.bounce>0&&p.vy<-160*k){p.bounce-=1;p.vy*=-.32;p.vx*=.6;p.vr*=.55;}
+        else{p.vy=0;p.vx*=.9;p.vr*=.9;p.landed=true;}}
+      if(p.landed){p.rest+=dt;p.op=p.rest<1?1:Math.max(0,1-(p.rest-1)/.7);u=p.rest>1.7?1:0;}}
+    p.e.style.transform="translate("+p.x.toFixed(1)+"px,"+(-p.y).toFixed(1)+"px) rotate("+p.rot.toFixed(0)+"deg) scale("+p.sc.toFixed(2)+")";
+    p.e.style.opacity=p.op.toFixed(2);
+    if(u>=1){fx.removeChild(p.e);live.splice(i,1);}}
+  if(shk.t>0){shk.t-=dt;u=Math.max(0,shk.t/shk.d);jolt(rnd(-1,1)*shk.m*u,rnd(-1,1)*shk.m*u*.6);
+    if(shk.t<=0){jolt(0,0);}}
+  if(fis){var q=(now-fis.t0)/HEAVE,j,w;for(j=0;j<fis.p.length;j++){
+    w=Math.max(0,Math.min(1,(q-j*.09)/.55));fis.p[j].style.strokeDashoffset=(1-w).toFixed(3);}
+    if(q>=1){fis=null;}}
+  if(live.length||shk.t>0||fis){fxRaf=requestAnimationFrame(frame);}}
+function fxClear(){var i;for(i=0;i<live.length;i++){if(live[i].e.parentNode){fx.removeChild(live[i].e);}}
+  live=[];shk.t=0;fis=null;jolt(0,0);
+  if(earth){var a=earth.querySelectorAll(".scr path"),j;for(j=0;j<a.length;j++){a[j].style.strokeDashoffset="";}}}
+function clod(x,y,s,vx,vy,floor,bounce){return spawn({cls:"ph clump pt c"+Math.floor(rnd(0,8)),s:s,x:x,y:y,vx:vx,vy:vy,
+  vr:rnd(-720,720),rot:rnd(0,360),floor:floor,bounce:bounce});}
+function puff(x,y,vx,vy,s1,a){return spawn({cls:"pt dp",x:x,y:y,vx:vx,vy:vy,vr:0,life:rnd(1.3,1.9),s0:.35,s1:s1,a:a});}
+function fissures(){if(reduce||!earth){return;}var a=earth.querySelectorAll(".scr path"),j,l=[];
+  for(j=0;j<a.length;j++){a[j].style.strokeDashoffset="1";l.push(a[j]);}
+  fis={t0:performance.now(),p:l};loop();}
+function swells(){var n;for(n=0;n<3;n++){setTimeout(function(){if(timer){shake(2.5,.4);}},n*HEAVE/3);}}
+function erupt(){var k=kk(),n=BURST_CLODS[0]+Math.floor(Math.random()*(BURST_CLODS[1]-BURST_CLODS[0]+1)),i,x;
+  shake(3,.6);
+  for(i=0;i<n;i++){x=rnd(-55,55)*k;clod(x,rnd(0,10)*k,rnd(3.5,8),x*rnd(4,8)+rnd(-120,120)*k,rnd(650,1250)*k,rnd(-14,4)*k,1);}
+  for(i=0;i<BURST_TUFTS;i++){x=rnd(-60,60)*k;spawn({cls:"pt gt",s:rnd(2,3.5),x:x,y:rnd(0,6)*k,vx:x*rnd(3,7),vy:rnd(500,950)*k,
+    vr:rnd(-500,500),rot:rnd(-30,30),floor:rnd(-10,2)*k,bounce:0});}
+  for(i=0;i<BURST_DUST;i++){puff(rnd(-60,60)*k,rnd(0,10)*k,rnd(-110,110)*k,rnd(40,170)*k,rnd(1.6,2.8),.8);}}
+function rubble(){var k=kk(),n=2+Math.floor(Math.random()*2),i,sd,top=Math.max(0,curH-22)*k;
+  for(i=0;i<n;i++){sd=Math.random()<.5?-1:1;
+    clod(sd*rnd(48,66)*k,top-rnd(0,8)*k,rnd(2.5,5),sd*rnd(60,170)*k,rnd(60,260)*k,rnd(0,10)*k,1);}
+  if(top>0){puff(rnd(-50,50)*k,top,rnd(-40,40)*k,rnd(20,70)*k,1.3,.5);}}
+function spray(n){var k=kk(),x=-145*k,i;
+  for(i=0;i<n;i++){clod(x+rnd(-14,14)*k,rnd(0,24)*k,rnd(2,3.5),rnd(-150,150)*k,rnd(320,650)*k,rnd(-4,2)*k,0);}
+  puff(x,4*k,rnd(-50,50)*k,rnd(30,90)*k,1,.6);}
 function dig(){if(reduce||!earth){return;}earth.classList.remove("dig");void earth.offsetWidth;
   earth.classList.add("dig");}
 function draw(c){count.textContent=f(c)+" credits est.";setCost(f(c));
-  var hh=height(c);stone.style.setProperty("--rh",hh+"px");
+  var hh=height(c);curH=hh;stone.style.setProperty("--rh",hh+"px");
   if(earth){earth.style.setProperty("--rh",hh+"px");earth.style.setProperty("--hp",((hh-70)/150).toFixed(3));}
   if(c>last+1e-9){dig();}last=c;}
-function hand(i,n){if(!earth){return;}if(!earth.classList.contains("hup")){sfx("hand_emerge",.8,1,0);}earth.classList.add("hup");
+function hand(i,n){if(!earth){return;}if(!earth.classList.contains("hup")){sfx("hand_emerge",.8,1,0);spray(5);}else{spray(2);}earth.classList.add("hup");
   earth.style.setProperty("--hl",Math.min(1,.3+.7*(i-1)/Math.max(1,n-1)).toFixed(3));}
 function setCost(t){var all=stone.querySelectorAll(".cost"),i;for(i=0;i<all.length;i++){all[i].textContent=t;}}
 function clear(){verdict.textContent="";}
@@ -2737,7 +2789,6 @@ function line(cls,text){var p=document.createElement("p");if(cls){p.className=cl
   p.textContent=text;verdict.appendChild(p);}
 function boom(){if(!soundOn||!ac){return;}
   duck();sfx("stone_split",1,1,0);if(!reduce){sfx("hand_sink",.8,1,.25);}}
-function rnd(a,b){return a+Math.random()*(b-a);}
 function sfx(name,vol,rate,delay){var b=sfxBuf[name];if(!soundOn||!ac||!b){return;}
   try{var t=ac.currentTime+(delay||0),src=ac.createBufferSource(),g=ac.createGain(),
     d=b.duration/rate,f=Math.min(.3,d/3);
@@ -2746,7 +2797,7 @@ function sfx(name,vol,rate,delay){var b=sfxBuf[name];if(!soundOn||!ac||!b){retur
     g.gain.setValueAtTime(vol,t+d-f);g.gain.linearRampToValueAtTime(0,t+d);}
   src.connect(g);g.connect(ac.destination);src.start(t);duck();}catch(e){}}
 function stepSound(){sfx("stone_grind",rnd(.5,.65),rnd(.94,1.06),0);sfx("earth_crumble",rnd(.22,.3),rnd(.95,1.05),.05);}
-function reset(){if(timer){clearTimeout(timer);timer=null;}
+function reset(){if(timer){clearTimeout(timer);timer=null;}fxClear();
   hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("hup","full");earth.style.setProperty("--hl","0");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
@@ -2760,11 +2811,12 @@ function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
   var i=0,gap=6000/steps;
-  function tick(){i+=1;draw(T.credits[i-1]);stepSound();if(i>=2){hand(i,steps);}
+  function tick(){i+=1;draw(T.credits[i-1]);stepSound();shake(2,.3);rubble();if(i>=2){hand(i,steps);}
     if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
     timer=setTimeout(tick,gap);}
-  if(earth){earth.classList.add("on","heave");}sfx("ground_break",.9,1,0);
-  timer=setTimeout(function(){if(earth){earth.classList.remove("heave");}tick();},HEAVE);}
+  wake();fissures();
+  if(earth){earth.classList.add("on","heave");}sfx("ground_break",.9,1,0);swells();
+  timer=setTimeout(function(){if(earth){earth.classList.remove("heave");}erupt();tick();},HEAVE);}
 function label(){out.textContent=f(row().cap)+" credits";
   slider.setAttribute("aria-valuetext",f(row().cap)+" credits");}
 var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start=k;}}
@@ -2796,12 +2848,19 @@ function duck(){if(!amb||!ac){return;}
   try{var t=ac.currentTime,v=amb.g.gain;v.cancelScheduledValues(t);v.setValueAtTime(v.value,t);
   v.linearRampToValueAtTime(LEVEL*.15,t+.1);v.setValueAtTime(LEVEL*.15,t+1);
   v.linearRampToValueAtTime(LEVEL,t+1.8);}catch(e){}}
+function wake(){if(!soundOn){return;}
+  if(!ac){try{var C=window.AudioContext||window.webkitAudioContext;
+    if(C){ac=new C();}}catch(e){ac=null;}}
+  if(ac&&ac.state==="suspended"){ac.resume();}}
+var EVS=["pointerdown","touchstart","keydown"];
+function unlock(){if(unlocked){return;}unlocked=true;
+  EVS.forEach(function(n){document.removeEventListener(n,unlock,true);});
+  wake();if(soundOn){ambOn();}}
+EVS.forEach(function(n){document.addEventListener(n,unlock,true);});
 if(snd){snd.addEventListener("click",function(){soundOn=!soundOn;
   snd.setAttribute("aria-pressed",soundOn?"true":"false");
   snd.textContent=soundOn?"Sound on":"Sound off";
-  if(soundOn&&!ac){try{var C=window.AudioContext||window.webkitAudioContext;
-    if(C){ac=new C();}}catch(e){ac=null;}}
-  if(ac&&ac.state==="suspended"){ac.resume();}
+  wake();
   if(soundOn){ambOn();}else{ambOff();}});}
 reset();
 })();
@@ -2867,7 +2926,7 @@ def _g_runner(trace: Optional[dict]) -> str:
         f'value="{default}" aria-label="Cap in credits"> '
         f'<output id="run-cap-out" for="run-cap">{chosen["cap"]:.2f} credits</output></label>'
         '<button id="run-go" type="button" class="run">Release the agent</button>'
-        '<button id="run-sound" type="button" class="snd" aria-pressed="false">Sound off</button>'
+        '<button id="run-sound" type="button" class="snd" aria-pressed="true">Sound on</button>'
         '</div>\n'
         '<div class="scene"><div class="meter">Spent so far'
         f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
@@ -2878,7 +2937,7 @@ def _g_runner(trace: Optional[dict]) -> str:
         'aria-label="Headstone that rises with the spend">'
         f'<div class="half hl">{half}</div>'
         f'<div class="half hr" aria-hidden="true">{half}</div>{carve}'
-        f'</div>{_g_soil(hp)}</div></div>'
+        f'</div>{_g_soil(hp)}</div><div class="fx" id="run-fx" aria-hidden="true"></div></div>'
         f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
         f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
         "</section>\n"
@@ -2894,7 +2953,7 @@ _HERO_CSS = """
 .hero{--k:1.3;position:relative;isolation:isolate;overflow:hidden;color:var(--bone);
   min-height:clamp(640px,100vh,900px);min-height:clamp(640px,100svh,900px);
   display:flex;flex-direction:column;justify-content:flex-end;background:#04060e}
-.hero .photo{position:absolute;inset:-16px;z-index:0;pointer-events:none;
+.hero .photo{position:absolute;inset:-16px;z-index:0;pointer-events:none;translate:var(--tx,0) var(--ty,0);
   background:#04060e var(--scene-d) 50% 100%/cover no-repeat;
   filter:saturate(.92) brightness(.96);transition:transform .3s ease-out;will-change:transform}
 .hero .shade{position:absolute;inset:0;z-index:2;pointer-events:none;
@@ -2904,15 +2963,16 @@ _HERO_CSS = """
   --mx:72%;--my:21%;--ma:.1;
   -webkit-mask-image:radial-gradient(ellipse 15% 22% at var(--mx) var(--my),rgba(0,0,0,var(--ma)) 0,rgba(0,0,0,var(--ma)) 45%,#000 100%);
   mask-image:radial-gradient(ellipse 15% 22% at var(--mx) var(--my),rgba(0,0,0,var(--ma)) 0,rgba(0,0,0,var(--ma)) 45%,#000 100%)}
-.hero .fogl{position:absolute;left:0;width:200%;height:36%;bottom:var(--fb);pointer-events:none;
-  opacity:var(--fo);transition:opacity .9s ease}
-.hero .f1{--fb:30%;--fo:.42;z-index:1}
-.hero .f2{--fb:14%;--fo:.5;z-index:3}
-.hero .f3{--fb:2%;--fo:.42;z-index:3}
-.hero.stopped .f1{--fo:.7}.hero.stopped .f2{--fo:.8}.hero.stopped .f3{--fo:.65}
+.hero .fogl{position:absolute;left:0;width:200%;height:24%;bottom:var(--fb);pointer-events:none;
+  opacity:var(--fo);transition:opacity .9s ease;translate:var(--tx,0) var(--ty,0)}
+/* R22.3: wisps only in the lowest third (bottom + height at most 33 percent), at most .18 opacity, cool blue-grey */
+.hero .f1{--fb:9%;--fo:.14;z-index:1}
+.hero .f2{--fb:4%;--fo:.18;z-index:3}
+.hero .f3{--fb:0%;--fo:.16;z-index:3}
+.hero.stopped .f1{--fo:.16}.hero.stopped .f2{--fo:.18}.hero.stopped .f3{--fo:.17}
 .hero .burst{position:absolute;left:50%;bottom:6%;width:min(900px,120%);height:46%;
   transform:translateX(-50%);z-index:3;pointer-events:none;opacity:0;transition:opacity .9s ease;
-  background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(205,212,226,.3),transparent 72%)}
+  background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(38,28,22,.5),transparent 72%)}
 .hero.stopped .burst{opacity:.8}
 .hero::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
   background:#8a0f12;opacity:0}
@@ -2931,7 +2991,7 @@ _HERO_CSS = """
 .hero .runner{max-width:none;margin:0;padding:0;text-align:left;position:relative;z-index:5}
 .hero .runner .controls{justify-content:center;margin:0 0 clamp(8px,2vh,22px)}
 .hero .runner label{color:#e4e8ef;text-shadow:0 1px 10px #000}
-.hero .runner .scene{display:grid;grid-template-columns:1fr auto 1fr;gap:0 clamp(18px,3vw,48px);
+.hero .runner .scene{translate:var(--tx,0) var(--ty,0);display:grid;grid-template-columns:1fr auto 1fr;gap:0 clamp(18px,3vw,48px);
   align-items:end}
 .hero .runner .meter{justify-self:end;text-align:right;min-width:0;margin-right:calc(var(--k) * 40px);text-shadow:0 1px 12px #000}
 .hero .runner .meter b{color:var(--bone)}
@@ -2955,7 +3015,7 @@ _HERO_CSS = """
 .hero .earth:not(.on) .hstone{top:calc(228px * var(--k));transition:none}
 .hero .hstone{position:absolute;left:50%;margin-left:calc(var(--k) * -73px);width:calc(var(--k) * 147px);
   height:calc(var(--k) * 220px);top:calc((228px - var(--rh)) * var(--k));
-  transition:top .5s cubic-bezier(.3,.7,.3,1);cursor:default}
+  transition:top .26s cubic-bezier(.25,.9,.3,1.08);cursor:default}
 .hero .hstone .hs{display:block;width:100%;height:100%;user-select:none;background:var(--img-stone) center/100% 100% no-repeat;
   position:relative;filter:brightness(1.45) contrast(1.04) saturate(.75) drop-shadow(0 0 10px rgba(140,168,222,.16));
   transition:filter .8s ease}
@@ -3037,6 +3097,14 @@ _HERO_CSS = """
   z-index:4;pointer-events:none}
 .hero .bones::before{content:"";position:absolute;left:5%;right:5%;bottom:-6%;height:55%;border-radius:50%;opacity:0;
   background:radial-gradient(closest-side,rgba(118,122,138,.6),rgba(118,122,138,0))}
+/* R22.2: the particle layer sits at the ground line, centred on the stone, above the earth box whose clip would cut the arcs */
+.hero .fx{position:absolute;left:50%;bottom:calc(22px * var(--k));width:0;height:0;z-index:4;pointer-events:none}
+.hero .fx .pt{position:absolute;left:0;bottom:0;translate:-50% 50%;will-change:transform,opacity}
+.hero .fx .gt{width:calc(var(--s,3) * var(--k) * 3px);aspect-ratio:1/1.5;
+  background:linear-gradient(0deg,#141c10,#34472a 55%,#6f8a78);
+  clip-path:polygon(0 100%,12% 28%,30% 66%,48% 0,66% 62%,84% 22%,100% 100%)}
+.hero .fx .dp{width:calc(var(--k) * 70px);aspect-ratio:1;border-radius:50%;
+  background:radial-gradient(closest-side,rgba(62,46,34,.85),rgba(48,36,28,.5) 55%,rgba(36,28,24,0))}
 .hero .shed{position:absolute;left:50%;top:calc((228px - var(--rh)) * var(--k));width:0;height:0;z-index:4;
   pointer-events:none}
 .hero .fall{left:calc(var(--x) * var(--k) * 1px);top:calc(var(--y) * var(--k) * 1px);opacity:0;
@@ -3049,17 +3117,19 @@ _HERO_CSS = """
   @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .hero.scare::after{animation:flash 1s ease-out both}
   .hero.scare .grave{animation:tremor .4s linear .05s both}
-  .hero .earth.dig .hstone{animation:hshake .24s linear}
+  .hero .earth.dig .hstone{animation:wobble .6s ease-out}
   .hero .earth.dig .fall{animation:shed .95s ease-in calc(var(--t) * 1s) both}
   .hero .earth.heave .hstone{top:calc(228px * var(--k));transition:none}
-  .hero .earth.heave .mound{animation:swell .9s ease-out both}
+  .hero .earth.heave .mound{animation:swell 1.5s ease-out both}
   .hero .earth.on.heave .soil .heap,.hero .earth.on.heave .gsvg .tear,.hero .earth.on.heave .soil .lump{opacity:0}
-  .hero .earth.heave .scr path{animation:open .6s ease-out .25s both}
   .hero .earth.heave .soil{animation:hshake .2s linear 4}
   .hero.stopped .bones::before,.hero .earth.full .bones::before{animation:puff 1.2s ease-out both}
   @keyframes puff{0%{opacity:.85;transform:scale(.3)}100%{opacity:0;transform:scale(1.7) translateY(-25%)}}
-  @keyframes swell{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
-  @keyframes open{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  @keyframes swell{0%{transform:scaleY(.05)}14%{transform:scaleY(.4)}30%{transform:scaleY(.18)}
+    47%{transform:scaleY(.62)}63%{transform:scaleY(.36)}80%{transform:scaleY(.85)}100%{transform:scaleY(1)}}
+  @keyframes wobble{0%{transform:none}12%{transform:translate(-2px,1px) rotate(-1.4deg)}
+    30%{transform:translate(2px,-1px) rotate(1.2deg)}50%{transform:rotate(-.7deg)}
+    72%{transform:rotate(.3deg)}100%{transform:none}}
   @keyframes shed{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:1}
     60%{opacity:1;transform:translate(calc(var(--dx) * .45 * var(--k) * 1px),var(--fd)) rotate(calc(var(--dx) * 4deg))}
     80%{opacity:1;transform:translate(calc(var(--dx) * .8 * var(--k) * 1px),calc(var(--fd) - 3px)) rotate(calc(var(--dx) * 8deg))}
@@ -3075,6 +3145,7 @@ _HERO_CSS = """
   .hero .fogl,.hero .burst,.hero .hstone,.hero .hs,.hero .photo{transition:none}
   .hero::after{display:none}
   .hero .shed{display:none}
+  .hero .fx{display:none}
   .hero .hstone .half,.hero .gsvg .mound,.hero .heap,.hero .hand .hi,.hero .bones{transition:none}
   .hero .bones::before{display:none}
 }
@@ -3163,7 +3234,7 @@ def _fog_svg(cls: str, blobs: list) -> str:
                      'fill="url(#fogg)"/>')
     return (f'<div class="fogl {cls}" aria-hidden="true"><svg viewBox="0 0 3200 300" '
             'width="100%" height="100%" preserveAspectRatio="none">'
-            f"{ells}</svg></div>")
+            f'<g filter="url(#wisp)">{ells}</g></svg></div>')
 
 
 def _g_scene() -> str:
@@ -3173,9 +3244,13 @@ def _g_scene() -> str:
     fog = (
         '<svg width="0" height="0" aria-hidden="true" focusable="false" style="position:absolute">'
         '<defs><radialGradient id="fogg" cx=".5" cy=".5" r=".5">'
-        '<stop offset="0" stop-color="#c3cde0" stop-opacity=".5"/>'
-        '<stop offset=".6" stop-color="#a5b2cc" stop-opacity=".16"/>'
-        '<stop offset="1" stop-color="#8fa0c0" stop-opacity="0"/></radialGradient></defs></svg>'
+        '<stop offset="0" stop-color="#7d8fae" stop-opacity=".7"/>'
+        '<stop offset=".6" stop-color="#65779a" stop-opacity=".26"/>'
+        '<stop offset="1" stop-color="#52648a" stop-opacity="0"/></radialGradient>'
+        '<filter id="wisp" x="0" y="0" width="100%" height="100%">'
+        '<feTurbulence type="fractalNoise" baseFrequency=".005 .05" numOctaves="3" seed="11" result="n"/>'
+        '<feColorMatrix in="n" type="matrix" values="0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 2.2 -.55" result="m"/>'
+        '<feComposite in="SourceGraphic" in2="m" operator="in"/></filter></defs></svg>'
     )
     return ('<div class="photo" aria-hidden="true"></div>\n'
             f'{fog}{_fog_svg("f1", fog_blobs_a)}<div class="shade" aria-hidden="true"></div>'

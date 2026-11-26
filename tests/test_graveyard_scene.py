@@ -177,7 +177,7 @@ def test_reduced_motion_and_noscript_show_the_split_stone_in_its_heap():
     assert '<header class="hero stopped"' in page and 'class="runner stopped"' in page
     assert ".hero.stopped .hstone .hl{clip-path" in css
     reduce = css.split("@media (prefers-reduced-motion:reduce){  .hero .fogl", 1)[1].split("@media (max-width:900px)", 1)[0]
-    assert ".hero .hstone .half" in reduce and ".hero .shed{display:none}" in reduce
+    assert ".hero .hstone .half" in reduce and ".hero .shed{display:none}" in reduce and ".hero .fx{display:none}" in reduce
     assert "heave" not in reduce
     assert "--hp:" in page.split('id="run-earth"', 1)[1][:60]
 
@@ -527,15 +527,16 @@ def test_ambience_is_embedded_once_as_audio_mp4_and_never_autoplays():
     assert "<source" not in page
 
 
-def test_ambience_starts_only_from_the_toggle_click():
+def test_ambience_starts_only_from_the_first_interaction_or_the_toggle():
     script = _page().split("var AMBIENCE=", 1)[1]
     script = script.split(";\n", 1)[1]
     assert script.count("sfxOn()") == 2  # definition and the one call, inside ambOn
-    # decoding and playing are reached only through ambOn, which only the click handler calls
-    assert script.count("ambOn()") == 2  # definition and the one call
+    # decoding and playing are reached only through ambOn: the one-time unlock and the toggle
+    assert script.count("ambOn()") == 3  # definition, unlock, toggle
+    unlock = script.split("function unlock(){", 1)[1].split("EVS.forEach(function(n){document.add", 1)[0]
+    assert "if(soundOn){ambOn();}" in unlock and "if(unlocked){return;}unlocked=true;" in unlock
     handler = script.split('snd.addEventListener("click"', 1)[1]
     assert "if(soundOn){ambOn();}else{ambOff();}" in handler
-    assert "soundOn=false" in script  # sound is off by default
 
 
 def test_ambience_loops_with_fades_and_ducks_under_the_crack():
@@ -623,3 +624,104 @@ def test_effects_credit_line():
     page = _page()
     assert "Night ambience generated with Suno, sound effects with ElevenLabs." in page
     assert page.count('<p class="credit">') == 1
+
+
+# --- Task 33: music from the start, a violent break-through, no milky haze (R22) ---
+
+def _fog_rules(css: str) -> dict:
+    out = {}
+    for cls in ("f1", "f2", "f3"):
+        rule = re.search(r"\.hero \." + cls + r"\{([^}]*)\}", css).group(1)
+        stopped = re.search(r"\.hero\.stopped \." + cls + r"\{([^}]*)\}", css).group(1)
+        out[cls] = (rule, stopped)
+    return out
+
+
+def test_sound_defaults_to_on_and_starts_on_the_first_interaction_only():
+    page = _page()
+    assert 'id="run-sound" type="button" class="snd" aria-pressed="true">Sound on<' in page
+    s = _run_script()
+    assert "soundOn=true" in s and "soundOn=false" not in s
+    assert 'var EVS=["pointerdown","touchstart","keydown"]' in s
+    # the listeners are added once, and the unlock removes them
+    assert s.count("document.addEventListener(n,unlock,true)") == 1
+    assert "document.removeEventListener(n,unlock,true)" in s
+    # nothing is started or decoded at load: the context is created only inside wake()
+    top = s.split("var EVS=", 1)[0]
+    assert "new C()" in top.split("function wake(){", 1)[1].split("var EVS", 1)[0]
+    assert s.count("ambOn();") == 2  # the unlock and the toggle, nothing else
+    assert top.count("wake();") >= 1
+    assert "wake();fissures();" in s  # "Release the agent" also wakes a suspended context
+
+
+def test_effects_of_r21_are_unchanged():
+    s = _run_script()
+    for name in _SFX:
+        assert 'sfx("' + name + '"' in s, name
+
+
+def test_eruption_spawns_15_to_25_clods_and_never_more_than_40_particles():
+    s = _run_script()
+    assert "BURST_CLODS=[15,25]" in s and "MAXP=40" in s
+    tufts, dust = (int(re.search(r"BURST_%s=(\d+)" % n, s).group(1)) for n in ("TUFTS", "DUST"))
+    assert 25 + tufts + dust <= 40  # the whole burst fits under the cap
+    assert "live.length>=MAXP){return null;}" in s  # every particle goes through spawn()
+    assert s.count("document.createElement(\"i\")") == 1
+    assert "requestAnimationFrame(frame)" in s
+    assert "if(reduce||!fx" in s  # reduced motion: no particles
+    assert "erupt();tick();" in s
+
+
+def test_eruption_has_swells_tremor_fissures_wobble_and_hand_spray():
+    page = _page()
+    s = _run_script()
+    css = _css(page).replace("\n", "")
+    assert "HEAVE=1500" in s and "n<3" in s and "shake(2.5," in s  # three swells
+    assert "Math.min(3,m)" in s  # tremor of at most 3 px
+    assert "strokeDashoffset" in s and "fissures();" in s
+    assert "shake(2,.3);rubble();" in s.split("function tick(){", 1)[1].split("if(i>=steps)", 1)[0]
+    assert "spray(5)" in s and "spray(2)" in s
+    wob = css.split("@keyframes wobble{", 1)[1].split("}}", 1)[0]
+    degs = [abs(float(d)) for d in re.findall(r"rotate\((-?[\d.]+)deg\)", wob)]
+    assert degs and max(degs) <= 1.5
+    assert ".hero .earth.dig .hstone{animation:wobble" in css
+    assert 'id="run-fx"' in page
+
+
+def test_dust_and_flash_are_never_white():
+    css = _css(_page()).replace("\n", "")
+    for rule in (".hero .fx .dp{", ".hero .burst{"):
+        body = css.split(rule, 1)[1].split("}", 1)[0]
+        for r, g, b in re.findall(r"rgba?\((\d+),(\d+),(\d+)", body):
+            assert max(int(r), int(g), int(b)) < 100, (rule, r, g, b)
+    flash = css.split(".hero::after{content", 1)[1].split("}", 1)[0]
+    assert "background:#8a0f12" in flash
+    assert re.search(r"@keyframes flash\{0%\{opacity:0\}18%\{opacity:\.3\}", css)
+
+
+def test_fog_is_low_faint_cool_and_textured():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    base = re.search(r"\.hero \.fogl\{([^}]*)\}", css).group(1)
+    height = float(re.search(r"height:([\d.]+)%", base).group(1))
+    for cls, (rule, stopped) in _fog_rules(css).items():
+        bottom = float(re.search(r"--fb:([\d.]+)%", rule).group(1))
+        assert bottom + height <= 100 / 3 + 0.01, cls  # inside the lowest third
+        for text in (rule, stopped):
+            assert float(re.search(r"--fo:([\d.]+)", text).group(1)) <= 0.18, cls
+    fogg = page.split('id="fogg"', 1)[1].split("</radialGradient>", 1)[0]
+    for hexa in re.findall(r'stop-color="#(\w{2})(\w{2})(\w{2})"', fogg):
+        r, g, b = (int(v, 16) for v in hexa)
+        assert max(r, g, b) < 0xB0 and b >= r  # blue-grey, not milky
+    assert "feTurbulence" in page.split('id="wisp"', 1)[1].split("</filter>", 1)[0]
+    assert page.count('filter="url(#wisp)"') == 3
+
+
+def test_reduced_motion_shows_the_final_state_without_particles():
+    css = _css(_page()).replace("\n", "")
+    reduce = css.split("@media (prefers-reduced-motion:reduce){  .hero .fogl", 1)[1].split("@media (max-width:900px)", 1)[0]
+    assert ".hero .fx{display:none}" in reduce
+    s = _run_script()
+    assert "if(reduce){finish(r);return;}" in s
+    assert "function shake(m,d){if(reduce){return;}" in s
+    assert "wobble" not in reduce and "swell" not in reduce

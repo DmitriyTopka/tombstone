@@ -24,7 +24,7 @@ def test_hero_copy_and_controls():
     assert 'id="run-cap"' in hero and 'type="range"' in hero
     assert ">Release the agent</button>" in hero
     assert "A recorded real Kiro CLI session, scrubbed." in hero
-    assert 'id="run-sound"' in hero and 'aria-pressed="false">Sound off<' in hero
+    assert 'id="run-sound"' in hero and 'aria-pressed="true">Sound on<' in hero
     assert ">STOP</p>" in hero and "hook exit code 2" in hero and "Without the breaker" in hero
 
 

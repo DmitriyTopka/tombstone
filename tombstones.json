@@ -3450,6 +3450,156 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/33",
+      "task_id": "33",
+      "name": "Music from the start, a violent break-through, no milky haze",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.0108,
+      "actual": 1.1378,
+      "minutes": 0.8585,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_48cd3a8f-7310-4a6e-9f41-438b0f446b33",
+          "turn_id": "0fc2c6cd-16a3-443d-9a9a-95655f393fac",
+          "requests": 18,
+          "estimate": 5.0538,
+          "actual": 5.6889,
+          "minutes": 4.2923,
+          "start": "2026-11-26T15:49:46.008000Z",
+          "end": "2026-11-26T15:54:03.543000Z",
+          "share": 0.2,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/33.1",
+      "task_id": "33.1",
+      "name": "Sound on by default",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.0108,
+      "actual": 1.1378,
+      "minutes": 0.8585,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_48cd3a8f-7310-4a6e-9f41-438b0f446b33",
+          "turn_id": "0fc2c6cd-16a3-443d-9a9a-95655f393fac",
+          "requests": 18,
+          "estimate": 5.0538,
+          "actual": 5.6889,
+          "minutes": 4.2923,
+          "start": "2026-11-26T15:49:46.008000Z",
+          "end": "2026-11-26T15:54:03.543000Z",
+          "share": 0.2,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/33.2",
+      "task_id": "33.2",
+      "name": "The break-through",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.0108,
+      "actual": 1.1378,
+      "minutes": 0.8585,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_48cd3a8f-7310-4a6e-9f41-438b0f446b33",
+          "turn_id": "0fc2c6cd-16a3-443d-9a9a-95655f393fac",
+          "requests": 18,
+          "estimate": 5.0538,
+          "actual": 5.6889,
+          "minutes": 4.2923,
+          "start": "2026-11-26T15:49:46.008000Z",
+          "end": "2026-11-26T15:54:03.543000Z",
+          "share": 0.2,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/33.3",
+      "task_id": "33.3",
+      "name": "Clear the haze",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.0108,
+      "actual": 1.1378,
+      "minutes": 0.8585,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_48cd3a8f-7310-4a6e-9f41-438b0f446b33",
+          "turn_id": "0fc2c6cd-16a3-443d-9a9a-95655f393fac",
+          "requests": 18,
+          "estimate": 5.0538,
+          "actual": 5.6889,
+          "minutes": 4.2923,
+          "start": "2026-11-26T15:49:46.008000Z",
+          "end": "2026-11-26T15:54:03.543000Z",
+          "share": 0.2,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/33.4",
+      "task_id": "33.4",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.0108,
+      "actual": 1.1378,
+      "minutes": 0.8585,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_48cd3a8f-7310-4a6e-9f41-438b0f446b33",
+          "turn_id": "0fc2c6cd-16a3-443d-9a9a-95655f393fac",
+          "requests": 18,
+          "estimate": 5.0538,
+          "actual": 5.6889,
+          "minutes": 4.2923,
+          "start": "2026-11-26T15:49:46.008000Z",
+          "end": "2026-11-26T15:54:03.543000Z",
+          "share": 0.2,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
