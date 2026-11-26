@@ -873,3 +873,27 @@ def test_effects_decode_at_load_and_the_slide_retries_when_its_buffer_arrives():
     assert "if(slide){slEnd=true;}slWant=false;" in s
     # the ambience does not start before the first interaction
     assert "if(unlocked){ambPlay();}" in s
+
+
+# --- Task 34.6: the vignette covers the whole scene (R22.4) ------------------
+
+def _z(css: str, selector: str) -> int:
+    return int(re.search(r"z-index:(-?\d+)", _rule(css, selector)).group(1))
+
+
+def test_vignette_is_above_every_scene_layer_and_below_the_text_and_controls():
+    css = _css(_page())
+    vig = _z(css, ".hero .vig")
+    # bones and every other scene layer sit below the vignette
+    for sel in (".hero .photo", ".hero .shade", ".hero .bones", ".hero .fx", ".hero .runner .grave",
+                ".hero .f2", ".hero .f3", ".hero .burst", ".hero .shed"):
+        assert _z(css, sel) < vig, sel
+    assert _z(css, ".hero .bones") < vig
+    # the wrappers of the stone must not trap it in a stacking context below or above the vignette
+    for sel in (".hero-inner", ".hero .runner"):
+        assert "z-index" not in _rule(css, sel), sel
+    assert "translate" not in _rule(css, ".hero .runner .scene")
+    # headline, controls, counter, verdict (STOP, refusal) and caption sit above it
+    for sel in (".hero h1", ".hero .tagline", ".hero .runner .controls", ".hero .runner .meter",
+                ".hero .runner .verdict", ".hero .runner .caption", ".hero .toplinks"):
+        assert _z(css, sel) > vig, sel

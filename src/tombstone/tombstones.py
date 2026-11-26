@@ -2979,36 +2979,37 @@ _HERO_CSS = """
 .hero::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
   background:#8a0f12;opacity:0}
 /* R22.4: the damage vignette; strength --vg comes from spend / cap (script), the beat speeds up toward the cap */
-.hero .vig{position:absolute;inset:0;z-index:4;pointer-events:none;opacity:var(--vg,0);transition:opacity .6s ease;
+.hero .vig{position:absolute;inset:0;z-index:6;pointer-events:none;opacity:var(--vg,0);transition:opacity .6s ease;
   background:radial-gradient(ellipse 80% 75% at 50% 50%,rgba(110,0,8,0) 42%,rgba(120,2,10,.5) 72%,rgba(138,6,14,.9) 100%)}
 .hero.stopped .vig{--vg:1}
-.hero .toplinks{position:absolute;top:18px;right:max(18px,3vw);z-index:6;margin:0;font-size:14px;
+.hero .toplinks{position:absolute;top:18px;right:max(18px,3vw);z-index:7;margin:0;font-size:14px;
   display:flex;gap:16px;letter-spacing:.03em}
 .hero .toplinks a{color:var(--bone);opacity:.8;text-decoration:none;border-bottom:1px solid rgba(236,231,218,.35)}
 .hero .toplinks a:hover{opacity:1}
-.hero-inner{position:relative;z-index:5;width:100%;max-width:1240px;margin:0 auto;
+.hero-inner{position:relative;width:100%;max-width:1240px;margin:0 auto;
   padding:clamp(56px,9vh,96px) max(18px,4vw) clamp(40px,5vw,90px);text-align:center}
-.hero .tagline{margin:0 0 14px;font-size:clamp(13px,1.2vw,16px);letter-spacing:.2em;
+.hero .tagline{position:relative;z-index:7;margin:0 0 14px;font-size:clamp(13px,1.2vw,16px);letter-spacing:.2em;
   text-transform:uppercase;color:#c3ccdb;text-shadow:0 1px 14px #000}
-.hero h1{font-weight:400;font-size:clamp(36px,6.2vw,92px);line-height:1.02;letter-spacing:-.02em;
+.hero h1{position:relative;z-index:7;font-weight:400;font-size:clamp(36px,6.2vw,92px);line-height:1.02;letter-spacing:-.02em;
   max-width:none;margin:0 0 clamp(14px,2.4vh,26px);text-wrap:balance;
   text-shadow:0 2px 28px #000,0 0 3px rgba(0,0,0,.8)}
 .hero h1 em{color:#ff5a5a;font-style:italic;text-shadow:0 0 34px rgba(255,59,59,.35),0 2px 20px #000}
-.hero .runner{max-width:none;margin:0;padding:0;text-align:left;position:relative;z-index:5}
-.hero .runner .controls{justify-content:center;margin:0 0 clamp(8px,2vh,22px)}
+.hero .runner{max-width:none;margin:0;padding:0;text-align:left;position:relative}
+.hero .runner .controls{position:relative;z-index:7;justify-content:center;margin:0 0 clamp(8px,2vh,22px)}
 .hero .runner label{color:#e4e8ef;text-shadow:0 1px 10px #000}
-.hero .runner .scene{translate:var(--tx,0) var(--ty,0);display:grid;grid-template-columns:1fr auto 1fr;gap:0 clamp(18px,3vw,48px);
+.hero .runner .scene>*{translate:var(--tx,0) var(--ty,0)}
+.hero .runner .scene{display:grid;grid-template-columns:1fr auto 1fr;gap:0 clamp(18px,3vw,48px);
   align-items:end}
-.hero .runner .meter{justify-self:end;text-align:right;min-width:0;margin-right:calc(var(--k) * 40px);text-shadow:0 1px 12px #000}
+.hero .runner .meter{position:relative;z-index:7;justify-self:end;text-align:right;min-width:0;margin-right:calc(var(--k) * 40px);text-shadow:0 1px 12px #000}
 .hero .runner .meter b{color:var(--bone)}
-.hero .runner .grave{position:relative;display:block;min-height:0;padding:0}
+.hero .runner .grave{position:relative;z-index:5;display:block;min-height:0;padding:0}
 .hero .runner .grave::before{content:"";position:absolute;left:-40%;right:-40%;bottom:-14px;height:70%;
   pointer-events:none;opacity:0;transition:opacity .9s ease;
   background:radial-gradient(ellipse 50% 50% at 50% 70%,rgba(255,59,59,.3),transparent 70%)}
 .hero.stopped .runner .grave::before{opacity:1}
-.hero .runner .verdict{flex:none;justify-self:start;margin-left:calc(var(--k) * 40px);max-width:34em;text-shadow:0 1px 12px #000}
+.hero .runner .verdict{position:relative;z-index:7;flex:none;justify-self:start;margin-left:calc(var(--k) * 40px);max-width:34em;text-shadow:0 1px 12px #000}
 .hero .runner .verdict .stop{text-shadow:0 0 28px rgba(255,59,59,.45),0 1px 10px #000}
-.hero .runner .caption{text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#b4bdcc;
+.hero .runner .caption{position:relative;z-index:7;text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#b4bdcc;
   text-shadow:0 1px 8px #000}
 /* the rising headstone: its visible height is --rh on the R15 scale */
 .hero .earth{position:relative;clip-path:inset(0 -160px 0 -160px);width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);

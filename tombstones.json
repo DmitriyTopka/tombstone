@@ -3750,6 +3750,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/34.6",
+      "task_id": "34.6",
+      "name": "The vignette covers the whole scene",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 4.1137,
+      "actual": 1.2692,
+      "minutes": 0.9463,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_10c3abf3-3520-48f7-8c5b-66f010a234c3",
+          "turn_id": "3978955b-af18-47b0-bdf4-8ba9b976ac71",
+          "requests": 10,
+          "estimate": 4.1137,
+          "actual": 1.2692,
+          "minutes": 0.9463,
+          "start": "2026-11-26T16:07:42.852000Z",
+          "end": "2026-11-26T16:08:39.631000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
