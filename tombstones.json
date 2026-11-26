@@ -3720,6 +3720,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/34.4",
+      "task_id": "34.4",
+      "name": "Sounds missing on the first run",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 14,
+      "estimate": 6.4894,
+      "actual": 1.8623,
+      "minutes": 1.8089,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_d6c5cb15-433f-43ca-90bf-80ac211c1d2f",
+          "turn_id": "a3c6bfbf-7d4e-4aa5-9ddd-ce789cca9707",
+          "requests": 14,
+          "estimate": 6.4894,
+          "actual": 1.8623,
+          "minutes": 1.8089,
+          "start": "2026-11-26T16:00:53.716000Z",
+          "end": "2026-11-26T16:02:42.249000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

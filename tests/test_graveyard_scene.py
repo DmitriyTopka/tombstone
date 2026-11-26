@@ -509,8 +509,8 @@ def test_ambience_is_embedded_once_as_audio_mp4_and_never_autoplays():
 def test_ambience_starts_only_from_the_first_interaction_or_the_toggle():
     script = _page().split("var AMBIENCE=", 1)[1]
     script = script.split(";\n", 1)[1]
-    assert script.count("sfxOn()") == 2  # definition and the one call, inside ambOn
-    # decoding and playing are reached only through ambOn: the one-time unlock and the toggle
+    assert script.count("sfxOn()") == 3  # definition, ambOn, and the decode at load (preload)
+    # playing is reached only through ambOn: the one-time unlock and the toggle
     assert script.count("ambOn()") == 3  # definition, unlock, toggle
     unlock = script.split("function unlock(){", 1)[1].split("EVS.forEach(function(n){document.add", 1)[0]
     assert "if(soundOn){ambOn();}" in unlock and "if(unlocked){return;}unlocked=true;" in unlock
@@ -622,9 +622,9 @@ def test_sound_defaults_to_on_and_starts_on_the_first_interaction_only():
     # the listeners are added once, and the unlock removes them
     assert s.count("document.addEventListener(n,unlock,true)") == 1
     assert "document.removeEventListener(n,unlock,true)" in s
-    # nothing is started or decoded at load: the context is created only inside wake()
+    # nothing is started at load: the context is created (suspended) by mkAc and only resumed in wake()
     top = s.split("var EVS=", 1)[0]
-    assert "new C()" in top.split("function wake(){", 1)[1].split("var EVS", 1)[0]
+    assert "new C()" in top.split("function mkAc(){", 1)[1].split("function wake(){", 1)[0]
     assert s.count("ambOn();") == 2  # the unlock and the toggle, nothing else
     assert top.count("wake();") >= 1
     assert "wake();slideStart();fissures();" in s  # "Release the agent" also wakes a suspended context
@@ -797,18 +797,18 @@ def test_no_hand_is_embedded_and_no_hand_sounds_remain():
     assert 'class="hand"' not in bare and "hand_reach" not in bare and "img-hand" not in bare
     assert ".hand" not in css and "hup" not in bare and "--hl" not in bare
     sfx = resources.files("tombstone").joinpath("data", "scene", "sfx")
-    for name in ("hand_emerge", "hand_sink"):
-        assert '"' + name + '"' not in page and base64.b64encode(sfx.joinpath(name + ".m4a").read_bytes()).decode() not in page
+    for name in ("hand_emerge", "hand_sink", "stone_grind"):
+        assert name not in page
+    assert not sfx.joinpath("hand_emerge.m4a").is_file() and not sfx.joinpath("hand_sink.m4a").is_file()
     assert "function hand(" not in page and "function spray(" not in page
-    hand_img = resources.files("tombstone").joinpath("data", "scene", "hand_reach.webp").read_bytes()
-    assert base64.b64encode(hand_img).decode() not in page
+    assert not resources.files("tombstone").joinpath("data", "scene", "hand_reach.webp").is_file()
 
 
 def test_stone_slide_is_embedded_once_and_stone_grind_is_not():
     page = _page()
     assert page.count(_sfx_b64("stone_slide")) == 1
     assert page.count('"stone_slide":"data:audio/mp4;base64,') == 1
-    assert _sfx_b64("stone_grind") not in page and "stone_grind" not in page
+    assert "stone_grind" not in page
     s = _run_script()
     assert s.count("createBufferSource()") == 3  # ambience, one-shot effects, the one slide loop
     assert s.count("src.buffer=sfxBuf.stone_slide;src.loop=true;") == 1
@@ -854,3 +854,22 @@ def test_each_rise_step_lasts_0_8_to_1_0_s_inside_the_step_interval():
     steps = len(demo.trace()["credits"])
     assert max(6000 / steps, dur * 1000 + 200) >= dur * 1000 + 200
     assert steps * (dur + 0.2) <= 10  # a run stays inside the 4 to 10 s of R15.3
+
+
+def test_effects_decode_at_load_and_the_slide_retries_when_its_buffer_arrives():
+    s = _run_script()
+    top, after = s.split("EVS.forEach(function(n){document.add", 1)
+    # the decode starts at load, before any interaction listener is added
+    assert "function preload(){if(!soundOn){return;}mkAc();sfxOn();ambDecode();}\npreload();\n" in top + "\n"
+    unlock = top.split("function unlock(){", 1)[1].split("/* R21.1", 1)[0]
+    assert "mkAc()" not in unlock and "decodeAudioData" not in unlock
+    assert "ac.resume()" in top.split("function wake(){", 1)[1]
+    # a missing slide buffer is remembered and started when it arrives
+    start = s.split("function slideStart(){", 1)[1].split("function slideStop", 1)[0]
+    assert "if(!sfxBuf.stone_slide){slWant=true;return;}" in start
+    assert 'if(k==="stone_slide"&&slWant){slideStart();}' in s
+    # the pending start is dropped when the run ends or is reset
+    assert "slWant=false;" in s.split("function slideStop(){", 1)[1].split("\n", 1)[0]
+    assert "if(slide){slEnd=true;}slWant=false;" in s
+    # the ambience does not start before the first interaction
+    assert "if(unlocked){ambPlay();}" in s

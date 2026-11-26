@@ -2775,13 +2775,14 @@ function sfx(name,vol,rate,delay){var b=sfxBuf[name];if(!soundOn||!ac||!b){retur
   src.connect(g);g.connect(ac.destination);src.start(t);duck();}catch(e){}}
 function stepSound(){sfx("earth_crumble",rnd(.22,.3),rnd(.95,1.05),.05);}
 /* R23.2: one looping stone_slide source for the whole run; its gain follows the measured upward speed of the stone each frame */
-var SLIDE_VOL=.6,SLIDE_VMAX=40,slide=null,slY=null,slT=0,slRaf=0,slEnd=false;
+var SLIDE_VOL=.6,SLIDE_VMAX=40,slide=null,slY=null,slT=0,slRaf=0,slEnd=false,slWant=false;
 function slideGain(v,k){var n=Math.min(1,Math.max(0,v)/(SLIDE_VMAX*k));return n<.04?0:n;}
-function slideStart(){if(reduce||!soundOn||!ac||slide||!sfxBuf.stone_slide){return;}
+function slideStart(){if(reduce||!soundOn||!ac||slide){return;}
+  if(!sfxBuf.stone_slide){slWant=true;return;}slWant=false;
   try{var src=ac.createBufferSource(),g=ac.createGain();src.buffer=sfxBuf.stone_slide;src.loop=true;
   g.gain.value=0;src.connect(g);g.connect(ac.destination);src.start();slide={src:src,g:g};
   slY=null;slT=0;slEnd=false;if(!slRaf){slRaf=requestAnimationFrame(slideFrame);}}catch(e){slide=null;}}
-function slideStop(){var s=slide;slide=null;slEnd=false;if(!s||!ac){return;}
+function slideStop(){var s=slide;slide=null;slEnd=false;slWant=false;if(!s||!ac){return;}
   try{var t=ac.currentTime;s.g.gain.cancelScheduledValues(t);s.g.gain.setTargetAtTime(0,t,.05);s.src.stop(t+.4);}catch(e){}}
 function slideFrame(now){slRaf=0;if(!slide||!ac){return;}
   var y=parseFloat(getComputedStyle(stone).top)||0,k=kk(),v=0,n,t=ac.currentTime;
@@ -2804,7 +2805,7 @@ function reset(){if(timer){clearTimeout(timer);timer=null;}fxClear();slideStop()
   hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("full");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
-  if(slide){slEnd=true;}
+  if(slide){slEnd=true;}slWant=false;
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
     if(!reduce){hero.classList.add("scare");}boom();vigHit();stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
@@ -2841,25 +2842,29 @@ function ambPlay(){if(!ac||!ambBuf||!soundOn||amb){return;}
 function sfxOn(){if(sfxLoad||!ac||typeof SFX!=="object"){return;}sfxLoad=true;
   Object.keys(SFX).forEach(function(k){try{var s=atob(SFX[k].split(",")[1]),u=new Uint8Array(s.length),i,p;
     for(i=0;i<s.length;i++){u[i]=s.charCodeAt(i);}
-    p=ac.decodeAudioData(u.buffer,function(b){sfxBuf[k]=b;},function(){});
+    p=ac.decodeAudioData(u.buffer,function(b){sfxBuf[k]=b;if(k==="stone_slide"&&slWant){slideStart();}},function(){});
     if(p&&p.catch){p.catch(function(){});}}catch(e){}});}
-function ambOn(){sfxOn();if(ambBuf){ambPlay();return;}if(ambLoad||!ac){return;}
+function ambDecode(){if(ambLoad||ambBuf||!ac){return;}
   try{var raw=ambData();if(!raw){return;}
-  ambLoad=ac.decodeAudioData(raw,function(b){ambBuf=b;ambPlay();},function(){ambLoad=null;});
+  ambLoad=ac.decodeAudioData(raw,function(b){ambBuf=b;if(unlocked){ambPlay();}},function(){ambLoad=null;});
   if(ambLoad&&ambLoad.catch){ambLoad.catch(function(){});}}catch(e){ambLoad=null;}}
+function ambOn(){sfxOn();if(ambBuf){ambPlay();return;}ambDecode();}
 function ambOff(){if(amb&&ac){var a=amb;amb=null;ambStop(a,ac.currentTime,.5);}}
 function duck(){if(!amb||!ac){return;}
   try{var t=ac.currentTime,v=amb.g.gain;v.cancelScheduledValues(t);v.setValueAtTime(v.value,t);
   v.linearRampToValueAtTime(LEVEL*.15,t+.1);v.setValueAtTime(LEVEL*.15,t+1);
   v.linearRampToValueAtTime(LEVEL,t+1.8);}catch(e){}}
-function wake(){if(!soundOn){return;}
-  if(!ac){try{var C=window.AudioContext||window.webkitAudioContext;
-    if(C){ac=new C();}}catch(e){ac=null;}}
+function mkAc(){if(ac){return;}try{var C=window.AudioContext||window.webkitAudioContext;
+  if(C){ac=new C();}}catch(e){ac=null;}}
+function wake(){if(!soundOn){return;}mkAc();
   if(ac&&ac.state==="suspended"){ac.resume();}}
 var EVS=["pointerdown","touchstart","keydown"];
 function unlock(){if(unlocked){return;}unlocked=true;
   EVS.forEach(function(n){document.removeEventListener(n,unlock,true);});
   wake();if(soundOn){ambOn();}}
+/* R21.1: decode every buffer at load (a suspended context decodes fine); the first interaction only resumes it */
+function preload(){if(!soundOn){return;}mkAc();sfxOn();ambDecode();}
+preload();
 EVS.forEach(function(n){document.addEventListener(n,unlock,true);});
 if(snd){snd.addEventListener("click",function(){soundOn=!soundOn;
   snd.setAttribute("aria-pressed",soundOn?"true":"false");
