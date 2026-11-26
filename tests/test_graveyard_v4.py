@@ -140,7 +140,8 @@ def test_stopped_row_caps_eight_and_keeps_gap():
 def test_page_has_no_external_resource_or_dash():
     page = render_graveyard(_mixed_records(), None, {"k/0": "live_stops.json"})
     page_no_ns = page.replace("xmlns='http://www.w3.org/2000/svg'", "")  # namespace, never fetched
-    for bad in ("http://", "https://", "@import", "<link", "<img", 'src="//'):
+    for bad in ("http://", "https://", "@import", "<link", 'src="//'):
         assert bad not in page_no_ns
     assert not re.search(r"url\((?!['\"]?(data:|%23|#))", page)
+    assert not re.search(r"<img(?![^>]*src=\"data:)", page)  # the one image is a data URI
     assert "\u2014" not in page and "\u2013" not in page

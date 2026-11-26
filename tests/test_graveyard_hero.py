@@ -28,11 +28,13 @@ def test_hero_copy_and_controls():
     assert ">STOP</p>" in hero and "hook exit code 2" in hero and "Without the breaker" in hero
 
 
-def test_scene_layers_are_inline_svg():
+def test_scene_is_a_photo_with_fog_and_no_drawn_scenery():
     hero = _hero(_page())
-    for needle in ('id="halo"', 'class="moon-g"', 'class="fogl f1"', 'class="fogl f2"',
-                   'class="fogl f3"', 'class="tree', 'class="sil', "<svg"):
+    assert 'class="photo"' in hero and 'class="shade"' in hero
+    for needle in ('class="fogl f1"', 'class="fogl f2"', 'class="fogl f3"', "<svg"):
         assert needle in hero, needle
+    for gone in ('id="halo"', 'class="moon-g"', 'class="tree', 'class="sil', "pickets"):
+        assert gone not in hero, gone
 
 
 def test_no_second_run_block_and_past_section_follows():
@@ -56,7 +58,8 @@ def test_links_in_hero_and_past_section():
 def test_no_audio_element_and_no_external_hosts():
     page = _page(video="https://v.test/a", repo="https://r.test/b")
     assert "<audio" not in page and "Audio(" not in page
-    urls = re.findall(r"""(?:src|href)\s*=\s*["']([^"']+)""", page)
+    urls = [u for u in re.findall(r"""(?:src|href)\s*=\s*["']([^"']+)""", page)
+            if not u.startswith("data:image/webp;base64,")]
     assert sorted(urls) == ["https://r.test/b", "https://r.test/b",
                             "https://v.test/a", "https://v.test/a"]
     assert "AudioContext" in page
@@ -67,7 +70,7 @@ def test_reduced_motion_noscript_and_phone_rules():
     css = page.split("<style>", 1)[1].split("</style>", 1)[0]
     assert "@media (prefers-reduced-motion:no-preference)" in css
     assert ".hero::after{display:none}" in css
-    assert "max-width:640px" in css and ".t-extra,.sil-extra{display:none}" in css
+    assert "max-width:640px" in css and "max-width:767px" in css and "t-extra" not in css
     hero = _hero(page)
     assert "<noscript>" in hero and "0.75 credits" in hero
     assert 'class="runner stopped"' in hero and "crack-1" in hero

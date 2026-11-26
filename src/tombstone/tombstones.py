@@ -2608,6 +2608,23 @@ _RUN_CSS = """
   .runner .meter b{font-size:28px}.runner .verdict .stop{font-size:24px}}
 """
 
+_SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
+
+_HERO_JS = """
+(function(){
+var h=document.getElementById("hero"),p=h&&h.querySelector(".photo"),mm=window.matchMedia;
+if(!p||!mm||!mm("(hover:hover) and (pointer:fine) and (min-width:768px)").matches||
+   mm("(prefers-reduced-motion:reduce)").matches){return;}
+var raf=0,x=0,y=0;
+function set(){raf=0;p.style.transform="translate3d("+x.toFixed(1)+"px,"+y.toFixed(1)+"px,0)";}
+h.addEventListener("pointermove",function(e){if(e.pointerType==="touch"){return;}
+  var r=h.getBoundingClientRect();
+  x=((e.clientX-r.left)/r.width-.5)*-24;y=((e.clientY-r.top)/r.height-.5)*-24;
+  if(!raf){raf=requestAnimationFrame(set);}});
+h.addEventListener("pointerleave",function(){x=0;y=0;if(!raf){raf=requestAnimationFrame(set);}});
+})();
+"""
+
 _RUN_JS = """
 (function(){
 var root=document.getElementById("runner");
@@ -2623,8 +2640,11 @@ var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)
 function f(n){return n.toFixed(2);}
 function row(){return rows[+slider.value];}
 function height(c){return Math.round(70+150*Math.min(c/T.total,1));}
+var last=0,earth=document.getElementById("run-earth");
+function dig(){if(reduce||!earth){return;}earth.classList.remove("dig");void earth.offsetWidth;
+  earth.classList.add("dig");}
 function draw(c){count.textContent=f(c)+" credits est.";cost.textContent=f(c);
-  stone.style.setProperty("--rh",height(c)+"px");}
+  stone.style.setProperty("--rh",height(c)+"px");if(c>last+1e-9){dig();}last=c;}
 function clear(){verdict.textContent="";}
 function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
   p.textContent=text;verdict.appendChild(p);}
@@ -2640,11 +2660,11 @@ function boom(){if(!soundOn||!ac){return;}
   og.gain.setValueAtTime(.9,t+.05);og.gain.exponentialRampToValueAtTime(.001,t+.7);
   o.connect(og);og.connect(ac.destination);o.start(t+.05);o.stop(t+.75);}catch(e){}}
 function reset(){if(timer){clearTimeout(timer);timer=null;}
-  hero.classList.remove("stopped","scare");root.classList.remove("stopped");stone.className="stone shape-arch";count.classList.remove("hot");
+  hero.classList.remove("stopped","scare");root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
-    if(!reduce){hero.classList.add("scare");boom();}stone.className="stone shape-arch crack-1";
+    if(!reduce){hero.classList.add("scare");boom();}stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
     line("","hook exit code 2");line("refusal",r.refusal);
     line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}
@@ -2697,11 +2717,11 @@ def _g_runner(trace: Optional[dict]) -> str:
             '<p class="stop">STOP</p><p>hook exit code 2</p>'
             f'<p class="refusal">{esc(chosen["refusal"])}</p>'
             f"<p>Without the breaker this session went on to {total:.2f} credits est.</p>")
-        shown, state, cls = chosen["figure"], " stopped", "stone shape-arch crack-1"
+        shown, state, cls = chosen["figure"], " stopped", "hstone crack-1"
     else:
         result = (f"<p>The cap was never reached. The session finished at "
                   f"{total:.2f} credits est.</p>")
-        shown, state, cls = total, "", "stone shape-arch"
+        shown, state, cls = total, "", "hstone"
     height = round(70 + 150 * min(shown / total, 1)) if total else 70
     return (
         f'<section class="runner{state}" id="runner" aria-labelledby="runh">\n'
@@ -2716,12 +2736,16 @@ def _g_runner(trace: Optional[dict]) -> str:
         '<div class="scene"><div class="meter">Spent so far'
         f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
         f"{shown:.2f} credits est.</b></div>"
-        f'<div class="grave"><div id="run-stone" class="{cls}" '
+        f'<div class="grave"><div class="earth" id="run-earth"><div id="run-stone" class="{cls}" '
         f'style="--rh:{height}px" role="img" '
-        'aria-label="Headstone that grows with the spend">'
-        f'<span class="cost" id="run-stone-cost">{shown:.2f}</span>'
+        'aria-label="Headstone that rises with the spend">'
+        f'<img class="hs" alt="" src="{_scene_uri("headstone.webp")}">'
+        f'<span class="carve"><span class="cost" id="run-stone-cost">{shown:.2f}</span>'
+        '<span class="cunit">credits est.</span></span>'
         '<svg class="scrack" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">'
-        '<path pathLength="1" d="M52 0 L45 26 L57 48 L43 74 L55 100 L47 140"/></svg></div></div>'
+        '<path class="glow" pathLength="1" d="M80 0 L73 26 L84 48 L71 74 L82 100 L75 140"/>'
+        '<path class="cut" pathLength="1" d="M80 0 L73 26 L84 48 L71 74 L82 100 L75 140"/>'
+        '</svg></div><div class="dirt" aria-hidden="true"></div></div></div>'
         f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
         f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
         "</section>\n"
@@ -2733,25 +2757,27 @@ def _g_runner(trace: Optional[dict]) -> str:
 # --- the hero: a night graveyard scene around the breaker (R16) -------------
 
 _HERO_CSS = """
-/* hero (R16): layered night scene, the breaker in the middle */
-.hero{position:relative;isolation:isolate;overflow:hidden;color:var(--bone);
+/* hero (R16, R17): a photographed night cemetery, the breaker rising in the middle */
+.hero{--k:1.3;position:relative;isolation:isolate;overflow:hidden;color:var(--bone);
   min-height:clamp(640px,100vh,900px);min-height:clamp(640px,100svh,900px);
   display:flex;flex-direction:column;justify-content:flex-end;background:#04060e}
-.hero .layer{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none}
-.hero .l-back{z-index:0}
+.hero .photo{position:absolute;inset:-16px;z-index:0;pointer-events:none;
+  background:#04060e var(--scene-d) 50% 100%/cover no-repeat;
+  filter:saturate(.92) brightness(.96);transition:transform .3s ease-out;will-change:transform}
+.hero .shade{position:absolute;inset:0;z-index:2;pointer-events:none;
+  background:linear-gradient(180deg,rgba(3,5,12,.84) 0,rgba(3,5,12,.62) 22%,rgba(3,5,12,.2) 40%,rgba(3,5,12,0) 56%),
+    radial-gradient(ellipse 125% 95% at 50% 62%,transparent 52%,rgba(2,3,8,.6) 100%),
+    linear-gradient(0deg,rgba(3,5,10,.5),transparent 28%)}
 .hero .fogl{position:absolute;left:0;width:200%;height:36%;bottom:var(--fb);pointer-events:none;
   opacity:var(--fo);transition:opacity .9s ease}
-.hero .f1{--fb:30%;--fo:.5;z-index:1}
-.hero .f2{--fb:14%;--fo:.6;z-index:3}
-.hero .f3{--fb:2%;--fo:.5;z-index:3}
-.hero .l-front{z-index:2}
-.hero .sil{fill:#0a101b;transition:fill .8s ease}
-.hero.stopped .sil{fill:#020306}
-.hero.stopped .f1{--fo:.8}.hero.stopped .f2{--fo:.9}.hero.stopped .f3{--fo:.75}
+.hero .f1{--fb:30%;--fo:.42;z-index:1}
+.hero .f2{--fb:14%;--fo:.5;z-index:3}
+.hero .f3{--fb:2%;--fo:.42;z-index:3}
+.hero.stopped .f1{--fo:.7}.hero.stopped .f2{--fo:.8}.hero.stopped .f3{--fo:.65}
 .hero .burst{position:absolute;left:50%;bottom:6%;width:min(900px,120%);height:46%;
   transform:translateX(-50%);z-index:3;pointer-events:none;opacity:0;transition:opacity .9s ease;
-  background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(205,212,226,.42),transparent 72%)}
-.hero.stopped .burst{opacity:.85}
+  background:radial-gradient(ellipse 50% 50% at 50% 55%,rgba(205,212,226,.3),transparent 72%)}
+.hero.stopped .burst{opacity:.8}
 .hero::after{content:"";position:absolute;inset:0;z-index:4;pointer-events:none;
   background:#8a0f12;opacity:0}
 .hero .toplinks{position:absolute;top:18px;right:max(18px,3vw);z-index:6;margin:0;font-size:14px;
@@ -2759,25 +2785,66 @@ _HERO_CSS = """
 .hero .toplinks a{color:var(--bone);opacity:.8;text-decoration:none;border-bottom:1px solid rgba(236,231,218,.35)}
 .hero .toplinks a:hover{opacity:1}
 .hero-inner{position:relative;z-index:5;width:100%;max-width:1240px;margin:0 auto;
-  padding:clamp(56px,9vh,96px) max(18px,4vw) clamp(60px,6vw,120px);text-align:center}
+  padding:clamp(56px,9vh,96px) max(18px,4vw) clamp(40px,5vw,90px);text-align:center}
 .hero .tagline{margin:0 0 14px;font-size:clamp(13px,1.2vw,16px);letter-spacing:.2em;
-  text-transform:uppercase;color:#aeb8c8;text-shadow:0 1px 14px #000}
+  text-transform:uppercase;color:#c3ccdb;text-shadow:0 1px 14px #000}
 .hero h1{font-weight:400;font-size:clamp(36px,6.2vw,92px);line-height:1.02;letter-spacing:-.02em;
   max-width:none;margin:0 0 clamp(14px,2.4vh,26px);text-wrap:balance;
   text-shadow:0 2px 28px #000,0 0 3px rgba(0,0,0,.8)}
-.hero h1 em{color:var(--ember);font-style:italic;text-shadow:0 0 34px rgba(255,59,59,.35),0 2px 20px #000}
+.hero h1 em{color:#ff5a5a;font-style:italic;text-shadow:0 0 34px rgba(255,59,59,.35),0 2px 20px #000}
 .hero .runner{max-width:none;margin:0;padding:0;text-align:left;position:relative;z-index:5}
 .hero .runner .controls{justify-content:center;margin:0 0 clamp(8px,2vh,22px)}
-.hero .runner label{color:#dfe3ea;text-shadow:0 1px 10px #000}
+.hero .runner label{color:#e4e8ef;text-shadow:0 1px 10px #000}
 .hero .runner .scene{display:grid;grid-template-columns:1fr auto 1fr;gap:0 clamp(18px,3vw,48px);
   align-items:end}
 .hero .runner .meter{justify-self:end;text-align:right;min-width:0;text-shadow:0 1px 12px #000}
 .hero .runner .meter b{color:var(--bone)}
-.hero .runner .grave{position:relative;min-height:0;padding:0 0 10px}
+.hero .runner .grave{position:relative;display:block;min-height:0;padding:0}
+.hero .runner .grave::before{content:"";position:absolute;left:-40%;right:-40%;bottom:-14px;height:70%;
+  pointer-events:none;opacity:0;transition:opacity .9s ease;
+  background:radial-gradient(ellipse 50% 50% at 50% 70%,rgba(255,59,59,.3),transparent 70%)}
+.hero.stopped .runner .grave::before{opacity:1}
 .hero .runner .verdict{flex:none;justify-self:start;max-width:34em;text-shadow:0 1px 12px #000}
 .hero .runner .verdict .stop{text-shadow:0 0 28px rgba(255,59,59,.45),0 1px 10px #000}
-.hero .runner .caption{text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#97a1b1;
+.hero .runner .caption{text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#b4bdcc;
   text-shadow:0 1px 8px #000}
+/* the rising headstone: its visible height is --rh on the R15 scale */
+.hero .earth{position:relative;overflow:hidden;width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);
+  margin:0 auto}
+.hero .hstone{position:absolute;left:50%;margin-left:calc(var(--k) * -73px);width:calc(var(--k) * 147px);
+  height:calc(var(--k) * 220px);top:calc((228px - var(--rh)) * var(--k));
+  transition:top .5s cubic-bezier(.3,.7,.3,1);cursor:default}
+.hero .hstone .hs{display:block;width:100%;height:100%;user-select:none;-webkit-user-drag:none;
+  filter:brightness(.92) contrast(1.08) saturate(.65) sepia(.4) hue-rotate(172deg)
+    drop-shadow(0 0 10px rgba(140,168,222,.16));transition:filter .8s ease}
+.hero.stopped .hstone .hs{filter:brightness(.78) contrast(1.12) saturate(.6) sepia(.4) hue-rotate(172deg)
+    drop-shadow(0 0 12px rgba(255,59,59,.28))}
+.hero .hstone .carve{position:absolute;left:14%;right:14%;top:21%;text-align:center;
+  font-family:Georgia,"Times New Roman",serif;color:#070a10;pointer-events:none;
+  text-shadow:0 1px 0 rgba(190,205,232,.4),0 -1px 0 rgba(0,0,0,.5)}
+.hero .hstone .cost{display:block;margin:0;font-size:calc(var(--k) * 26px);line-height:1.05;
+  font-weight:700;letter-spacing:.03em;color:#070a10}
+.hero .hstone .cunit{display:block;font-size:calc(var(--k) * 11px);letter-spacing:.14em;
+  text-transform:uppercase;opacity:.85}
+.hero .hstone .scrack{left:14%;top:5%;width:72%;height:82%;overflow:visible}
+.hero .runner.stopped .hstone .scrack{opacity:1}
+.hero .hstone .scrack .glow{stroke:rgba(255,48,48,.55);stroke-width:7;filter:blur(2.5px)}
+.hero .hstone .scrack .cut{stroke:#06080c;stroke-width:2.4;filter:none}
+.hero .earth::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--k) * 26px);
+  pointer-events:none;
+  background:repeating-linear-gradient(97deg,transparent 0 4px,rgba(58,84,48,.95) 4px 5px,transparent 5px 8px,
+      rgba(34,52,32,.95) 8px 9px,transparent 9px 12px) top/100% 9px no-repeat,
+    linear-gradient(180deg,rgba(32,38,26,.0) 0,#1b2117 9px,#0b0e0a 100%);
+  -webkit-mask-image:radial-gradient(ellipse 50% 125% at 50% 100%,#000 58%,transparent 100%);
+  mask-image:radial-gradient(ellipse 50% 125% at 50% 100%,#000 58%,transparent 100%)}
+.hero .dirt{position:absolute;left:14%;right:14%;bottom:calc(var(--k) * 16px);height:calc(var(--k) * 40px);
+  pointer-events:none;opacity:0;
+  background:radial-gradient(circle 2px at 14% 30%,#4a3b2c 90%,transparent),
+    radial-gradient(circle 1.5px at 30% 10%,#2c2219 90%,transparent),
+    radial-gradient(circle 2.5px at 48% 40%,#3a2d21 90%,transparent),
+    radial-gradient(circle 1.5px at 66% 15%,#5a4836 90%,transparent),
+    radial-gradient(circle 2px at 82% 35%,#2c2219 90%,transparent),
+    radial-gradient(circle 1px at 92% 8%,#4a3b2c 90%,transparent)}
 @media (prefers-reduced-motion:no-preference){
   .hero .fogl svg{animation:drift 90s linear infinite}
   .hero .f2 svg{animation-duration:62s;animation-direction:reverse}
@@ -2786,14 +2853,20 @@ _HERO_CSS = """
   .hero.scare::after{animation:flash 1s ease-out both}
   .hero.scare .scrack path{animation:crackrun .5s ease-out both}
   .hero.scare .grave{animation:tremor .4s linear .05s both}
+  .hero .earth.dig .hstone{animation:hshake .24s linear}
+  .hero .earth.dig .dirt{animation:fall .7s ease-in both}
   @keyframes flash{0%{opacity:0}18%{opacity:.3}100%{opacity:0}}
   @keyframes crackrun{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
   @keyframes tremor{0%,100%{transform:none}20%{transform:translate(-3px,1px)}
     40%{transform:translate(3px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
+  @keyframes hshake{0%,100%{transform:none}25%{transform:translate(-2px,1px)}
+    50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,0)}}
+  @keyframes fall{0%{opacity:1;transform:translateY(-8px)}100%{opacity:0;transform:translateY(20px)}}
 }
 @media (prefers-reduced-motion:reduce){
-  .hero .fogl,.hero .sil,.hero .burst{transition:none}
+  .hero .fogl,.hero .burst,.hero .hstone,.hero .hs,.hero .photo{transition:none}
   .hero::after{display:none}
+  .hero .dirt{display:none}
 }
 @media (max-width:900px){
   .hero .runner .scene{grid-template-columns:1fr;justify-items:center;gap:6px}
@@ -2801,15 +2874,19 @@ _HERO_CSS = """
   .hero .runner .verdict{justify-self:center;text-align:center;max-width:30em}
   .hero .runner .verdict .refusal{text-align:left}
 }
+@media (max-width:767px){
+  .hero .photo{background-image:var(--scene-m)}
+}
 @media (max-width:640px){
-  .hero{min-height:640px}
-  .hero-inner{padding:48px 16px 70px}
+  .hero{--k:.74;min-height:640px}
+  .hero .shade{background:linear-gradient(180deg,rgba(3,5,12,.86) 0,rgba(3,5,12,.66) 30%,rgba(3,5,12,.3) 58%,rgba(3,5,12,0) 78%),
+    linear-gradient(0deg,rgba(3,5,10,.5),transparent 24%)}
+  .hero-inner{padding:48px 16px 56px}
   .hero .toplinks{position:static;justify-content:flex-end;padding:12px 16px 0;position:relative;z-index:6}
   .hero .runner .controls{gap:8px 12px}
   .hero .runner input[type=range]{width:min(300px,76vw)}
-  .t-extra,.sil-extra{display:none}
-  .hero .l-back .moon-g{transform:translate(430px,-60px) scale(.8);opacity:.7}
 }
+.credit{margin:0;padding:10px 16px 18px;text-align:center;font-size:14px;color:#8e98a8;background:#05070c}
 h3.total{font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:.98;letter-spacing:-.015em;
   margin:0 0 22px;max-width:11em;text-wrap:balance;text-shadow:0 2px 30px rgba(0,0,0,.5)}
 .past-title{font-weight:400;font-size:clamp(26px,3vw,44px);margin:0 0 14px;letter-spacing:.01em;
@@ -2818,73 +2895,24 @@ h3.total{font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:.98;letter
 """
 
 
-class _Lcg:
-    """A tiny seeded generator so the scene is the same on every build."""
-
-    def __init__(self, seed: int) -> None:
-        self.state = seed & 0x7FFFFFFF
-
-    def next(self) -> float:
-        self.state = (self.state * 1103515245 + 12345) & 0x7FFFFFFF
-        return self.state / 0x7FFFFFFF
-
-
-def _scene_tree(x: float, y: float, trunk: float, seed: int, extra: bool) -> str:
-    """One bare tree: tapering quadratic branches, one path per depth."""
-    import math
-    rng = _Lcg(seed)
-    widths = [12, 7.5, 4.8, 3.1, 2.0, 1.2]
-    layers: list[list[str]] = [[] for _ in widths]
-    scale = trunk / 150.0
-
-    def grow(px: float, py: float, ang: float, ln: float, depth: int) -> None:
-        ex, ey = px + ln * math.sin(ang), py - ln * math.cos(ang)
-        cx = (px + ex) / 2 + (rng.next() - .5) * ln * .35
-        cy = (py + ey) / 2 + (rng.next() - .5) * ln * .2
-        layers[depth].append(f"M{px:.0f} {py:.0f}Q{cx:.0f} {cy:.0f} {ex:.0f} {ey:.0f}")
-        if depth + 1 >= len(widths):
-            return
-        kids = 3 if depth in (1, 2) and rng.next() > .72 else 2
-        for k in range(kids):
-            side = (k - (kids - 1) / 2) * .62
-            grow(ex, ey, ang + side + (rng.next() - .5) * .5,
-                 ln * (.66 + .14 * rng.next()), depth + 1)
-
-    grow(x, y, (rng.next() - .5) * .16, trunk, 0)
-    paths = "".join(
-        f'<path d="{"".join(segs)}" stroke-width="{w * scale:.1f}"/>'
-        for w, segs in zip(widths, layers) if segs)
-    cls = "tree t-extra" if extra else "tree"
-    return (f'<g class="{cls}" fill="none" stroke="#03050a" stroke-linecap="round">{paths}</g>')
+@functools.lru_cache(maxsize=None)
+def _scene_uri(name: str) -> str:
+    """One scene image from the package data as a base64 data URI ("" if missing)."""
+    import base64
+    from importlib import resources
+    try:
+        raw = resources.files("tombstone").joinpath("data", "scene", name).read_bytes()
+    except (OSError, ModuleNotFoundError):
+        return ""
+    return "data:image/webp;base64," + base64.b64encode(raw).decode("ascii")
 
 
-def _scene_stone(kind: str, x: float, y: float, w: float, h: float) -> str:
-    """A headstone silhouette path with its base at ``y``."""
-    top = y - h
-    if kind == "arch":
-        r = w / 2
-        return (f"M{x:.0f} {y + 30:.0f}V{top + r:.0f}A{r:.0f} {r:.0f} 0 0 1 "
-                f"{x + w:.0f} {top + r:.0f}V{y + 30:.0f}Z")
-    if kind == "cross":
-        s = w * .11
-        cx = x + w / 2
-        return (f"M{cx - s:.0f} {y + 30:.0f}V{top:.0f}H{cx + s:.0f}V{y + 30:.0f}Z"
-                f"M{x:.0f} {top + h * .22:.0f}H{x + w:.0f}V{top + h * .22 + w * .2:.0f}"
-                f"H{x:.0f}Z")
-    if kind == "obelisk":
-        return (f"M{x:.0f} {y + 30:.0f}L{x + w * .18:.0f} {top + h * .12:.0f}"
-                f"L{x + w / 2:.0f} {top:.0f}L{x + w * .82:.0f} {top + h * .12:.0f}"
-                f"L{x + w:.0f} {y + 30:.0f}Z")
-    return (f"M{x:.0f} {y + 30:.0f}V{top + 10:.0f}L{x + 8:.0f} {top:.0f}H{x + w - 8:.0f}"
-            f"L{x + w:.0f} {top + 10:.0f}V{y + 30:.0f}Z")
-
-
-_SCENE_FAR = [("arch", 60, 48, 70), ("cross", 190, 44, 86), ("slab", 330, 50, 62),
-              ("arch", 470, 42, 66), ("obelisk", 640, 36, 100), ("cross", 800, 40, 78),
-              ("slab", 940, 52, 58), ("arch", 1090, 44, 74), ("cross", 1240, 42, 88),
-              ("slab", 1360, 54, 64), ("arch", 1500, 46, 72)]
-_SCENE_NEAR = [("slab", 20, 84, 112), ("arch", 250, 76, 130), ("cross", 520, 80, 150),
-               ("obelisk", 1060, 64, 168), ("arch", 1290, 86, 120), ("cross", 1480, 84, 144)]
+def _scene_css() -> str:
+    """The two photographs as CSS custom properties (R17.1, R17.4)."""
+    props = "".join(f'--{var}:url("{uri}");' for var, name in
+                    (("scene-d", "scene_desktop.webp"), ("scene-m", "scene_mobile.webp"))
+                    if (uri := _scene_uri(name)))
+    return f".hero{{{props}}}" if props else ""
 
 
 def _fog_svg(cls: str, blobs: list) -> str:
@@ -2900,63 +2928,7 @@ def _fog_svg(cls: str, blobs: list) -> str:
 
 
 def _g_scene() -> str:
-    """The layered night scene: sky, moon, hills, trees, fog, fence, ground."""
-    rng = _Lcg(7)
-    stars = "".join(
-        f'<circle cx="{rng.next() * 1600:.0f}" cy="{rng.next() * 430:.0f}" '
-        f'r="{.6 + rng.next() * 1.1:.1f}" opacity="{.35 + rng.next() * .55:.2f}"/>'
-        for _ in range(70))
-    far = "".join(
-        f'<path class="sil{" sil-extra" if i < 4 else ""}" d="{_scene_stone(k, x, 645, w, h)}"/>'
-        for i, (k, x, w, h) in enumerate(_SCENE_FAR))
-    near = "".join(
-        f'<path class="sil{" sil-extra" if i < 3 else ""}" d="{_scene_stone(k, x, 742, w, h)}"/>'
-        for i, (k, x, w, h) in enumerate(_SCENE_NEAR))
-    trees = "".join((
-        _scene_tree(120, 700, 165, 3, True), _scene_tree(400, 690, 105, 11, True),
-        _scene_tree(1020, 690, 120, 5, True), _scene_tree(1300, 700, 150, 17, False),
-        _scene_tree(1540, 720, 190, 23, False)))
-    fence_x = range(-10, 1640, 36)
-    pickets = "".join(f"M{x} 810V700L{x + 5} 686L{x + 10} 700V810" for x in fence_x)
-    rails = "M-10 724H1610M-10 786H1610"
-    back = (
-        '<svg class="layer l-back" viewBox="0 0 1600 900" preserveAspectRatio="xMaxYMax slice" '
-        'aria-hidden="true" focusable="false"><defs>'
-        '<linearGradient id="skyg" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0" stop-color="#03050c"/><stop offset=".55" stop-color="#0a1226"/>'
-        '<stop offset=".8" stop-color="#17233d"/><stop offset="1" stop-color="#1c2a47"/>'
-        "</linearGradient>"
-        '<radialGradient id="halo" cx=".5" cy=".5" r=".5">'
-        '<stop offset="0" stop-color="#d9e4f7" stop-opacity=".55"/>'
-        '<stop offset=".35" stop-color="#9db4dc" stop-opacity=".22"/>'
-        '<stop offset="1" stop-color="#6f8cc0" stop-opacity="0"/></radialGradient>'
-        '<radialGradient id="moong" cx=".38" cy=".34" r=".8">'
-        '<stop offset="0" stop-color="#fdfbf2"/><stop offset=".6" stop-color="#d9dccf"/>'
-        '<stop offset="1" stop-color="#a9aea8"/></radialGradient>'
-        '<linearGradient id="hillg" x1="0" y1="0" x2="0" y2="1">'
-        '<stop offset="0" stop-color="#0d1524"/><stop offset="1" stop-color="#060910"/>'
-        "</linearGradient></defs>"
-        '<rect width="1600" height="900" fill="url(#skyg)"/>'
-        f'<g fill="#e8eefc">{stars}</g>'
-        '<g class="moon-g"><circle cx="1330" cy="230" r="430" fill="url(#halo)"/>'
-        '<circle cx="1330" cy="230" r="190" fill="none" stroke="#9db4dc" stroke-opacity=".12" '
-        'stroke-width="2"/>'
-        '<circle cx="1330" cy="230" r="270" fill="none" stroke="#9db4dc" stroke-opacity=".07" '
-        'stroke-width="2"/>'
-        '<circle cx="1330" cy="230" r="82" fill="url(#moong)"/>'
-        '<g fill="#8c9296" opacity=".28"><circle cx="1352" cy="250" r="14"/>'
-        '<circle cx="1306" cy="262" r="9"/><circle cx="1322" cy="206" r="11"/>'
-        '<circle cx="1362" cy="206" r="6"/></g></g>'
-        '<g fill="#cfd9ee" opacity=".07"><ellipse cx="1100" cy="190" rx="300" ry="9"/>'
-        '<ellipse cx="1480" cy="330" rx="260" ry="7"/><ellipse cx="500" cy="260" rx="330" ry="8"/>'
-        "</g>"
-        '<path d="M-10 640C180 596 380 612 580 626S980 586 1240 604S1500 612 1610 592V900H-10Z" '
-        'fill="url(#hillg)"/>'
-        f"{far}{trees}"
-        '<path d="M-10 742C200 706 420 722 640 736S1020 700 1280 722S1520 730 1610 712V900H-10Z" '
-        'fill="#070b13"/>'
-        f"{near}</svg>"
-    )
+    """The night photograph with a dark top, drifting fog layers and the frost glow."""
     fog_blobs_a = [(240, 170, 330, 70), (820, 200, 400, 62), (1340, 160, 300, 66)]
     fog_blobs_b = [(120, 190, 280, 58), (640, 150, 360, 72), (1150, 190, 340, 60), (1500, 170, 220, 54)]
     fog = (
@@ -2965,20 +2937,9 @@ def _g_scene() -> str:
         '<stop offset="0" stop-color="#c3cde0" stop-opacity=".5"/>'
         '<stop offset=".6" stop-color="#a5b2cc" stop-opacity=".16"/>'
         '<stop offset="1" stop-color="#8fa0c0" stop-opacity="0"/></radialGradient></defs></svg>'
-        f'{_fog_svg("f1", fog_blobs_a)}'
     )
-    front = (
-        '<svg class="layer l-front" viewBox="0 0 1600 900" preserveAspectRatio="xMaxYMax slice" '
-        'aria-hidden="true" focusable="false">'
-        f'<g fill="none" stroke="#03050a" stroke-width="5" stroke-linejoin="miter">'
-        f'<path d="{pickets}"/><path d="{rails}" stroke-width="7"/></g>'
-        f'<path d="{rails}" stroke="#8fa6d0" stroke-opacity=".22" stroke-width="1" fill="none" '
-        'transform="translate(0 -3)"/>'
-        '<path d="M-10 806C300 790 600 800 900 796S1400 790 1610 800V900H-10Z" fill="#04070c"/>'
-        '<path d="M-10 806C300 790 600 800 900 796S1400 790 1610 800" fill="none" '
-        'stroke="#8fa6d0" stroke-opacity=".14" stroke-width="2"/></svg>'
-    )
-    return (f'{back}{fog}{front}'
+    return ('<div class="photo" aria-hidden="true"></div>\n'
+            f'{fog}{_fog_svg("f1", fog_blobs_a)}<div class="shade" aria-hidden="true"></div>'
             f'{_fog_svg("f2", fog_blobs_b)}{_fog_svg("f3", fog_blobs_a[::-1])}'
             '<div class="burst" aria-hidden="true"></div>')
 
@@ -3134,7 +3095,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{esc(header['title'])}</title>\n"
-        f"<style>\n{_GRAVEYARD_CSS}\n{_RUN_CSS}\n{_HERO_CSS}\n</style>\n</head>\n<body>\n"
+        f"<style>\n{_GRAVEYARD_CSS}\n{_RUN_CSS}\n{_HERO_CSS}\n{_scene_css()}\n</style>\n</head>\n<body>\n"
         '<div class="fog" aria-hidden="true"></div>\n'
         f"{_g_hero(run_trace, video, repo)}"
         f"{header['html']}"
@@ -3161,6 +3122,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         "<footer>Every number on this page comes from tombstones.json, written by "
         "Tombstone's hooks while Kiro worked. Credits are Kiro credits as the session "
         "files report them.</footer>\n"
+        f'<p class="credit">{esc(_SCENE_CREDIT)}</p>\n'
         '<dialog id="card" aria-labelledby="ct"><h3 id="ct"></h3><p class="meta" id="cm"></p>'
         '<dl id="cd"></dl><p class="prompt" id="cp" hidden></p><p class="gap" id="cg"></p>'
         '<section id="cr" class="receipt" aria-labelledby="crh" hidden><h4 id="crh">Receipt</h4>'
@@ -3169,7 +3131,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<p class="rl">Last tool calls</p><ol id="crc"></ol></div></section>'
         '<form method="dialog"><button>Close</button></form></dialog>\n'
         f"<script>\n{_GRAVEYARD_JS}\n"
-        f"{('var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}"
+        f"{('var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}\n{_HERO_JS}"
         "\n</script>\n"
         f"</body>\n</html>\n"
     )

@@ -369,18 +369,18 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Hero present with the line, the headline with the red italic part, the slider, the "Release the agent" button, the R15 caption and the sound toggle off by default; no second Run block below; the old first-screen texts sit after the hero under "The graveyard of this build" with R2.12 to R2.14 wording intact; no `<audio>`, no `src=`/`href=` to external hosts except the two links; a reduced-motion rule and a noscript scene exist; the R15 trace tests still pass. Update existing tests that the move breaks, nothing else.
     - _Requirements: R16.1, R16.2, R16.3, R16.4, R16.5_
 
-- [ ] 28. A photographic scene and a headstone that rises from the grave
+- [x] 28. A photographic scene and a headstone that rises from the grave
   - Approved by Dima on 2026-11-26. Dima generated the background (16:9 and 9:16) and a blank headstone with Nano Banana Pro; Claude chroma-keyed the headstone and compressed the three images into `src/tombstone/data/scene/` (137, 107 and 72 KB). Rollback tag `rollback-before-1127` exists.
   - _Requirements: R17.1, R17.2, R17.3, R17.4, R17.5_
 
-  - [ ] 28.1 Photo background and rising headstone
+  - [x] 28.1 Photo background and rising headstone
     - In `render_graveyard` and `_g_runner` (tombstones.py) and the page script: read the three files from package data (declare them in `pyproject.toml` like the demo session), embed them as data URIs, replace the SVG scenery with the photo and fog per R17.1, and replace the drawn central stone with the rising photographed headstone, carved figure and crack per R17.2 and R17.3; add the credit line per R17.4.
     - _Requirements: R17.1, R17.2, R17.3, R17.4_
 
-  - [ ] 28.2 Small screens, motion and fallbacks
+  - [x] 28.2 Small screens, motion and fallbacks
     - 375 px, reduced motion, parallax only on fine pointers, and the noscript scene per R17.5.
     - _Requirements: R17.5_
 
-  - [ ] 28.3 Tests
+  - [x] 28.3 Tests
     - The three data URIs are in the page and no `src=`/`url(` points outside it; the page is under 700 KB; the credit line is present; the drawn SVG trees and fence are gone while the fog stays; the headstone's visible height at the stop matches the R15 scale for the default cap; reduced-motion and noscript rules exist; the package data is installed (the files resolve through the package). Update existing tests the change breaks, nothing else.
     - _Requirements: R17.1, R17.2, R17.3, R17.4, R17.5_

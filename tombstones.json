@@ -2700,6 +2700,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/28",
+      "task_id": "28",
+      "name": "A photographic scene and a headstone that rises from the grave",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 2.0304,
+      "actual": 1.5401,
+      "minutes": 1.4158,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_07197bbd-d307-4602-9823-2599e697c0a9",
+          "turn_id": "cc26fd8b-8105-4d47-b7c5-7d4a4e44b9f7",
+          "requests": 22,
+          "estimate": 8.1215,
+          "actual": 6.1603,
+          "minutes": 5.6632,
+          "start": "2026-11-26T12:36:16.788000Z",
+          "end": "2026-11-26T12:41:56.578000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/28.1",
+      "task_id": "28.1",
+      "name": "Photo background and rising headstone",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 2.0304,
+      "actual": 1.5401,
+      "minutes": 1.4158,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_07197bbd-d307-4602-9823-2599e697c0a9",
+          "turn_id": "cc26fd8b-8105-4d47-b7c5-7d4a4e44b9f7",
+          "requests": 22,
+          "estimate": 8.1215,
+          "actual": 6.1603,
+          "minutes": 5.6632,
+          "start": "2026-11-26T12:36:16.788000Z",
+          "end": "2026-11-26T12:41:56.578000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/28.2",
+      "task_id": "28.2",
+      "name": "Small screens, motion and fallbacks",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 2.0304,
+      "actual": 1.5401,
+      "minutes": 1.4158,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_07197bbd-d307-4602-9823-2599e697c0a9",
+          "turn_id": "cc26fd8b-8105-4d47-b7c5-7d4a4e44b9f7",
+          "requests": 22,
+          "estimate": 8.1215,
+          "actual": 6.1603,
+          "minutes": 5.6632,
+          "start": "2026-11-26T12:36:16.788000Z",
+          "end": "2026-11-26T12:41:56.578000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/28.3",
+      "task_id": "28.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 22,
+      "estimate": 2.0304,
+      "actual": 1.5401,
+      "minutes": 1.4158,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_07197bbd-d307-4602-9823-2599e697c0a9",
+          "turn_id": "cc26fd8b-8105-4d47-b7c5-7d4a4e44b9f7",
+          "requests": 22,
+          "estimate": 8.1215,
+          "actual": 6.1603,
+          "minutes": 5.6632,
+          "start": "2026-11-26T12:36:16.788000Z",
+          "end": "2026-11-26T12:41:56.578000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
