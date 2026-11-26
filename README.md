@@ -19,7 +19,7 @@ Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.
 
 **Try it in the browser:** open the [graveyard page](https://dmitriytopka.github.io/tombstone/), set a cap and press **Release the agent**. A recorded real Kiro CLI session spends request by request, the headstone rises out of the earth as the credits go, and at the cap it cracks and shows the refusal the agent read. The stop point for every cap on the slider was computed by Tombstone's own watcher code when the page was built; the browser only plays it back.
 
-![The first screen of the graveyard page: set a cap, release the agent, and the headstone cracks at the cap](docs/img/graveyard.png)
+![The graveyard page: the cap is set, the agent is released, the headstone grinds up out of the earth and splits at the cap while the screen turns red](docs/img/scene.gif)
 
 The night cemetery, the headstone, the soil and the bones on the page are photos the author generated with Nano Banana Pro (Google Gemini); the night ambience was generated with Suno and the stone, soil and split sounds with ElevenLabs. Sound starts with the first click and can be turned off. Everything that moves, and when it moves, is code Kiro wrote.
 
@@ -30,7 +30,7 @@ Most graveyards in Kiroween bury code or tasks. This one buries money: every sto
 - **Catches a stall**, when the agent keeps calling the model and no project file changes.
 - **Costs zero credits.** No model calls, no agent hooks, no network.
 
-Video, 2:50: [youtu.be/LPhH_BCcwaQ](https://youtu.be/LPhH_BCcwaQ)  
+Video, 2:50: [youtu.be/WuSgkWJ0ol8](https://youtu.be/WuSgkWJ0ol8)  
 Live graveyard of this build: [dmitriytopka.github.io/tombstone](https://dmitriytopka.github.io/tombstone/)
 
 ```mermaid
