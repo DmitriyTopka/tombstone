@@ -1,9 +1,11 @@
 # Tombstone
+> **Judges, 60 seconds:** open the [graveyard page](https://dmitriytopka.github.io/tombstone/), set a cap and press **Release the agent** · [Devpost entry](https://devpost.com/software/tombstone-8p6fvg) · [video, 2:50](https://youtu.be/WuSgkWJ0ol8). One number: a long Kiro task with a 1.00 cap stopped at 1.17 to 1.37 credits; without the cap it ran to 4.13 to 5.83.
+
 [![tests](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml/badge.svg)](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml)
 
 **Tombstone stops a Kiro agent when a task goes over its budget.** In a live run on 24 November the cap was 0.10 credits: the breaker tripped at an estimate of 0.114, the agent's next tool call was refused, and the turn ended at 0.126 credits actual.
 
-**On a long task it saves money.** Three runs of the same Kiro task with a 1.00 credit cap cost 1.17 to 1.37 credits; three runs without Tombstone cost 4.13 to 5.83. The breaker tripped in all three, about 74 percent less on average. The stopped runs did not finish the app, which is the point of a cap. Protocol and every run: [experiments/](experiments/RESULTS.md).
+**On a long task it caps the loss.** Three runs of the same Kiro task had a 1.00 credit cap. Tombstone wrote STOP at 1.03 to 1.05 live credits, one request after the cap, and the bill closed at 1.17 to 1.37 once the agent had spent a request or two explaining why it stopped. Three runs without Tombstone went on to 4.13 to 5.83. That is about 74 percent less, and the stopped runs did not finish the task: a cap is where the work stops, so a person decides whether to go on. Three runs per side is a small sample. Protocol and every run: [experiments/](experiments/RESULTS.md).
 
 **Who it's for:** a developer on a paid Kiro plan who starts a spec and walks away.
 
@@ -23,7 +25,15 @@ Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.
 
 The night cemetery, the headstone, the soil and the bones on the page are photos the author generated with Nano Banana Pro (Google Gemini); the night ambience was generated with Suno and the stone, soil and split sounds with ElevenLabs. Sound starts with the first click and can be turned off. Everything that moves, and when it moves, is code Kiro wrote.
 
-Most graveyards in Kiroween bury code or tasks. This one buries money: every stone is what one Kiro spec task really cost, and every cracked stone is a task the breaker stopped. The 282.45 credits on the page are this repo's own build (270.08 credits over 126 stones) plus the 25 live test runs the breaker stopped (12.05 credits priced, and 0.32 estimated for the one turn Tombstone killed, since Kiro writes no price for a killed turn). Click a cracked stone and its card shows the receipt: why it stopped, the refusal the agent read and its last tool calls. 11 of the 25 stops kept a receipt; the scratch projects of the early runs are gone. So the page shows 151 stones: 126 from the build and 25 stops. Kiro's own `/usage` counts more, 394.37 credits, because it covers the whole account, with test runs, measurements, the cost experiment and the video recording.
+Most graveyards in Kiroween bury code or tasks. This one buries money: every stone is what one Kiro spec task really cost, and every cracked stone is a task the breaker stopped. Click a cracked stone and its card shows the receipt: why it stopped, the refusal the agent read and its last tool calls. 11 of the 25 stops kept a receipt; the scratch projects of the early runs are gone.
+
+Three credit totals appear in this repo, and they count different things:
+
+| Total | What it counts |
+|---|---|
+| **282.45**, on the page | 151 stones: the build of this repo (126 stones, 270.08 credits) and the 25 live test runs the breaker stopped (12.37: 12.05 priced, 0.32 estimated for the one turn Tombstone killed, which Kiro never priced) |
+| 270.08 | the build alone, in [tombstones.json](tombstones.json) |
+| 394.37 | Kiro's `/usage` for the whole account, which adds measurements, the cost experiment and the video recording |
 
 - **Prices every spec task** in credits, from the session files Kiro already writes. Nothing leaves your machine.
 - **Stops a runaway turn** past its cap: the `PreToolUse` hook refuses the next tool call, and the agent reads why.
@@ -31,6 +41,7 @@ Most graveyards in Kiroween bury code or tasks. This one buries money: every sto
 - **Costs zero credits.** No model calls, no agent hooks, no network.
 
 Video, 2:50: [youtu.be/WuSgkWJ0ol8](https://youtu.be/WuSgkWJ0ol8)  
+Devpost entry: [devpost.com/software/tombstone-8p6fvg](https://devpost.com/software/tombstone-8p6fvg)  
 Live graveyard of this build: [dmitriytopka.github.io/tombstone](https://dmitriytopka.github.io/tombstone/)
 
 ```mermaid
