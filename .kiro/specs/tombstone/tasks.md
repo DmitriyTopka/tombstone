@@ -513,14 +513,14 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Dima's review on 2026-11-26: at the stop the skull and bones in the lower left stay untouched while everything around them turns red, so they look pasted on top. Put the R22.4 damage vignette above every scene layer (photo, fog, heap, clods, dust, the headstone and its halves, the bones) and below only the text and controls (headline, slider, buttons, counter, STOP, refusal, caption). Add a test that the bones' stacking order is below the vignette's and the controls' above it.
     - _Requirements: R22.4_
 
-- [ ] 35. Devpost link and a shorter stopped list
+- [x] 35. Devpost link and a shorter stopped list
   - Council of 2026-11-26 evening, item 0, approved by Dima ("Да, запускай"). The README has no Devpost link and a namesake project sits at devpost.com/software/tombstone; the 25 live stop rows push the page down.
   - _Requirements: R24.1, R24.2_
 
-  - [ ] 35.1 `--devpost` option and links, the stopped list inside `<details>`
+  - [x] 35.1 `--devpost` option and links, the stopped list inside `<details>`
     - _Requirements: R24.1, R24.2_
 
-  - [ ] 35.2 Tests
+  - [x] 35.2 Tests
     - The link shows only with the option, is escaped and carries the same `rel` as the other links; the summary text carries the real count; the list sits inside a closed `<details>`; existing tests pass.
     - _Requirements: R24.1, R24.2_
 

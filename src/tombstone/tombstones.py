@@ -2034,6 +2034,9 @@ th button[aria-sort]{color:var(--bone)}
 td.n,th.n{text-align:right}
 tr.killed td{color:#ffb3b3}
 tr[hidden]{display:none}
+.stop-list{grid-column:1/-1;width:100%}
+.stop-list>summary{cursor:pointer;color:var(--muted);padding:8px 0}
+footer .links{margin:10px 0 0}
 footer{max-width:1240px;margin:0 auto;padding:0 5vw 56px;color:var(--muted);font-size:14px}
 
 @media (max-width:640px){
@@ -2505,8 +2508,16 @@ _GRAVEYARD_HINT = "Click a cracked stone to read its receipt."
 _GRAVEYARD_PAST_TITLE = "The graveyard of this build"
 
 
+def _g_links(video: Optional[str], repo: Optional[str],
+             devpost: Optional[str]) -> list:
+    """The optional page links as (label, url) pairs, in display order."""
+    return [(label, url) for label, url in
+            (("Demo video", video), ("Repository", repo), ("Devpost entry", devpost)) if url]
+
+
 def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER,
-              video: Optional[str] = None, repo: Optional[str] = None) -> dict:
+              video: Optional[str] = None, repo: Optional[str] = None,
+              devpost: Optional[str] = None) -> dict:
     """The scene header (task 13.1, 21.1): title, tagline, headline, three figures.
 
     Every figure is computed from the records. ``total`` is the sum of the
@@ -2543,7 +2554,7 @@ def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER,
     if n_stopped:
         legend += f" {esc(_GRAVEYARD_HINT)}"
     legend += "</p>\n"
-    links = [(label, url) for label, url in (("Demo video", video), ("Repository", repo)) if url]
+    links = _g_links(video, repo, devpost)
     link_html = ""
     if links:
         link_html = '<p class="kicker links">' + " ".join(
@@ -3264,7 +3275,7 @@ def _g_scene() -> str:
 
 
 def _g_hero(trace: Optional[dict], video: Optional[str] = None,
-            repo: Optional[str] = None) -> str:
+            repo: Optional[str] = None, devpost: Optional[str] = None) -> str:
     """The first screen (R16.1, R16.2, R16.4, R16.5): scene, headline, controls.
 
     The R15 runner sits in the middle. The page is server-rendered in the
@@ -3274,7 +3285,7 @@ def _g_hero(trace: Optional[dict], video: Optional[str] = None,
     esc = functools.partial(html.escape, quote=True)
     runner = _g_runner(trace)
     state = " stopped" if 'class="runner stopped"' in runner else ""
-    links = [(label, url) for label, url in (("Demo video", video), ("Repository", repo)) if url]
+    links = _g_links(video, repo, devpost)
     nav = ""
     if links:
         nav = '<p class="toplinks">' + " ".join(
@@ -3297,7 +3308,8 @@ def _g_hero(trace: Optional[dict], video: Optional[str] = None,
 def render_graveyard(records: list, plots: Optional[dict] = None,
                      included: Optional[dict] = None,
                      receipts: Optional[dict] = None,
-                     video: Optional[str] = None, repo: Optional[str] = None) -> str:
+                     video: Optional[str] = None, repo: Optional[str] = None,
+                     devpost: Optional[str] = None) -> str:
     """Render tombstone records as one static HTML page (R2.6, R2.7, R4.4).
 
     Headstones, plots, the stopped row, unmarked graves and the register are
@@ -3367,9 +3379,12 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             "These tasks went over their cap or were blocked before they started. "
             "The next tool call was refused and the agent stopped. "
             f"The cost is what Kiro charged before it did.{live_note}</div>"
+            '<details class="stop-list wide"><summary>'
+            f"Show the {len(live) if live else len(stopped)} "
+            f'{"live test" if live else "stopped"} runs</summary>'
             '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
             + "".join(stones)
-            + "</div></div>"
+            + "</div></div></details>"
             '<div class="section-note wide"><h2>Finished tasks</h2>'
             "Grouped by the top-level task in tasks.md.</div>"
         )
@@ -3408,7 +3423,12 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
     register_rows = sorted(
         rows, key=lambda r: (_g_num(r.get("actual")) is None, -(_g_num(r.get("actual")) or 0.0)))
     header = _g_header(rows, _GRAVEYARD_KICKER_LIVE if on_page else _GRAVEYARD_KICKER,
-                       video, repo)
+                       video, repo, devpost)
+    footer_links = ""
+    if devpost:
+        footer_links = '<p class="links">' + " ".join(
+            f'<a href="{esc(url)}">{label}</a>'
+            for label, url in _g_links(video, repo, devpost)) + "</p>"
 
     return (
         "<!doctype html>\n"
@@ -3417,7 +3437,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         f"<title>{esc(header['title'])}</title>\n"
         f"<style>\n{_GRAVEYARD_CSS}\n{_RUN_CSS}\n{_HERO_CSS}\n{_scene_css()}\n</style>\n</head>\n<body>\n"
         '<div class="fog" aria-hidden="true"></div>\n'
-        f"{_g_hero(run_trace, video, repo)}"
+        f"{_g_hero(run_trace, video, repo, devpost)}"
         f"{header['html']}"
         "<main>\n"
         f'<section class="ground" id="ground" aria-label="Tasks by plot">'
@@ -3441,7 +3461,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         "</table></div>\n</section>\n</main>\n"
         "<footer>Every number on this page comes from tombstones.json, written by "
         "Tombstone's hooks while Kiro worked. Credits are Kiro credits as the session "
-        "files report them.</footer>\n"
+        f"files report them.{footer_links}</footer>\n"
         f'<p class="credit">{esc(_SCENE_CREDIT)} {esc(_AUDIO_CREDIT)}</p>\n'
         '<dialog id="card" aria-labelledby="ct"><h3 id="ct"></h3><p class="meta" id="cm"></p>'
         '<dl id="cd"></dl><p class="prompt" id="cp" hidden></p><p class="gap" id="cg"></p>'
@@ -3556,7 +3576,8 @@ def _collect_receipts(project: Path, records: list, extra_dirs: Optional[list]) 
 def write_graveyard(project: Path, out: Optional[Path] = None,
                     includes: Optional[list] = None,
                     autopsy_dirs: Optional[list] = None,
-                    video: Optional[str] = None, repo: Optional[str] = None) -> Path:
+                    video: Optional[str] = None, repo: Optional[str] = None,
+                    devpost: Optional[str] = None) -> Path:
     """Render ``tombstones.json`` of ``project`` and write the page.
 
     Default target is ``.tombstone/graveyard.html``. Reads the store
@@ -3568,7 +3589,7 @@ def write_graveyard(project: Path, out: Optional[Path] = None,
     records, included = merge_includes(store.get("tombstones") or [], includes or [])
     receipts = _collect_receipts(project, records, autopsy_dirs)
     page = render_graveyard(records, read_plot_names(project), included, receipts,
-                            video, repo)
+                            video, repo, devpost)
     target = Path(out).expanduser() if out is not None \
         else project / TOMBSTONE_DIR / "graveyard.html"
     if out is None and not guard(project, target):

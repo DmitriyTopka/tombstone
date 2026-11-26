@@ -3780,6 +3780,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/35",
+      "task_id": "35",
+      "name": "Devpost link and a shorter stopped list",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 1.815,
+      "actual": 0.5469,
+      "minutes": 0.5647,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_6a443334-2822-43b6-ade9-bb799adf3d9a",
+          "turn_id": "a287b33b-d85f-48fc-9204-83da7ad596a5",
+          "requests": 15,
+          "estimate": 5.4456,
+          "actual": 1.6408,
+          "minutes": 1.6943,
+          "start": "2026-11-26T20:24:24.164000Z",
+          "end": "2026-11-26T20:26:05.822000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/35.1",
+      "task_id": "35.1",
+      "name": "`--devpost` option and links, the stopped list inside `<details>`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 1.815,
+      "actual": 0.5469,
+      "minutes": 0.5647,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_6a443334-2822-43b6-ade9-bb799adf3d9a",
+          "turn_id": "a287b33b-d85f-48fc-9204-83da7ad596a5",
+          "requests": 15,
+          "estimate": 5.4456,
+          "actual": 1.6408,
+          "minutes": 1.6943,
+          "start": "2026-11-26T20:24:24.164000Z",
+          "end": "2026-11-26T20:26:05.822000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/35.2",
+      "task_id": "35.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 1.815,
+      "actual": 0.5469,
+      "minutes": 0.5647,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_6a443334-2822-43b6-ade9-bb799adf3d9a",
+          "turn_id": "a287b33b-d85f-48fc-9204-83da7ad596a5",
+          "requests": 15,
+          "estimate": 5.4456,
+          "actual": 1.6408,
+          "minutes": 1.6943,
+          "start": "2026-11-26T20:24:24.164000Z",
+          "end": "2026-11-26T20:26:05.822000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
