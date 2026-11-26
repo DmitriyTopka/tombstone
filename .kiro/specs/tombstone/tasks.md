@@ -353,18 +353,18 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - Found in a browser check on 2026-11-26: after a run the refusal text and the "Without the breaker" line sit under the "Stopped by the breaker" section and cannot be seen; at the 0.30 start the run stops on request 2 of 9, so the stone barely grows. Make the block grow with its content per R15.5 (no fixed height, no overlap at 1280 and 375 px) and start the slider at 0.75 per R15.4 (noscript text too). `tombstone demo` keeps its own 0.30 cap. Update the tests that check the start cap and add one that the result lines are inside the block's flow (no absolute positioning or fixed height on the block).
     - _Requirements: R15.4, R15.5_
 
-- [ ] 27. A frightening first screen built around the breaker
+- [x] 27. A frightening first screen built around the breaker
   - Approved by Dima on 2026-11-26 ("Да, делай страшную"). A side-by-side of first screens (contests_2026-10/new_3110_kiroween/visual_2611/) showed the strongest Costume entries drawing a full illustrated scene with the main action on the first screen, while ours opened with text and figures and the Run block below the fold. Rollback tag `rollback-before-1127` exists.
   - _Requirements: R16.1, R16.2, R16.3, R16.4, R16.5_
 
-  - [ ] 27.1 The hero scene and controls
+  - [x] 27.1 The hero scene and controls
     - In `render_graveyard` (tombstones.py) replace the `header.sky` first screen with the R16.1/R16.2 hero: inline SVG layers (moon and halo, fog, trees, fence, silhouettes, ground) and the R15 runner moved into it as the centre; move the old first-screen content under "The graveyard of this build" per R16.4. Reuse `_g_runner` and its trace, the existing stone, crack and glow CSS and the page script; keep everything escaped and in one file.
     - _Requirements: R16.1, R16.2, R16.4_
 
-  - [ ] 27.2 The scare, sound, small screens and fallbacks
+  - [x] 27.2 The scare, sound, small screens and fallbacks
     - The stop sequence of R16.3 (crack, one dim red flash, fog thickening, silhouettes darkening, under 1.5 s), the opt-in Web Audio crack and thud behind a "Sound off"/"Sound on" toggle, the 375 px layout, keyboard labels, `prefers-reduced-motion` and the noscript scene per R16.5.
     - _Requirements: R16.3, R16.5_
 
-  - [ ] 27.3 Tests
+  - [x] 27.3 Tests
     - Hero present with the line, the headline with the red italic part, the slider, the "Release the agent" button, the R15 caption and the sound toggle off by default; no second Run block below; the old first-screen texts sit after the hero under "The graveyard of this build" with R2.12 to R2.14 wording intact; no `<audio>`, no `src=`/`href=` to external hosts except the two links; a reduced-motion rule and a noscript scene exist; the R15 trace tests still pass. Update existing tests that the move breaks, nothing else.
     - _Requirements: R16.1, R16.2, R16.3, R16.4, R16.5_

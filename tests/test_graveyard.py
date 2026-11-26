@@ -242,7 +242,7 @@ V3_LEDE = ("Each stone is a task: a spec task Kiro finished, work that ticked no
 
 
 def _h1(page: str) -> str:
-    return re.search(r"<h1>(.*?)</h1>", page).group(1)
+    return re.search(r'<h3 class="total">(.*?)</h3>', page).group(1)
 
 
 def _strip(page: str) -> dict:

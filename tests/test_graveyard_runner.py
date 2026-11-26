@@ -77,7 +77,7 @@ def test_cap_above_total_has_no_stop():
 def test_block_caption_labels_and_static_result():
     page = _page()
     for needle in (
-            "Run the agent", ">Run</button>", 'id="run-cap"', 'aria-label="Cap in credits"',
+            "Run the agent", ">Release the agent</button>", 'id="run-cap"', 'aria-label="Cap in credits"',
             "A recorded real Kiro CLI session, scrubbed. For every cap on the slider, the "
             "stop point was computed by Tombstone&#x27;s own watcher code when this page "
             "was built.",
@@ -87,7 +87,8 @@ def test_block_caption_labels_and_static_result():
     default = next(i for i, r in enumerate(_data(page)["caps"]) if r["cap"] == 0.75)
     assert f'value="{default}"' in page and "0.75 credits</output>" in page
     assert page.index('id="runner"') < page.index('id="ground"')
-    assert page.index("</header>") < page.index('id="runner"')
+    assert page.index('<header class="hero') < page.index('id="runner"') < page.index("</header>")
+    assert page.index("</header>") < page.index('id="ground"')
 
 
 def test_reduced_motion_and_phone_rules_exist():

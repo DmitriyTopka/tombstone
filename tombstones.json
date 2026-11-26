@@ -2580,6 +2580,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/27",
+      "task_id": "27",
+      "name": "A frightening first screen built around the breaker",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 27,
+      "estimate": 1.8181,
+      "actual": 2.0093,
+      "minutes": 1.5224,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_4bf7c3bc-e284-451c-ab65-9675ea023679",
+          "turn_id": "8a4f49ce-36b4-43bf-9848-28f2cc224228",
+          "requests": 27,
+          "estimate": 7.2723,
+          "actual": 8.0372,
+          "minutes": 6.0894,
+          "start": "2026-11-26T11:02:01.824000Z",
+          "end": "2026-11-26T11:08:07.189000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/27.1",
+      "task_id": "27.1",
+      "name": "The hero scene and controls",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 27,
+      "estimate": 1.8181,
+      "actual": 2.0093,
+      "minutes": 1.5224,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_4bf7c3bc-e284-451c-ab65-9675ea023679",
+          "turn_id": "8a4f49ce-36b4-43bf-9848-28f2cc224228",
+          "requests": 27,
+          "estimate": 7.2723,
+          "actual": 8.0372,
+          "minutes": 6.0894,
+          "start": "2026-11-26T11:02:01.824000Z",
+          "end": "2026-11-26T11:08:07.189000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/27.2",
+      "task_id": "27.2",
+      "name": "The scare, sound, small screens and fallbacks",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 27,
+      "estimate": 1.8181,
+      "actual": 2.0093,
+      "minutes": 1.5224,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_4bf7c3bc-e284-451c-ab65-9675ea023679",
+          "turn_id": "8a4f49ce-36b4-43bf-9848-28f2cc224228",
+          "requests": 27,
+          "estimate": 7.2723,
+          "actual": 8.0372,
+          "minutes": 6.0894,
+          "start": "2026-11-26T11:02:01.824000Z",
+          "end": "2026-11-26T11:08:07.189000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/27.3",
+      "task_id": "27.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 27,
+      "estimate": 1.8181,
+      "actual": 2.0093,
+      "minutes": 1.5224,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_4bf7c3bc-e284-451c-ab65-9675ea023679",
+          "turn_id": "8a4f49ce-36b4-43bf-9848-28f2cc224228",
+          "requests": 27,
+          "estimate": 7.2723,
+          "actual": 8.0372,
+          "minutes": 6.0894,
+          "start": "2026-11-26T11:02:01.824000Z",
+          "end": "2026-11-26T11:08:07.189000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
