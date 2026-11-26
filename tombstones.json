@@ -3990,6 +3990,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/36.4",
+      "task_id": "36.4",
+      "name": "Browser check fixes",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 5.6553,
+      "actual": 2.6466,
+      "minutes": 2.0075,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_f3439ead-0acc-4d41-a8b1-2d32f1e8d7fa",
+          "turn_id": "8f2ccc6f-07b4-4eac-aed5-db72df96b976",
+          "requests": 16,
+          "estimate": 5.6553,
+          "actual": 2.6466,
+          "minutes": 2.0075,
+          "start": "2026-11-26T20:34:31.879000Z",
+          "end": "2026-11-26T20:36:32.328000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

@@ -2813,7 +2813,7 @@ function vigSet(c,cap,final){if(!vig){return;}var st=vigStrength(c,cap),pe=final
 function vigHit(){if(!vig){return;}vig.style.setProperty("--vg","1");vig.classList.remove("beat","hit");
   if(!reduce){void vig.offsetWidth;vig.classList.add("hit");}}
 function vigClear(){if(!vig){return;}vig.classList.remove("beat","hit");vig.style.setProperty("--vg","0");}
-function reset(){if(timer){clearTimeout(timer);timer=null;}fxClear();slideStop();vigClear();
+function reset(){if(timer){clearTimeout(timer);timer=null;}stone.style.transitionDuration="";fxClear();slideStop();vigClear();
   hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("full");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
@@ -2830,7 +2830,9 @@ function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
     else{line("","The cap was never reached. The session finished at "+f(T.total)+" credits est.");}}}
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
-  var i=0,gap=Math.max(PUSH+200,6000/steps);
+  var i=0,gap=Math.max(PUSH+200,6000/steps);SETTLE=1000;
+  if(ovr&&typeof buryPlan==="function"){var pl=buryPlan(steps,HEAVE,1000);gap=pl.gap;SETTLE=pl.settle;
+    stone.style.transitionDuration=pl.rise+"ms";}
   function tick(){i+=1;draw(T.credits[i-1]);vigSet(T.credits[i-1],r.cap,false);stepSound();shake(2,.3);rubble();
     if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
     timer=setTimeout(tick,gap);}
@@ -2842,13 +2844,15 @@ function label(){out.textContent=f(row().cap)+" credits";
 var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start=k;}}
 slider.value=start;label();
 /* R25.3: the "Bury your own session" block plays its series on this same scene; the recorded run restores the demo data */
-function mode(c){var u=root.querySelector(".cunit");unit=c?" credits live":" credits est.";
-  if(u){u.textContent=c?"credits live":"credits est.";}if(!c){ovr=null;T=RUN_DATA;}}
+var capEl=document.getElementById("run-caption"),capOrig=capEl?capEl.textContent:"";
+function mode(c,source){var u=root.querySelector(".cunit");unit=c?" credits live":" credits est.";
+  if(u){u.textContent=c?"credits live":"credits est.";}if(!c){ovr=null;T=RUN_DATA;}
+  if(capEl){capEl.textContent=c&&typeof buryCaption==="function"?buryCaption(source):capOrig;}}
 slider.addEventListener("input",function(){mode(false);});
 btn.addEventListener("click",function(){mode(false);});
 slider.addEventListener("input",function(){label();reset();});
 btn.addEventListener("click",run);
-window.TombstonePlay=function(s){mode(true);T={credits:s.credits,total:s.total};ovr=s.row;
+window.TombstonePlay=function(s){mode(true,s.source);T={credits:s.credits,total:s.total};ovr=s.row;
   out.textContent=f(s.row.cap)+" credits";run();};
 var LEVEL=.35,amb=null,ambBuf=null,ambLoad=null,sfxBuf={},sfxLoad=false;
 function ambData(){if(typeof AMBIENCE!=="string"){return null;}
@@ -2962,7 +2966,7 @@ def _g_runner(trace: Optional[dict]) -> str:
         f'<div class="half hr" aria-hidden="true">{half}</div>{carve}'
         f'</div>{_g_soil(hp)}</div><div class="fx" id="run-fx" aria-hidden="true"></div></div>'
         f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
-        f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
+        f'<p class="caption" id="run-caption">{esc(_RUN_CAPTION)}</p>\n'
         "</section>\n"
     )
 
@@ -2982,9 +2986,9 @@ DEFAULT_SAMPLE_LABEL = "The recorded demo session"
 BURY_MAX_BYTES = 20 * 1024 * 1024
 
 _BURY_CSS = """
-.bury{position:relative;z-index:2;background:#080b14;border-top:1px solid rgba(236,231,218,.14);
+.bury{position:relative;z-index:9;isolation:isolate;overflow:hidden;clear:both;background:#080b14;border-top:1px solid rgba(236,231,218,.14);
   border-bottom:1px solid rgba(236,231,218,.14);color:var(--bone)}
-.bury-in{max-width:880px;margin:0 auto;padding:36px 20px 44px}
+.bury-in{max-width:880px;margin:0 auto;padding:72px 20px 44px}
 .bury h2{font-size:26px;margin:0 0 8px}
 .bury p{margin:8px 0;max-width:60em}
 .bury .where,.bury .note,.bury .caption{color:var(--muted);font-size:14px}
@@ -3002,7 +3006,7 @@ _BURY_CSS = """
 .bury input[type=range]{width:min(320px,70vw);min-height:32px;accent-color:var(--ember)}
 .bury .status{min-height:1.4em;color:var(--bone)}
 .bury .privacy{color:var(--bone)}
-@media (max-width:640px){.bury-in{padding:28px 14px 36px}.bury select{width:100%}}
+@media (max-width:640px){.bury-in{padding:72px 14px 36px}.bury select{width:100%}}
 """
 
 # Browser reader (R25.2). Pure functions, mirrored by sessions.series_from_events.
@@ -3037,6 +3041,12 @@ function buryRead(text){var lines=String(text).split(/\\r\\n|\\n|\\r/),order=[],
     else{out.push({credits:[price!==null?price:0],price:price,live:false});}}
   return out;}
 function buryFirstOver(credits,cap){var i;for(i=0;i<credits.length;i++){if(credits[i]>cap){return i+1;}}return null;}
+var BURY_MIN_MS=4000,BURY_MAX_MS=8000,BURY_RISE_MS=900;
+function buryPlan(steps,heave,settle){var n=Math.max(1,steps|0),gap=n>1?Math.min(1100,(BURY_MAX_MS-heave-settle)/(n-1)):0,
+    tail=Math.max(settle,BURY_MIN_MS+200-heave-(n-1)*gap);
+  return {gap:gap,settle:tail,rise:Math.round(Math.min(BURY_RISE_MS,Math.max(120,gap*1.3))),
+    total:heave+(n-1)*gap+tail};}
+function buryCaption(source){return (source||"Your file")+". The stop was computed in this browser with the watcher's live-figure rule: the first step whose live figure is above the cap.";}
 function buryFmt(v){return v>=10?v.toFixed(1):v.toFixed(2);}
 function buryRefusal(template,figure,cap){
   return template.split("{figure}").join(buryFmt(figure)).split("{cap}").join(buryFmt(cap));}
@@ -3078,7 +3088,7 @@ go.addEventListener("click",function(){var t=chosen(),c=+cap.value,at,last,went,
   if(typeof window.TombstonePlay!=="function"){return;}
   h=document.getElementById("hero");
   if(h&&h.scrollIntoView){h.scrollIntoView({behavior:reduce?"auto":"smooth",block:"start"});}
-  window.TombstonePlay({credits:t.credits,total:total,row:row});});
+  window.TombstonePlay({credits:t.credits,total:total,row:row,source:src==="Your file"?"Your file":"Sample: "+src});});
 Array.prototype.forEach.call(document.querySelectorAll("#bury-samples button"),function(b){
   b.addEventListener("click",function(){var s=BURY_DATA.samples[+b.getAttribute("data-i")];if(s){show(s.turns,s.label);}});});
 function load(files){var f=null,i,r;

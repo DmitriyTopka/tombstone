@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import html
 import json
 import re
 import shutil
@@ -199,3 +200,67 @@ def test_existing_player_hook_and_message_text():
     assert "This Kiro version writes no live figure for this turn." in page
     assert "This file is larger than 20 MB" in page
     assert _bury_data(page)["max_bytes"] == 20 * 1024 * 1024
+
+
+# --- task 36.4 (R25.3, R25.5): caption switch and playback duration ----------
+
+def _node_eval(expr: str):
+    script = tombstones._BURY_READER_JS + f"\nprocess.stdout.write(JSON.stringify({expr}));"
+    done = subprocess.run([NODE, "-e", script], capture_output=True, text=True, check=True)
+    return json.loads(done.stdout)
+
+
+@pytest.mark.skipif(NODE is None, reason="node is not installed")
+def test_bury_caption_names_the_source_and_the_rule():
+    for source in ("Sample: The recorded demo session", "Your file"):
+        text = _node_eval(f"buryCaption({json.dumps(source)})")
+        assert text.startswith(source)
+        assert "computed in this browser" in text
+        assert "live-figure rule" in text
+        assert "recorded real Kiro CLI session" not in text
+    assert _node_eval("buryCaption()").startswith("Your file")
+
+
+def test_caption_switch_is_wired_to_play_and_to_the_original_controls():
+    page = render_graveyard([])
+    assert 'id="run-caption"' in page
+    # the original caption is kept and restored by the same mode(false) path the slider and button use
+    assert 'capOrig=capEl?capEl.textContent:""' in page
+    assert "capEl.textContent=c&&typeof buryCaption===\"function\"?buryCaption(source):capOrig" in page
+    assert 'slider.addEventListener("input",function(){mode(false);});' in page
+    assert 'btn.addEventListener("click",function(){mode(false);});' in page
+    assert "window.TombstonePlay=function(s){mode(true,s.source);" in page
+    # the block passes "Sample: <label>" for a sample and "Your file" for a visitor's file
+    assert 'source:src==="Your file"?"Your file":"Sample: "+src' in page
+    assert html.escape(tombstones._RUN_CAPTION, quote=True) in page
+
+
+@pytest.mark.skipif(NODE is None, reason="node is not installed")
+@pytest.mark.parametrize("steps", [1, 2, 3, 5, 10, 43, 100, 500, 5000])
+def test_playback_lasts_between_4_and_12_seconds(steps):
+    plan = _node_eval(f"buryPlan({steps},1500,1000)")
+    assert 4000 <= plan["total"] <= 12000
+    assert plan["gap"] >= 0 and plan["rise"] <= 900
+    # total is heave + gaps between steps + the wait before the verdict
+    assert plan["total"] == pytest.approx(1500 + (steps - 1) * plan["gap"] + plan["settle"])
+
+
+@pytest.mark.skipif(NODE is None, reason="node is not installed")
+def test_long_series_gets_a_shorter_rise_per_step():
+    short = _node_eval("buryPlan(3,1500,1000)")
+    long_ = _node_eval("buryPlan(43,1500,1000)")
+    assert long_["gap"] < short["gap"] and long_["rise"] < short["rise"]
+
+
+def test_run_uses_the_bounded_plan_only_for_bury_series():
+    page = render_graveyard([])
+    assert 'if(ovr&&typeof buryPlan==="function")' in page
+    assert "SETTLE=pl.settle" in page and "SETTLE=1000;" in page
+    assert 'stone.style.transitionDuration=pl.rise+"ms"' in page
+    assert 'stone.style.transitionDuration=""' in page
+
+
+def test_bury_block_sits_above_the_hero_edge():
+    css = tombstones._BURY_CSS
+    assert "isolation:isolate" in css and "z-index:9" in css
+    assert "padding:72px 20px 44px" in css and "padding:72px 14px 36px" in css
