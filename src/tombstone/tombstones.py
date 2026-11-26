@@ -2690,7 +2690,7 @@ def _g_soil(hp: float) -> str:
 
 
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
-_AUDIO_CREDIT = "Night ambience generated with Suno."
+_AUDIO_CREDIT = "Night ambience generated with Suno, sound effects with ElevenLabs."
 
 _HERO_JS = """
 (function(){
@@ -2729,29 +2729,29 @@ function draw(c){count.textContent=f(c)+" credits est.";setCost(f(c));
   var hh=height(c);stone.style.setProperty("--rh",hh+"px");
   if(earth){earth.style.setProperty("--rh",hh+"px");earth.style.setProperty("--hp",((hh-70)/150).toFixed(3));}
   if(c>last+1e-9){dig();}last=c;}
-function hand(i,n){if(!earth){return;}earth.classList.add("hup");
+function hand(i,n){if(!earth){return;}if(!earth.classList.contains("hup")){sfx("hand_emerge",.8,1,0);}earth.classList.add("hup");
   earth.style.setProperty("--hl",Math.min(1,.3+.7*(i-1)/Math.max(1,n-1)).toFixed(3));}
 function setCost(t){var all=stone.querySelectorAll(".cost"),i;for(i=0;i<all.length;i++){all[i].textContent=t;}}
 function clear(){verdict.textContent="";}
 function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
   p.textContent=text;verdict.appendChild(p);}
 function boom(){if(!soundOn||!ac){return;}
-  duck();try{var t=ac.currentTime,n=Math.floor(ac.sampleRate*.2),b=ac.createBuffer(1,n,ac.sampleRate),
-    d=b.getChannelData(0),i,src=ac.createBufferSource(),hp=ac.createBiquadFilter(),
-    g=ac.createGain(),o=ac.createOscillator(),og=ac.createGain();
-  for(i=0;i<n;i++){d[i]=(Math.random()*2-1)*Math.pow(1-i/n,3);}
-  src.buffer=b;hp.type="highpass";hp.frequency.value=1500;g.gain.value=.5;
-  src.connect(hp);hp.connect(g);g.connect(ac.destination);src.start(t);
-  o.type="sine";o.frequency.setValueAtTime(95,t+.05);
-  o.frequency.exponentialRampToValueAtTime(38,t+.6);
-  og.gain.setValueAtTime(.9,t+.05);og.gain.exponentialRampToValueAtTime(.001,t+.7);
-  o.connect(og);og.connect(ac.destination);o.start(t+.05);o.stop(t+.75);}catch(e){}}
+  duck();sfx("stone_split",1,1,0);if(!reduce){sfx("hand_sink",.8,1,.25);}}
+function rnd(a,b){return a+Math.random()*(b-a);}
+function sfx(name,vol,rate,delay){var b=sfxBuf[name];if(!soundOn||!ac||!b){return;}
+  try{var t=ac.currentTime+(delay||0),src=ac.createBufferSource(),g=ac.createGain(),
+    d=b.duration/rate,f=Math.min(.3,d/3);
+  src.buffer=b;src.playbackRate.value=rate;g.gain.setValueAtTime(name==="stone_grind"?0:vol,t);
+  if(name==="stone_grind"){g.gain.linearRampToValueAtTime(vol,t+f);
+    g.gain.setValueAtTime(vol,t+d-f);g.gain.linearRampToValueAtTime(0,t+d);}
+  src.connect(g);g.connect(ac.destination);src.start(t);duck();}catch(e){}}
+function stepSound(){sfx("stone_grind",rnd(.5,.65),rnd(.94,1.06),0);sfx("earth_crumble",rnd(.22,.3),rnd(.95,1.05),.05);}
 function reset(){if(timer){clearTimeout(timer);timer=null;}
   hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig","on");earth.classList.remove("hup","full");earth.style.setProperty("--hl","0");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
-    if(!reduce){hero.classList.add("scare");boom();}stone.className="hstone crack-1";
+    if(!reduce){hero.classList.add("scare");}boom();stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
     line("","hook exit code 2");line("refusal",r.refusal);
     line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}
@@ -2760,10 +2760,10 @@ function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
   var i=0,gap=6000/steps;
-  function tick(){i+=1;draw(T.credits[i-1]);if(i>=2){hand(i,steps);}
+  function tick(){i+=1;draw(T.credits[i-1]);stepSound();if(i>=2){hand(i,steps);}
     if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
     timer=setTimeout(tick,gap);}
-  if(earth){earth.classList.add("on","heave");}
+  if(earth){earth.classList.add("on","heave");}sfx("ground_break",.9,1,0);
   timer=setTimeout(function(){if(earth){earth.classList.remove("heave");}tick();},HEAVE);}
 function label(){out.textContent=f(row().cap)+" credits";
   slider.setAttribute("aria-valuetext",f(row().cap)+" credits");}
@@ -2771,7 +2771,7 @@ var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start
 slider.value=start;label();
 slider.addEventListener("input",function(){label();reset();});
 btn.addEventListener("click",run);
-var LEVEL=.35,amb=null,ambBuf=null,ambLoad=null;
+var LEVEL=.35,amb=null,ambBuf=null,ambLoad=null,sfxBuf={},sfxLoad=false;
 function ambData(){if(typeof AMBIENCE!=="string"){return null;}
   var s=atob(AMBIENCE.split(",")[1]),u=new Uint8Array(s.length),i;
   for(i=0;i<s.length;i++){u[i]=s.charCodeAt(i);}return u.buffer;}
@@ -2782,7 +2782,12 @@ function ambPlay(){if(!ac||!ambBuf||!soundOn||amb){return;}
   src.buffer=ambBuf;src.loop=true;g.gain.setValueAtTime(0,t);
   g.gain.linearRampToValueAtTime(LEVEL,t+1.5);src.connect(g);g.connect(ac.destination);
   src.start(t);amb={src:src,g:g};}catch(e){amb=null;}}
-function ambOn(){if(ambBuf){ambPlay();return;}if(ambLoad||!ac){return;}
+function sfxOn(){if(sfxLoad||!ac||typeof SFX!=="object"){return;}sfxLoad=true;
+  Object.keys(SFX).forEach(function(k){try{var s=atob(SFX[k].split(",")[1]),u=new Uint8Array(s.length),i,p;
+    for(i=0;i<s.length;i++){u[i]=s.charCodeAt(i);}
+    p=ac.decodeAudioData(u.buffer,function(b){sfxBuf[k]=b;},function(){});
+    if(p&&p.catch){p.catch(function(){});}}catch(e){}});}
+function ambOn(){sfxOn();if(ambBuf){ambPlay();return;}if(ambLoad||!ac){return;}
   try{var raw=ambData();if(!raw){return;}
   ambLoad=ac.decodeAudioData(raw,function(b){ambBuf=b;ambPlay();},function(){ambLoad=null;});
   if(ambLoad&&ambLoad.catch){ambLoad.catch(function(){});}}catch(e){ambLoad=null;}}
@@ -3114,6 +3119,9 @@ def _scene_uri(name: str) -> str:
     return "data:image/webp;base64," + base64.b64encode(raw).decode("ascii")
 
 
+_SFX_NAMES = ("ground_break", "stone_grind", "earth_crumble", "hand_emerge", "stone_split", "hand_sink")
+
+
 @functools.lru_cache(maxsize=None)
 def _ambience_js() -> str:
     """The night ambience (R20.3) as one JS data URI string, embedded once ("" if missing)."""
@@ -3123,7 +3131,15 @@ def _ambience_js() -> str:
         raw = resources.files("tombstone").joinpath("data", "scene", "ambience.m4a").read_bytes()
     except (OSError, ModuleNotFoundError):
         return ""
-    return 'var AMBIENCE="data:audio/mp4;base64,' + base64.b64encode(raw).decode("ascii") + '";\n'
+    sfx = []
+    for name in _SFX_NAMES:
+        try:
+            data = resources.files("tombstone").joinpath("data", "scene", "sfx", name + ".m4a").read_bytes()
+        except (OSError, ModuleNotFoundError):
+            continue
+        sfx.append('"' + name + '":"data:audio/mp4;base64,' + base64.b64encode(data).decode("ascii") + '"')
+    return ("var SFX={" + ",".join(sfx) + "};\n"
+            + 'var AMBIENCE="data:audio/mp4;base64,' + base64.b64encode(raw).decode("ascii") + '";\n')
 
 
 def _scene_css() -> str:

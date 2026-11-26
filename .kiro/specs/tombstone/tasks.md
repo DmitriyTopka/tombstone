@@ -457,14 +457,14 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
     - The audio data URI is present exactly once and is audio/mp4; no `<audio autoplay>` and no playback before the toggle; the toggle starts and stops the loop with fades and the stop ducks it; the credit line is present; the page is under 1.2 MB with no external requests; existing tests still pass (update only the size limit and those the change breaks).
     - _Requirements: R20.1, R20.2, R20.3_
 
-- [ ] 32. Sound for every movement
+- [x] 32. Sound for every movement
   - Approved by Dima on 2026-11-26 (stone grinding like large blocks, falling earth, the hand breaking out, the split, all from ElevenLabs). Claude generated six effects through Dima's ElevenLabs API and re-encoded them to mono AAC 56 kbps, 111 KB in all, in `src/tombstone/data/scene/sfx/`.
   - _Requirements: R21.1, R21.2, R21.3_
 
-  - [ ] 32.1 Wire the effects
+  - [x] 32.1 Wire the effects
     - Play each effect on its event per R21.1 and R21.2 through the existing Web Audio context, replacing the synthesized crack and thud; embed once per R21.3; update the credit line.
     - _Requirements: R21.1, R21.2, R21.3_
 
-  - [ ] 32.2 Tests
+  - [x] 32.2 Tests
     - Each of the six effects is embedded exactly once; each is scheduled on its event (ground heave, every rise step, clods, first hand break-through, split, hand sink) and only when sound is on; the synthesized crack is gone; the credit line is updated; page under 1.35 MB with no external requests; existing tests still pass (update only the size limit and those the change breaks).
     - _Requirements: R21.1, R21.2, R21.3_

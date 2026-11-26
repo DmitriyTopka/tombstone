@@ -39,8 +39,8 @@ def test_data_uris_and_nothing_outside_the_page():
         "http://www.w3.org/2000/svg", "")
 
 
-def test_page_stays_under_1_2_mb():
-    assert len(_page().encode("utf-8")) < 1200 * 1024
+def test_page_stays_under_1_35_mb():
+    assert len(_page().encode("utf-8")) < 1350 * 1024
 
 
 def test_credit_line_is_at_the_bottom():
@@ -335,9 +335,9 @@ def test_reduced_motion_and_noscript_show_hand_sunk_and_bones_shown():
     assert 'class="earth on" id="run-earth"' in page and " hup" not in page.split('id="run-earth"', 1)[0][-40:]
 
 
-def test_page_is_one_file_with_no_external_requests_and_under_1_2_mb():
+def test_page_is_one_file_with_no_external_requests_and_under_1_35_mb():
     page = _page()
-    assert len(page.encode("utf-8")) < 1200 * 1024
+    assert len(page.encode("utf-8")) < 1350 * 1024
     assert not re.search(r"<(?:link|script)[^>]+(?:src|href)=[\"']https?:", page)
 
 
@@ -522,7 +522,7 @@ def _ambience_b64() -> str:
 def test_ambience_is_embedded_once_as_audio_mp4_and_never_autoplays():
     page = _page()
     assert page.count(_ambience_b64()) == 1
-    assert page.count("data:audio/mp4;base64,") == 1
+    assert page.count("data:audio/mp4;base64,") == 7  # ambience plus six effects
     assert "<audio" not in page and "autoplay" not in page
     assert "<source" not in page
 
@@ -530,6 +530,7 @@ def test_ambience_is_embedded_once_as_audio_mp4_and_never_autoplays():
 def test_ambience_starts_only_from_the_toggle_click():
     script = _page().split("var AMBIENCE=", 1)[1]
     script = script.split(";\n", 1)[1]
+    assert script.count("sfxOn()") == 2  # definition and the one call, inside ambOn
     # decoding and playing are reached only through ambOn, which only the click handler calls
     assert script.count("ambOn()") == 2  # definition and the one call
     handler = script.split('snd.addEventListener("click"', 1)[1]
@@ -549,11 +550,76 @@ def test_ambience_loops_with_fades_and_ducks_under_the_crack():
     assert "setValueAtTime(LEVEL*.15,t+1)" in duck and "linearRampToValueAtTime(LEVEL,t+" in duck
     # one Web Audio context shared by the crack and the ambience, and the reduced-motion path keeps sound
     assert script.count("new C()") == 1
-    assert "prefers-reduced-motion" in script and "if(!reduce){hero.classList.add(\"scare\");boom();}" in script
+    assert "prefers-reduced-motion" in script and "if(!reduce){hero.classList.add(\"scare\");}boom();" in script
 
 
 def test_ambience_credit_line_is_at_the_bottom():
     page = _page()
-    assert "Night ambience generated with Suno." in page
+    assert "Night ambience generated with Suno, sound effects with ElevenLabs." in page
     assert page.count('<p class="credit">') == 1
-    assert page.index("Night ambience generated with Suno.") > page.index("</main>")
+    assert page.index("Night ambience generated with Suno, sound effects") > page.index("</main>")
+
+
+# --- Task 32: sound for every movement (R21.1 to R21.3) ---
+
+_SFX = ("ground_break", "stone_grind", "earth_crumble", "hand_emerge", "stone_split", "hand_sink")
+
+
+def _sfx_b64(name: str) -> str:
+    import base64
+    raw = resources.files("tombstone").joinpath("data", "scene", "sfx", name + ".m4a").read_bytes()
+    return base64.b64encode(raw).decode("ascii")
+
+
+def _run_script() -> str:
+    return _page().split("var AMBIENCE=", 1)[1]
+
+
+def test_each_effect_is_embedded_exactly_once():
+    page = _page()
+    for name in _SFX:
+        assert page.count(_sfx_b64(name)) == 1, name
+        assert page.count('"' + name + '":"data:audio/mp4;base64,') == 1, name
+    assert page.count("new C()") == 1  # decoded through the one existing context
+    assert page.count("decodeAudioData(") == 2  # one for the ambience, one loop for the effects
+
+
+def test_effects_are_scheduled_on_their_events():
+    s = _run_script()
+    assert 'sfx("ground_break",.9,1,0);' in s.split("function run(){", 1)[1].split("function label", 1)[0]
+    tick = s.split("function tick(){", 1)[1].split("if(i>=steps)", 1)[0]
+    assert "stepSound();" in tick
+    step = s.split("function stepSound(){", 1)[1].split("\n", 1)[0]
+    assert 'sfx("stone_grind"' in step and 'sfx("earth_crumble"' in step and "rnd(" in step
+    hand = s.split("function hand(i,n){", 1)[1].split("\n", 1)[0]
+    assert '!earth.classList.contains("hup")' in hand and 'sfx("hand_emerge"' in hand
+    boom = s.split("function boom(){", 1)[1].split("function rnd", 1)[0]
+    assert 'sfx("stone_split"' in boom and 'sfx("hand_sink"' in boom and "if(!reduce)" in boom
+    assert "duck();" in boom
+
+
+def test_effects_play_only_with_sound_on_and_duck_the_ambience():
+    s = _run_script()
+    play = s.split("function sfx(", 1)[1].split("function stepSound", 1)[0]
+    assert "if(!soundOn||!ac||!b){return;}" in play and "duck();" in play
+    assert "function boom(){if(!soundOn||!ac){return;}" in s
+    assert "sfxOn()" in s.split("function ambOn(){", 1)[1].split("\n", 1)[0]
+
+
+def test_reduced_motion_plays_only_the_split():
+    s = _run_script()
+    assert 'if(!reduce){hero.classList.add("scare");}boom();' in s
+    assert "if(reduce){finish(r);return;}" in s  # no step, heave or hand effects on that path
+    boom = s.split("function boom(){", 1)[1].split("function rnd", 1)[0]
+    assert boom.index("stone_split") < boom.index("if(!reduce)") < boom.index("hand_sink")
+
+
+def test_synthesized_crack_is_gone():
+    s = _run_script()
+    assert "createOscillator" not in s and "createBiquadFilter" not in s
+
+
+def test_effects_credit_line():
+    page = _page()
+    assert "Night ambience generated with Suno, sound effects with ElevenLabs." in page
+    assert page.count('<p class="credit">') == 1

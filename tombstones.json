@@ -3360,6 +3360,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/32",
+      "task_id": "32",
+      "name": "Sound for every movement",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 0.8264,
+      "actual": 0.4993,
+      "minutes": 0.3492,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_ff05a80e-b7ed-4c91-9829-60f42a39c5bb",
+          "turn_id": "a908fc46-1da9-4912-9030-b88af468e01d",
+          "requests": 10,
+          "estimate": 2.4795,
+          "actual": 1.4981,
+          "minutes": 1.0476,
+          "start": "2026-11-26T15:12:19.759000Z",
+          "end": "2026-11-26T15:13:22.618000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/32.1",
+      "task_id": "32.1",
+      "name": "Wire the effects",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 0.8264,
+      "actual": 0.4993,
+      "minutes": 0.3492,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_ff05a80e-b7ed-4c91-9829-60f42a39c5bb",
+          "turn_id": "a908fc46-1da9-4912-9030-b88af468e01d",
+          "requests": 10,
+          "estimate": 2.4795,
+          "actual": 1.4981,
+          "minutes": 1.0476,
+          "start": "2026-11-26T15:12:19.759000Z",
+          "end": "2026-11-26T15:13:22.618000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/32.2",
+      "task_id": "32.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 10,
+      "estimate": 0.8264,
+      "actual": 0.4993,
+      "minutes": 0.3492,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_ff05a80e-b7ed-4c91-9829-60f42a39c5bb",
+          "turn_id": "a908fc46-1da9-4912-9030-b88af468e01d",
+          "requests": 10,
+          "estimate": 2.4795,
+          "actual": 1.4981,
+          "minutes": 1.0476,
+          "start": "2026-11-26T15:12:19.759000Z",
+          "end": "2026-11-26T15:13:22.618000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
