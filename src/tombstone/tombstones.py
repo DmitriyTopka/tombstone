@@ -22,6 +22,7 @@ import html
 import json
 import math
 import os
+import random
 import re
 import zlib
 from dataclasses import dataclass
@@ -2608,6 +2609,74 @@ _RUN_CSS = """
   .runner .meter b{font-size:28px}.runner .verdict .stop{font-size:24px}}
 """
 
+# R18: the earth is drawn inline (SVG + CSS), lit by the same cold moon as the photo.
+_CRACK_PTS = [(51, 0), (45, 13), (56, 27), (43, 44), (55, 61), (46, 78), (52, 100)]
+
+
+def _split_clips() -> tuple[str, str]:
+    """Clip polygons of the two stone halves, following the crack path (R18.4)."""
+    pts = [(16 + 0.68 * x, 0.86 * y) for x, y in _CRACK_PTS]
+    mid = ", ".join(f"{x:.1f}% {y:.1f}%" for x, y in pts)
+    end = pts[-1][0]
+    left = f"0% 0%, {mid}, {end:.1f}% 100%, 0% 100%"
+    right = f"100% 0%, {mid}, {end:.1f}% 100%, 100% 100%"
+    return left, right
+
+
+_FALLS = [(-12, 2, 6, -22, 0), (8, 0, 5, 18, .04), (22, 6, 4, 30, .1), (-30, 14, 7, -34, .06),
+          (34, 16, 5, 26, .14), (-52, 40, 8, -40, .02), (52, 40, 6, 36, .08),
+          (-60, 48, 5, -26, .18), (58, 50, 4, 22, .12), (0, -2, 3, 6, .2), (-20, 8, 3, -14, .16),
+          (44, 28, 3, 20, .22)]
+_LUMPS = [(10, 17, 9), (27, 12, 6), (44, 20, 4), (190, 14, 7), (205, 20, 10), (222, 11, 5)]
+_SOIL_CRACKS = ["M96 49 L88 54 L90 60 L80 66", "M154 49 L163 55 L159 61 L170 68",
+                "M70 48 L62 52 L64 58 L52 62 L54 69", "M182 48 L191 53 L188 60 L200 64",
+                "M118 52 L113 58 L119 64 L112 70", "M134 53 L139 60 L133 66",
+                "M112 30 L108 38 L113 45", "M140 31 L145 39 L141 46"]
+
+
+def _g_soil(hp: float) -> str:
+    """Ground, mound, soil cracks, torn edges, grass tufts, heap, lumps and falling clumps."""
+    rnd = random.Random(18)
+    top = " ".join(f"L{x} {46 + rnd.choice((-1.5, -.5, 0, .8, 1.6)):.1f}" for x in range(6, 250, 8))
+    ground = f"M0 47 {top} L250 47 L250 70 L0 70Z"
+    blades = []
+    for x in range(4, 248, 6):
+        x += rnd.randint(-1, 1)
+        h = rnd.randint(4, 9)
+        blades.append(f"M{x} 48 L{x - 2} {48 - h} L{x + 1} {48 - h // 2 - 1} L{x + 2} {48 - h + 1} L{x + 3} 48Z")
+    tufts = "".join(blades)
+    heap = ("M14 48 C40 47 52 25 78 23 C96 22 108 31 125 32 C142 31 154 22 172 23 "
+            "C198 25 210 47 236 48Z")
+    mound = "M30 48 C62 47 84 32 125 30 C166 32 188 47 220 48Z"
+    svg = (
+        '<svg class="gsvg" viewBox="0 0 250 70" preserveAspectRatio="none" focusable="false">'
+        '<defs><filter id="soilf" x="-2%" y="-5%" width="104%" height="110%">'
+        '<feTurbulence type="fractalNoise" baseFrequency=".28 .4" numOctaves="3" seed="7" result="n"/>'
+        '<feDiffuseLighting in="n" surfaceScale="4" diffuseConstant="1.25" lighting-color="#b4c4ec" result="l">'
+        '<feDistantLight azimuth="270" elevation="52"/></feDiffuseLighting>'
+        '<feComposite in="l" in2="SourceGraphic" operator="in" result="lit"/>'
+        '<feBlend in="SourceGraphic" in2="lit" mode="multiply"/></filter>'
+        '<linearGradient id="blade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f8a78"/>'
+        '<stop offset=".45" stop-color="#34472a"/><stop offset="1" stop-color="#141c10"/></linearGradient></defs>'
+        f'<path class="ground" d="{ground}" fill="#5b3f2b" filter="url(#soilf)"/>'
+        f'<path d="M0 46.5 {top.replace("L", "L")} L250 46.5" fill="none" stroke="rgba(160,182,230,.3)" stroke-width=".7"/>'
+        f'<path class="tufts" d="{tufts}" fill="url(#blade)"/>'
+        f'<path class="mound" d="{mound}" fill="#5b3f2b" filter="url(#soilf)"/>'
+        '<g class="scr">' + "".join(f'<path pathLength="1" d="{d}"/>' for d in _SOIL_CRACKS) + "</g>"
+        f'<path class="heap" d="{heap}" fill="#5b3f2b" filter="url(#soilf)"/>'
+        '<g class="tear"><path d="M44 48 L47 37 L53 43 L57 33 L64 47Z" fill="#5b3f2b" filter="url(#soilf)" '
+        'transform="rotate(-14 54 48)"/><path d="M186 48 L192 34 L198 42 L203 36 L207 48Z" fill="#5b3f2b" '
+        'filter="url(#soilf)" transform="rotate(14 196 48)"/>'
+        '<path d="M45 40 L47 33 L50 39 L53 31 L56 40Z M190 38 L193 31 L196 37 L199 32 L202 40Z" '
+        'fill="url(#blade)"/></g></svg>')
+    lumps = "".join(
+        f'<i class="clump lump" style="--x:{x};--y:{y};--s:{s}"></i>' for x, y, s in _LUMPS)
+    falls = "".join(
+        f'<i class="clump fall" style="--x:{x};--y:{y};--s:{s};--dx:{dx};--t:{t}"></i>'
+        for x, y, s, dx, t in _FALLS)
+    return f'<div class="soil" aria-hidden="true">{svg}{lumps}</div><div class="shed" aria-hidden="true">{falls}</div>'
+
+
 # R17.3: the crack starts at the top of the arch (y=0) and runs down the middle of the face.
 _CRACK_D = "M51 0 L45 13 L56 27 L43 44 L55 61 L46 78 L52 100"
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
@@ -2642,11 +2711,14 @@ var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)
 function f(n){return n.toFixed(2);}
 function row(){return rows[+slider.value];}
 function height(c){return Math.round(70+150*Math.min(c/T.total,1));}
-var last=0,earth=document.getElementById("run-earth");
+var last=0,earth=document.getElementById("run-earth"),SETTLE=450,HEAVE=950;
 function dig(){if(reduce||!earth){return;}earth.classList.remove("dig");void earth.offsetWidth;
   earth.classList.add("dig");}
-function draw(c){count.textContent=f(c)+" credits est.";cost.textContent=f(c);
-  stone.style.setProperty("--rh",height(c)+"px");if(c>last+1e-9){dig();}last=c;}
+function draw(c){count.textContent=f(c)+" credits est.";setCost(f(c));
+  var hh=height(c);stone.style.setProperty("--rh",hh+"px");
+  if(earth){earth.style.setProperty("--rh",hh+"px");earth.style.setProperty("--hp",((hh-70)/150).toFixed(3));}
+  if(c>last+1e-9){dig();}last=c;}
+function setCost(t){var all=stone.querySelectorAll(".cost"),i;for(i=0;i<all.length;i++){all[i].textContent=t;}}
 function clear(){verdict.textContent="";}
 function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
   p.textContent=text;verdict.appendChild(p);}
@@ -2662,7 +2734,7 @@ function boom(){if(!soundOn||!ac){return;}
   og.gain.setValueAtTime(.9,t+.05);og.gain.exponentialRampToValueAtTime(.001,t+.7);
   o.connect(og);og.connect(ac.destination);o.start(t+.05);o.stop(t+.75);}catch(e){}}
 function reset(){if(timer){clearTimeout(timer);timer=null;}
-  hero.classList.remove("stopped","scare");root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
+  hero.classList.remove("stopped","scare");if(earth){earth.classList.remove("heave","dig");}root.classList.remove("stopped");stone.className="hstone";count.classList.remove("hot");
   clear();draw(0);}
 function finish(r){var steps=r.stop_at;
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
@@ -2675,9 +2747,11 @@ function finish(r){var steps=r.stop_at;
 function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
   if(reduce){finish(r);return;}
   var i=0,gap=6000/steps;
-  (function tick(){i+=1;draw(T.credits[i-1]);
-    if(i>=steps){timer=setTimeout(function(){finish(r);},gap);return;}
-    timer=setTimeout(tick,gap);})();}
+  function tick(){i+=1;draw(T.credits[i-1]);
+    if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}
+    timer=setTimeout(tick,gap);}
+  if(earth){earth.classList.add("heave");}
+  timer=setTimeout(function(){if(earth){earth.classList.remove("heave");}tick();},HEAVE);}
 function label(){out.textContent=f(row().cap)+" credits";
   slider.setAttribute("aria-valuetext",f(row().cap)+" credits");}
 var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start=k;}}
@@ -2725,6 +2799,20 @@ def _g_runner(trace: Optional[dict]) -> str:
                   f"{total:.2f} credits est.</p>")
         shown, state, cls = total, "", "hstone"
     height = round(70 + 150 * min(shown / total, 1)) if total else 70
+    hp = (height - 70) / 150
+    left, right = _split_clips()
+    clip_l, clip_r = f"{left}", f"{right}"
+    uri = _scene_uri("headstone.webp")
+    dust = ('<svg class="dust" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+            '<path class="d1" d="M17 18 C18 4 36 1 50 1 C64 1 82 4 83 18 M6 20 L16 18 M84 18 L94 20"/>'
+            '<path class="d2" d="M17 20 C18 7 36 3 50 3 C64 3 82 7 83 20 M10 24 L16 21 M84 21 L90 24"/></svg>')
+
+    def half(first: bool) -> str:
+        cost_attr = 'class="cost" id="run-stone-cost"' if first else 'class="cost cr"'
+        return (f'<img class="hs" alt="" src="{uri}">'
+                f'<span class="carve"><span {cost_attr}>{shown:.2f}</span>'
+                f'<span class="cunit">credits est.</span></span>{dust}')
+
     return (
         f'<section class="runner{state}" id="runner" aria-labelledby="runh">\n'
         '<h2 id="runh" class="sr">Run the agent</h2>\n'
@@ -2738,16 +2826,17 @@ def _g_runner(trace: Optional[dict]) -> str:
         '<div class="scene"><div class="meter">Spent so far'
         f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
         f"{shown:.2f} credits est.</b></div>"
-        f'<div class="grave"><div class="earth" id="run-earth"><div id="run-stone" class="{cls}" '
-        f'style="--rh:{height}px" role="img" '
+        f'<div class="grave"><div class="earth" id="run-earth" style="--rh:{height}px;--hp:{hp:.3f}">'
+        f'<div id="run-stone" class="{cls}" '
+        f'style="--rh:{height}px;--cl:{clip_l};--cr:{clip_r}" role="img" '
         'aria-label="Headstone that rises with the spend">'
-        f'<img class="hs" alt="" src="{_scene_uri("headstone.webp")}">'
-        f'<span class="carve"><span class="cost" id="run-stone-cost">{shown:.2f}</span>'
-        '<span class="cunit">credits est.</span></span>'
         '<svg class="scrack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
         f'<path class="glow" pathLength="1" d="{_CRACK_D}"/>'
         f'<path class="cut" pathLength="1" d="{_CRACK_D}"/>'
-        '</svg></div><div class="dirt" aria-hidden="true"></div></div></div>'
+        '</svg>'
+        f'<div class="half hl">{half(True)}</div>'
+        f'<div class="half hr" aria-hidden="true">{half(False)}</div>'
+        f'</div>{_g_soil(hp)}</div></div>'
         f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
         f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
         "</section>\n"
@@ -2836,21 +2925,36 @@ _HERO_CSS = """
 .hero .runner.stopped .hstone .scrack{opacity:1}
 .hero .hstone .scrack .glow{stroke:rgba(255,48,48,.7);stroke-width:13;filter:blur(3.5px)}
 .hero .hstone .scrack .cut{stroke:#06080c;stroke-width:5;filter:none}
-.hero .earth::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--k) * 26px);
-  pointer-events:none;
-  background:repeating-linear-gradient(97deg,transparent 0 4px,rgba(58,84,48,.95) 4px 5px,transparent 5px 8px,
-      rgba(34,52,32,.95) 8px 9px,transparent 9px 12px) top/100% 9px no-repeat,
-    linear-gradient(180deg,rgba(32,38,26,.0) 0,#1b2117 9px,#0b0e0a 100%);
-  -webkit-mask-image:radial-gradient(ellipse 50% 125% at 50% 100%,#000 58%,transparent 100%);
-  mask-image:radial-gradient(ellipse 50% 125% at 50% 100%,#000 58%,transparent 100%)}
-.hero .dirt{position:absolute;left:14%;right:14%;bottom:calc(var(--k) * 16px);height:calc(var(--k) * 40px);
-  pointer-events:none;opacity:0;
-  background:radial-gradient(circle 2px at 14% 30%,#4a3b2c 90%,transparent),
-    radial-gradient(circle 1.5px at 30% 10%,#2c2219 90%,transparent),
-    radial-gradient(circle 2.5px at 48% 40%,#3a2d21 90%,transparent),
-    radial-gradient(circle 1.5px at 66% 15%,#5a4836 90%,transparent),
-    radial-gradient(circle 2px at 82% 35%,#2c2219 90%,transparent),
-    radial-gradient(circle 1px at 92% 8%,#4a3b2c 90%,transparent)}
+.hero .hstone{z-index:2}
+.hero .hstone .half{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,1.5,.4,1)}
+.hero .hstone .hl{transform-origin:30% 100%}.hero .hstone .hr{transform-origin:70% 100%;opacity:0}
+.hero.stopped .hstone .hr{opacity:1}
+.hero.stopped .hstone .hl{clip-path:polygon(var(--cl));transform:translateX(calc(var(--k) * -3.5px)) rotate(-1.8deg)}
+.hero.stopped .hstone .hr{clip-path:polygon(var(--cr));transform:translateX(calc(var(--k) * 3.5px)) rotate(2.2deg)}
+.hero .hstone .dust{position:absolute;inset:0;width:100%;height:100%;pointer-events:none;overflow:visible;
+  opacity:calc(.45 + .55 * var(--hp,1))}
+.hero .hstone .dust path{fill:none;stroke-linecap:round;vector-effect:non-scaling-stroke;filter:blur(.4px)}
+.hero .hstone .dust .d1{stroke:#3d2a1b;stroke-width:5;stroke-dasharray:0 6}
+.hero .hstone .dust .d2{stroke:#8a7863;stroke-width:2.5;stroke-dasharray:0 9;stroke-dashoffset:3}
+/* the earth: dark brown soil lit by the same cold moon as the photo (light from above, bluish) */
+.hero .soil{position:absolute;left:0;right:0;bottom:0;height:calc(var(--k) * 70px);z-index:3;pointer-events:none}
+.hero .gsvg{position:absolute;left:0;bottom:0;width:100%;height:100%;overflow:visible;
+  -webkit-mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%);
+  mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%)}
+.hero .gsvg .mound,.hero .gsvg .heap{transform-box:fill-box;transform-origin:50% 100%;
+  transition:transform .5s ease-out,opacity .4s}
+.hero .gsvg .heap{transform:scale(calc(.8 + .2 * var(--hp,1)),calc(.4 + .6 * var(--hp,1)))}
+.hero .gsvg .scr path{fill:none;stroke:#0a0603;stroke-width:1.1;stroke-linejoin:round;stroke-dasharray:1;
+  stroke-dashoffset:0;vector-effect:non-scaling-stroke}
+.hero .clump{position:absolute;border-radius:48% 52% 45% 55% / 55% 45% 55% 45%;
+  width:calc(var(--s) * var(--k) * 1px);height:calc(var(--s) * var(--k) * .8px);
+  background:radial-gradient(circle at 34% 24%,#9aa3bc 0,#5b4634 24%,#2f2016 60%,#120b06 100%);
+  box-shadow:0 1px 1px rgba(0,0,0,.7)}
+.hero .lump{left:calc(var(--x) * var(--k) * 1px);bottom:calc(var(--y) * var(--k) * 1px)}
+.hero .shed{position:absolute;left:50%;top:calc((228px - var(--rh)) * var(--k));width:0;height:0;z-index:4;
+  pointer-events:none}
+.hero .fall{left:calc(var(--x) * var(--k) * 1px);top:calc(var(--y) * var(--k) * 1px);opacity:0;
+  --fd:calc((var(--rh) - 26px - var(--y) * 1px) * var(--k))}
 @media (prefers-reduced-motion:no-preference){
   .hero .fogl svg{animation:drift 90s linear infinite}
   .hero .f2 svg{animation-duration:62s;animation-direction:reverse}
@@ -2862,19 +2966,30 @@ _HERO_CSS = """
   @keyframes crackpulse{0%{opacity:.5}40%{opacity:1}100%{opacity:.8}}
   .hero.scare .grave{animation:tremor .4s linear .05s both}
   .hero .earth.dig .hstone{animation:hshake .24s linear}
-  .hero .earth.dig .dirt{animation:fall .7s ease-in both}
+  .hero .earth.dig .fall{animation:shed .95s ease-in calc(var(--t) * 1s) both}
+  .hero .earth.heave .hstone{top:calc(228px * var(--k));transition:none}
+  .hero .earth.heave .mound{animation:swell .9s ease-out both}
+  .hero .earth.heave .heap{opacity:0}
+  .hero .earth.heave .scr path{animation:open .6s ease-out .25s both}
+  .hero .earth.heave .soil{animation:hshake .2s linear 4}
+  @keyframes swell{from{transform:scaleY(.05)}to{transform:scaleY(1)}}
+  @keyframes open{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
+  @keyframes shed{0%{opacity:0;transform:translate(0,0) rotate(0)}10%{opacity:1}
+    60%{opacity:1;transform:translate(calc(var(--dx) * .45 * var(--k) * 1px),var(--fd)) rotate(calc(var(--dx) * 4deg))}
+    80%{opacity:1;transform:translate(calc(var(--dx) * .8 * var(--k) * 1px),calc(var(--fd) - 3px)) rotate(calc(var(--dx) * 8deg))}
+    100%{opacity:0;transform:translate(calc(var(--dx) * 1.1 * var(--k) * 1px),var(--fd)) rotate(calc(var(--dx) * 11deg))}}
   @keyframes flash{0%{opacity:0}18%{opacity:.3}100%{opacity:0}}
   @keyframes crackrun{from{stroke-dashoffset:1}to{stroke-dashoffset:0}}
   @keyframes tremor{0%,100%{transform:none}20%{transform:translate(-3px,1px)}
     40%{transform:translate(3px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
   @keyframes hshake{0%,100%{transform:none}25%{transform:translate(-2px,1px)}
     50%{transform:translate(2px,-1px)}75%{transform:translate(-1px,0)}}
-  @keyframes fall{0%{opacity:1;transform:translateY(-8px)}100%{opacity:0;transform:translateY(20px)}}
 }
 @media (prefers-reduced-motion:reduce){
   .hero .fogl,.hero .burst,.hero .hstone,.hero .hs,.hero .photo{transition:none}
   .hero::after{display:none}
-  .hero .dirt{display:none}
+  .hero .shed{display:none}
+  .hero .hstone .half,.hero .gsvg .mound,.hero .gsvg .heap{transition:none}
 }
 @media (max-width:900px){
   .hero .runner .scene{grid-template-columns:1fr;justify-items:center;gap:6px}

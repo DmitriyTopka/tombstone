@@ -25,9 +25,10 @@ def test_package_data_resolves_through_the_package():
         assert base.joinpath(name).read_bytes()[:4] == b"RIFF", name
 
 
-def test_three_data_uris_and_nothing_outside_the_page():
+def test_data_uris_and_nothing_outside_the_page():
     page = _page()
-    assert page.count("data:image/webp;base64,") == 3
+    # two background photos, plus the headstone image once per half (R18.4)
+    assert page.count("data:image/webp;base64,") == 4
     assert "--scene-d:url(" in page and "--scene-m:url(" in page
     assert re.search(r'<img class="hs" alt="" src="data:image/webp;base64,', page)
     for url in re.findall(r"url\(([^)]{0,40})", page):
@@ -38,8 +39,8 @@ def test_three_data_uris_and_nothing_outside_the_page():
         "http://www.w3.org/2000/svg", "")
 
 
-def test_page_stays_under_700_kb():
-    assert len(_page().encode("utf-8")) < 700 * 1024
+def test_page_stays_under_750_kb():
+    assert len(_page().encode("utf-8")) < 750 * 1024
 
 
 def test_credit_line_is_at_the_bottom():
@@ -62,7 +63,7 @@ def test_headstone_height_at_the_stop_matches_the_r15_scale():
     trace = demo.trace()
     row = next(r for r in trace["caps"] if r["cap"] == trace["default_cap"])
     expected = round(70 + 150 * min(row["figure"] / trace["total"], 1))
-    assert f'style="--rh:{expected}px"' in page
+    assert f'style="--rh:{expected}px;' in page
     assert "Math.round(70+150*Math.min(c/T.total,1))" in page
     assert 'class="hstone crack-1"' in page and 'class="scrack"' in page
     assert 'id="run-stone-cost"' in page and "credits est." in page
@@ -102,3 +103,66 @@ def test_crack_starts_at_the_top_of_the_stone_and_crosses_the_face():
     assert pts[0][1] == 0 and pts[-1][1] == 100
     assert all(35 <= x <= 65 for x, _ in pts)
     assert 'viewBox="0 0 100 100"' in page and "@keyframes crackpulse" in page
+
+
+# --- Task 29: the headstone breaks through the earth (R18) -------------------
+
+def _script(page: str) -> str:
+    return page.split("RUN_DATA=", 1)[1].split("</script>", 1)[0]
+
+
+def test_earth_elements_exist_in_the_hero():
+    page = _page()
+    hero = page.split('<header class="hero', 1)[1].split("</header>", 1)[0]
+    for cls in ('class="mound"', 'class="scr"', 'class="heap"', 'class="tear"',
+                'class="tufts"', 'class="shed"'):
+        assert cls in hero, cls
+    assert len(re.findall(r'class="clump fall"', hero)) >= 8
+    assert len(re.findall(r'class="clump lump"', hero)) >= 4
+    assert 'class="dust"' in hero and 'id="soilf"' in hero and "feDiffuseLighting" in hero
+    assert re.search(r'id="run-earth" style="--rh:\d+px;--hp:[\d.]+"', hero)
+    css = _css(page).replace("\n", "")
+    assert ".hero .earth.heave .mound{animation:swell" in css
+    assert ".hero .earth.dig .fall{animation:shed" in css
+    assert ".hero .gsvg .heap{transform:scale(" in css
+
+
+def test_heap_grows_with_the_final_height():
+    css = _css(_page()).replace("\n", "")
+    assert "calc(.4 + .6 * var(--hp,1))" in css
+    assert '(hh-70)/150' in _script(_page())
+
+
+def test_split_uses_two_halves_of_the_same_headstone_image():
+    page = _page()
+    imgs = re.findall(r'<img class="hs" alt="" src="(data:image/webp;base64,[^"]+)"', page)
+    assert len(imgs) == 2 and imgs[0] == imgs[1]
+    assert page.count('class="half hl"') == 1 and page.count('class="half hr"') == 1
+    css = _css(page).replace("\n", "")
+    assert ".hero.stopped .hstone .hl{clip-path:polygon(var(--cl))" in css
+    assert ".hero.stopped .hstone .hr{clip-path:polygon(var(--cr))" in css
+    cl = re.search(r"--cl:([^;\"]+)", page).group(1)
+    assert cl.startswith("0% 0%,") and cl.split(",")[1].strip().endswith("% 0.0%") and cl.endswith("0% 100%")
+
+
+def test_stop_and_split_come_after_the_last_rise_step():
+    js = _script(_page()).replace("\n", "")
+    assert "SETTLE=450" in js
+    assert "if(i>=steps){timer=setTimeout(function(){finish(r);},SETTLE);return;}" in js
+    assert 'earth.classList.add("heave")' in js and "},HEAVE);" in js
+    finish = js.split("function finish(r){", 1)[1].split("function run()", 1)[0]
+    assert 'line("stop","STOP")' in finish and 'hero.classList.add("scare")' in finish
+    # the stop and the split are never reached from inside the rise loop
+    tick = js.split("function tick(){", 1)[1].split("if(earth){earth.classList.add", 1)[0]
+    assert "finish(r)" in tick and "STOP" not in tick and "scare" not in tick
+
+
+def test_reduced_motion_and_noscript_show_the_split_stone_in_its_heap():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    assert '<header class="hero stopped"' in page and 'class="runner stopped"' in page
+    assert ".hero.stopped .hstone .hl{clip-path" in css
+    reduce = css.split("@media (prefers-reduced-motion:reduce){  .hero .fogl", 1)[1].split("@media (max-width:900px)", 1)[0]
+    assert ".hero .hstone .half" in reduce and ".hero .shed{display:none}" in reduce
+    assert "heave" not in reduce
+    assert "--hp:" in page.split('id="run-earth"', 1)[1][:60]

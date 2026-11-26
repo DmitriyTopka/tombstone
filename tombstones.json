@@ -2850,6 +2850,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/29",
+      "task_id": "29",
+      "name": "The headstone breaks through the earth",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.8781,
+      "actual": 1.3329,
+      "minutes": 1.1046,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_9dd42b56-ae4b-43ec-a31d-a9c839f8c581",
+          "turn_id": "4273338f-33eb-45f8-9368-942a0de293ce",
+          "requests": 16,
+          "estimate": 7.5123,
+          "actual": 5.3317,
+          "minutes": 4.4185,
+          "start": "2026-11-26T13:34:58.276000Z",
+          "end": "2026-11-26T13:39:23.387000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/29.1",
+      "task_id": "29.1",
+      "name": "Ground heave, breaking ground, falling earth and the heap",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.8781,
+      "actual": 1.3329,
+      "minutes": 1.1046,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_9dd42b56-ae4b-43ec-a31d-a9c839f8c581",
+          "turn_id": "4273338f-33eb-45f8-9368-942a0de293ce",
+          "requests": 16,
+          "estimate": 7.5123,
+          "actual": 5.3317,
+          "minutes": 4.4185,
+          "start": "2026-11-26T13:34:58.276000Z",
+          "end": "2026-11-26T13:39:23.387000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/29.2",
+      "task_id": "29.2",
+      "name": "The split at the end",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.8781,
+      "actual": 1.3329,
+      "minutes": 1.1046,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_9dd42b56-ae4b-43ec-a31d-a9c839f8c581",
+          "turn_id": "4273338f-33eb-45f8-9368-942a0de293ce",
+          "requests": 16,
+          "estimate": 7.5123,
+          "actual": 5.3317,
+          "minutes": 4.4185,
+          "start": "2026-11-26T13:34:58.276000Z",
+          "end": "2026-11-26T13:39:23.387000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/29.3",
+      "task_id": "29.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 16,
+      "estimate": 1.8781,
+      "actual": 1.3329,
+      "minutes": 1.1046,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_9dd42b56-ae4b-43ec-a31d-a9c839f8c581",
+          "turn_id": "4273338f-33eb-45f8-9368-942a0de293ce",
+          "requests": 16,
+          "estimate": 7.5123,
+          "actual": 5.3317,
+          "minutes": 4.4185,
+          "start": "2026-11-26T13:34:58.276000Z",
+          "end": "2026-11-26T13:39:23.387000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
