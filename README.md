@@ -1,5 +1,5 @@
 # Tombstone
-> **Judges, 60 seconds:** open the [graveyard page](https://dmitriytopka.github.io/tombstone/), set a cap and press **Release the agent** · [Devpost entry](https://devpost.com/software/tombstone-8p6fvg) · [video, 2:50](https://youtu.be/WuSgkWJ0ol8). One number: a long Kiro task with a 1.00 cap stopped at 1.17 to 1.37 credits; without the cap it ran to 4.13 to 5.83.
+> **Judges, 60 seconds:** open the [graveyard page](https://dmitriytopka.github.io/tombstone/), set a cap and press **Release the agent** · [Devpost entry](https://devpost.com/software/tombstone-8p6fvg) · [video, 2:50](https://youtu.be/9YfDC9yDQrg). One number: a long Kiro task with a 1.00 cap stopped at 1.17 to 1.37 credits; without the cap it ran to 4.13 to 5.83.
 
 [![tests](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml/badge.svg)](https://github.com/DmitriyTopka/tombstone/actions/workflows/tests.yml)
 
@@ -40,7 +40,7 @@ Three credit totals appear in this repo, and they count different things:
 - **Catches a stall**, when the agent keeps calling the model and no project file changes.
 - **Costs zero credits.** No model calls, no agent hooks, no network.
 
-Video, 2:50: [youtu.be/WuSgkWJ0ol8](https://youtu.be/WuSgkWJ0ol8)  
+Video, 2:50: [youtu.be/9YfDC9yDQrg](https://youtu.be/9YfDC9yDQrg)  
 Devpost entry: [devpost.com/software/tombstone-8p6fvg](https://devpost.com/software/tombstone-8p6fvg)  
 Live graveyard of this build: [dmitriytopka.github.io/tombstone](https://dmitriytopka.github.io/tombstone/)
 
