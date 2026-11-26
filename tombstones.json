@@ -2430,6 +2430,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/26",
+      "task_id": "26",
+      "name": "Run the agent on the page",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.6859,
+      "actual": 1.132,
+      "minutes": 0.9813,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_7b539170-8a81-4652-bb8f-5788b88d0103",
+          "turn_id": "1b9cb05a-e040-471b-b538-68cf54153f06",
+          "requests": 21,
+          "estimate": 6.7437,
+          "actual": 4.5278,
+          "minutes": 3.9251,
+          "start": "2026-11-26T10:38:09.692000Z",
+          "end": "2026-11-26T10:42:05.198000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/26.1",
+      "task_id": "26.1",
+      "name": "Trace at build time",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.6859,
+      "actual": 1.132,
+      "minutes": 0.9813,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_7b539170-8a81-4652-bb8f-5788b88d0103",
+          "turn_id": "1b9cb05a-e040-471b-b538-68cf54153f06",
+          "requests": 21,
+          "estimate": 6.7437,
+          "actual": 4.5278,
+          "minutes": 3.9251,
+          "start": "2026-11-26T10:38:09.692000Z",
+          "end": "2026-11-26T10:42:05.198000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/26.2",
+      "task_id": "26.2",
+      "name": "The block on the page",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.6859,
+      "actual": 1.132,
+      "minutes": 0.9813,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_7b539170-8a81-4652-bb8f-5788b88d0103",
+          "turn_id": "1b9cb05a-e040-471b-b538-68cf54153f06",
+          "requests": 21,
+          "estimate": 6.7437,
+          "actual": 4.5278,
+          "minutes": 3.9251,
+          "start": "2026-11-26T10:38:09.692000Z",
+          "end": "2026-11-26T10:42:05.198000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/26.3",
+      "task_id": "26.3",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 1.6859,
+      "actual": 1.132,
+      "minutes": 0.9813,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_7b539170-8a81-4652-bb8f-5788b88d0103",
+          "turn_id": "1b9cb05a-e040-471b-b538-68cf54153f06",
+          "requests": 21,
+          "estimate": 6.7437,
+          "actual": 4.5278,
+          "minutes": 3.9251,
+          "start": "2026-11-26T10:38:09.692000Z",
+          "end": "2026-11-26T10:42:05.198000Z",
+          "share": 0.25,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

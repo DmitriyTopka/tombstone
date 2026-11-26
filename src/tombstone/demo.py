@@ -37,6 +37,77 @@ def packaged_session() -> Optional[Path]:
     return found[0] if found else None
 
 
+def cap_grid(total_credits: float) -> list[float]:
+    """Slider positions in 0.05 steps (est.): from 0.05 up to just under the
+    total, plus one step above it so the slider can show a cap never reached.
+    """
+    caps_list: list[float] = []
+    step = 1
+    while round(step * 0.05, 2) < total_credits:
+        caps_list.append(round(step * 0.05, 2))
+        step += 1
+    if caps_list:
+        caps_list.append(round(step * 0.05, 2))
+    return caps_list
+
+
+def trace(source: Optional[Path] = None,
+          caps_list: Optional[list] = None) -> Optional[dict]:
+    """Replay the packaged session for every slider cap, in memory (R15.2).
+
+    Uses the same loop as ``run``: ``watcher.evaluate`` on each request, with
+    the watcher's own estimate. The refusal text comes from
+    ``stop.refusal_text``, the function behind the pre-tool hook. Nothing is
+    written, no hook process runs, no clock is read. Returns None when the
+    packaged session is missing or has no turn. All credits are est.
+
+    Shape: ``{"credits": [est. after request 1, ...], "total": float,
+    "default_cap": float, "caps": [{"cap", "stop_at", "figure", "refusal"}]}``
+    where ``stop_at``, ``figure`` and ``refusal`` are None when no stop.
+    ``caps_list`` overrides the slider positions from ``cap_grid``.
+    """
+    from . import caps, sessions, stop, watcher
+
+    source = source or packaged_session()
+    if source is None:
+        return None
+    session = sessions.parse_session(source)
+    if not session.turns:
+        return None
+    turn_id = session.turns[0].turn_id
+    count = sessions.assistant_counts(source).get(turn_id, 0)
+    if count < 1:
+        return None
+    start = datetime(2000, 1, 1, tzinfo=timezone.utc)
+
+    def replay(cap: float) -> tuple[list[float], Optional[int], Optional[float], Optional[str]]:
+        cfg = caps.Config(task_cap=cap)
+        state = watcher.default_state()
+        watcher.set_session(state, session.session_id, "v3", source)
+        state["turn"] = {"watch_turn_id": turn_id, "started_at": start.isoformat(),
+                         "event_raised": False}
+        credits: list[float] = []
+        for units in range(1, count + 1):
+            obs = watcher.Observation(
+                project="", session_path=str(source), engine="v3",
+                session_id=session.session_id, turn_id=turn_id, units=units)
+            event = watcher.evaluate(state, obs, cfg, start + timedelta(seconds=units))
+            estimate = watcher.open_estimate(state, units, "v3", cfg.avg_request_price)
+            credits.append(round(estimate, 4))
+            if event is not None:
+                return credits, units, round(estimate, 4), \
+                    stop.refusal_text({"message": event.message})
+        return credits, None, None, None
+
+    full, _, _, _ = replay(1e9)
+    total = full[-1]
+    rows = []
+    for cap in (cap_grid(total) if caps_list is None else caps_list):
+        _, at, figure, refusal = replay(cap)
+        rows.append({"cap": cap, "stop_at": at, "figure": figure, "refusal": refusal})
+    return {"credits": full, "total": total, "default_cap": DEMO_TASK_CAP, "caps": rows}
+
+
 def prepare_dir(dir_arg: Optional[str]) -> Path:
     """The scratch project: a new temp dir, or ``--dir`` when empty or absent.
 

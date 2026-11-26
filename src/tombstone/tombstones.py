@@ -2562,6 +2562,139 @@ def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER,
     return {"title": title, "html": markup}
 
 
+# --- "Run the agent" block (R15) ------------------------------------------
+
+_RUN_CAPTION = ("A recorded real Kiro CLI session, scrubbed. For every cap on the slider, "
+                "the stop point was computed by Tombstone's own watcher code when this "
+                "page was built.")
+
+_RUN_CSS = """
+.runner{max-width:880px;margin:0 auto;padding:28px 20px 8px}
+.runner h2{font-size:26px;margin:0 0 6px}
+.runner .caption{color:var(--muted);margin:0 0 16px;font-size:15px}
+.runner .controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;margin:0 0 18px}
+.runner label{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:16px}
+.runner input[type=range]{width:min(320px,70vw);min-height:32px;accent-color:var(--ember)}
+.runner button.run{font:inherit;font-size:17px;min-height:44px;min-width:96px;padding:6px 22px;
+  color:var(--bone);background:#2a1215;border:1px solid var(--ember);border-radius:4px;cursor:pointer}
+.runner button.run:hover{background:#3a1519}
+.runner .scene{display:flex;flex-wrap:wrap;gap:20px 32px;align-items:flex-end}
+.runner .meter{font-size:15px;color:var(--muted);min-width:180px}
+.runner .meter b{display:block;font-size:34px;color:var(--bone);font-weight:600}
+.runner .meter b.hot{color:var(--ember)}
+.runner .grave{flex:0 0 auto;display:flex;align-items:flex-end;min-height:260px;padding:0 20px 14px}
+.runner .stone{--h:var(--rh);transition:height .5s ease,width .5s ease;cursor:default;
+  background:var(--grain),linear-gradient(255deg,#9a9596,#6e6a6d 42%,#433f46);
+  width:calc(var(--h) * .66);min-width:104px;align-items:center;justify-content:center;display:flex;color:#1d1a1c}
+.runner .stone .cost{margin:0;color:#2a2528}
+.runner.stopped .stone{box-shadow:0 0 34px 6px rgba(255,59,59,.35)}
+.runner .verdict{flex:1 1 260px;min-height:120px}
+.runner .verdict .stop{font-size:30px;letter-spacing:.14em;color:var(--ember);font-weight:700;margin:0}
+.runner .verdict p{margin:4px 0;overflow-wrap:anywhere}
+.runner .verdict .refusal{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;
+  background:#1a1014;border-left:3px solid var(--ember);padding:8px 10px}
+@media (prefers-reduced-motion:reduce){.runner .stone{transition:none}}
+@media (max-width:640px){.runner{padding:20px 14px 4px}.runner .grave{min-height:200px;padding:0 6px 14px}
+  .runner .meter b{font-size:28px}.runner .verdict .stop{font-size:24px}}
+"""
+
+_RUN_JS = """
+(function(){
+var root=document.getElementById("runner");
+if(!root||typeof RUN_DATA==="undefined"){return;}
+var T=RUN_DATA,rows=T.caps;
+var slider=document.getElementById("run-cap"),out=document.getElementById("run-cap-out"),
+    btn=document.getElementById("run-go"),count=document.getElementById("run-count"),
+    stone=document.getElementById("run-stone"),cost=document.getElementById("run-stone-cost"),
+    verdict=document.getElementById("run-verdict"),timer=null;
+var reduce=window.matchMedia&&window.matchMedia("(prefers-reduced-motion:reduce)").matches;
+function f(n){return n.toFixed(2);}
+function row(){return rows[+slider.value];}
+function height(c){return Math.round(70+150*Math.min(c/T.total,1));}
+function draw(c){count.textContent=f(c)+" credits est.";cost.textContent=f(c);
+  stone.style.setProperty("--rh",height(c)+"px");}
+function clear(){verdict.textContent="";}
+function line(cls,text){var p=document.createElement("p");if(cls){p.className=cls;}
+  p.textContent=text;verdict.appendChild(p);}
+function reset(){if(timer){clearTimeout(timer);timer=null;}
+  root.classList.remove("stopped");stone.className="stone shape-arch";count.classList.remove("hot");
+  clear();draw(0);}
+function finish(r){var steps=r.stop_at;
+  if(steps){root.classList.add("stopped");stone.className="stone shape-arch crack-1";
+    count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
+    line("","hook exit code 2");line("refusal",r.refusal);
+    line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}
+  else{draw(T.total);clear();line("","The cap was never reached. The session finished at "
+    +f(T.total)+" credits est.");}}
+function run(){reset();var r=row(),steps=r.stop_at||T.credits.length;
+  if(reduce){finish(r);return;}
+  var i=0,gap=6000/steps;
+  (function tick(){i+=1;draw(T.credits[i-1]);
+    if(i>=steps){timer=setTimeout(function(){finish(r);},gap);return;}
+    timer=setTimeout(tick,gap);})();}
+function label(){out.textContent=f(row().cap)+" credits";
+  slider.setAttribute("aria-valuetext",f(row().cap)+" credits");}
+var start=0;for(var k=0;k<rows.length;k++){if(rows[k].cap===T.default_cap){start=k;}}
+slider.value=start;label();
+slider.addEventListener("input",function(){label();reset();});
+btn.addEventListener("click",run);
+reset();
+})();
+"""
+
+
+def _run_json(trace: dict) -> str:
+    """Inline JSON for a script tag: ``<``, ``>``, ``&`` and line separators escaped."""
+    text = json.dumps(trace, separators=(",", ":"), ensure_ascii=True)
+    return text.replace("<", "\\u003c").replace(">", "\\u003e").replace("&", "\\u0026")
+
+
+def _g_runner(trace: Optional[dict]) -> str:
+    """The "Run the agent" block (R15.1, R15.3, R15.4). Empty when no trace.
+
+    Server-rendered for the default cap so it reads with JavaScript off; the
+    script only looks up the embedded results and animates them.
+    """
+    if not trace or not trace.get("caps"):
+        return ""
+    esc = functools.partial(html.escape, quote=True)
+    rows = trace["caps"]
+    default = next((i for i, r in enumerate(rows) if r["cap"] == trace["default_cap"]), 0)
+    chosen = rows[default]
+    total = trace["total"]
+    if chosen["stop_at"]:
+        result = (
+            '<p class="stop">STOP</p><p>hook exit code 2</p>'
+            f'<p class="refusal">{esc(chosen["refusal"])}</p>'
+            f"<p>Without the breaker this session went on to {total:.2f} credits est.</p>")
+        shown, state, cls = chosen["figure"], " stopped", "stone shape-arch crack-1"
+    else:
+        result = (f"<p>The cap was never reached. The session finished at "
+                  f"{total:.2f} credits est.</p>")
+        shown, state, cls = total, "", "stone shape-arch"
+    height = round(70 + 150 * min(shown / total, 1)) if total else 70
+    return (
+        f'<section class="runner{state}" id="runner" aria-labelledby="runh">\n'
+        '<h2 id="runh">Run the agent</h2>\n'
+        f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
+        '<div class="controls"><label for="run-cap">Cap '
+        f'<input id="run-cap" type="range" min="0" max="{len(rows) - 1}" step="1" '
+        f'value="{default}" aria-label="Cap in credits"> '
+        f'<output id="run-cap-out" for="run-cap">{chosen["cap"]:.2f} credits</output></label>'
+        '<button id="run-go" type="button" class="run">Run</button></div>\n'
+        '<div class="scene"><div class="meter">Spent so far'
+        f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
+        f"{shown:.2f} credits est.</b></div>"
+        f'<div class="grave"><div id="run-stone" class="{cls}" '
+        f'style="--rh:{height}px" role="img" '
+        'aria-label="Headstone that grows with the spend">'
+        f'<span class="cost" id="run-stone-cost">{shown:.2f}</span></div></div>'
+        f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
+        "</section>\n"
+    )
+
+
+
 def render_graveyard(records: list, plots: Optional[dict] = None,
                      included: Optional[dict] = None,
                      receipts: Optional[dict] = None,
@@ -2586,6 +2719,11 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
     header (R2.12). Each is escaped and left out when not given.
     """
     esc = functools.partial(html.escape, quote=True)
+    from . import demo
+    try:
+        run_trace = demo.trace()
+    except Exception:  # noqa: BLE001 - the page never fails for the demo block
+        run_trace = None
     receipts = receipts if isinstance(receipts, dict) else {}
     plots = plots if isinstance(plots, dict) else {}
     rows = [r for r in (records or []) if isinstance(r, dict)]
@@ -2678,10 +2816,11 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<html lang="en">\n<head>\n<meta charset="utf-8">\n'
         '<meta name="viewport" content="width=device-width, initial-scale=1">\n'
         f"<title>{esc(header['title'])}</title>\n"
-        f"<style>\n{_GRAVEYARD_CSS}\n</style>\n</head>\n<body>\n"
+        f"<style>\n{_GRAVEYARD_CSS}\n{_RUN_CSS}\n</style>\n</head>\n<body>\n"
         '<div class="fog" aria-hidden="true"></div>\n'
         f"{header['html']}"
         "<main>\n"
+        f"{_g_runner(run_trace)}"
         f'<section class="ground" id="ground" aria-label="Tasks by plot">'
         f'<div class="field">{"".join(parts)}</div></section>\n'
         '<section class="register" aria-labelledby="regh">\n'
@@ -2711,7 +2850,10 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         '<div id="crb" hidden><dl id="crd"></dl><pre id="crt" tabindex="0"></pre>'
         '<p class="rl">Last tool calls</p><ol id="crc"></ol></div></section>'
         '<form method="dialog"><button>Close</button></form></dialog>\n'
-        f"<script>\n{_GRAVEYARD_JS}\n</script>\n</body>\n</html>\n"
+        f"<script>\n{_GRAVEYARD_JS}\n"
+        f"{('var RUN_DATA=' + _run_json(run_trace) + ';' + _RUN_JS) if run_trace else ''}"
+        "\n</script>\n"
+        f"</body>\n</html>\n"
     )
 
 

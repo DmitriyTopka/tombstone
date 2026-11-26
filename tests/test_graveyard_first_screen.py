@@ -23,7 +23,9 @@ def _stopped(rid: str, name: str = "secret prompt words", **over) -> dict:
 
 def _visible(page: str) -> str:
     """Page text a reader sees: no title, style, script or tag attributes."""
-    page = re.sub(r"<title>.*?</title>|<style>.*?</style>|<script>.*?</script>", "", page, flags=re.S)
+    # The "Run the agent" block (R15) quotes the hook's refusal text, which says "turn".
+    page = re.sub(r"<title>.*?</title>|<style>.*?</style>|<script>.*?</script>"
+                  r'|<section class="runner[^"]*".*?</section>', "", page, flags=re.S)
     return re.sub(r"<[^>]+>", " ", page)
 
 

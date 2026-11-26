@@ -100,6 +100,11 @@ def check_stop(project: Path) -> Optional[str]:
     content = read_stop(project)
     if content is None:
         return None
+    return refusal_text(content)
+
+
+def refusal_text(content: dict) -> str:
+    """The one line the pre-tool hook prints for a STOP file with ``content``."""
     message = content.get("message")
     if isinstance(message, str) and message.strip():
         return message.strip().splitlines()[0]
