@@ -9,7 +9,7 @@
 
 **Who it's for:** a developer on a paid Kiro plan who starts a spec and walks away.
 
-**Built with Kiro:** the spec in `.kiro/specs/tombstone/` (23 requirements in EARS, 34 tasks), 7 command hooks, a steering file, the MCP tool `get_budget` and a Power in `power/`. One requirement followed all the way to the refusal the agent reads: [From spec to hook](#from-spec-to-hook).
+**Built with Kiro:** the spec in `.kiro/specs/tombstone/` (25 requirements in EARS, 36 tasks), 7 command hooks, a steering file, the MCP tool `get_budget` and a Power in `power/`. One requirement followed all the way to the refusal the agent reads: [From spec to hook](#from-spec-to-hook).
 
 Tombstone is a circuit breaker for Kiro specs. You give every spec task a credit cap. When a running task goes past it, Tombstone blocks the agent's next tool call with a plain message, and if the agent keeps going, it ends the `kiro-cli` process for that project. Every finished task gets a tombstone with its real price, and every stopped one leaves a receipt. The breaker itself spends zero credits and never changes your model.
 
@@ -19,7 +19,7 @@ Tombstone is a circuit breaker for Kiro specs. You give every spec task a credit
 
 Built for Kiroween 2026, Costume Contest. MIT. Tested on Kiro CLI 3.0.0 and 3.1.0 (V3 engine), the live process kill on 3.5.0, the cost experiment on 3.6.0, macOS; CI runs the tests on Linux and macOS with Python 3.11 and 3.12. No dependencies outside the standard library.
 
-**Try it in the browser:** open the [graveyard page](https://dmitriytopka.github.io/tombstone/), set a cap and press **Release the agent**. A recorded real Kiro CLI session spends request by request, the headstone rises out of the earth as the credits go, and at the cap it cracks and shows the refusal the agent read. The stop point for every cap on the slider was computed by Tombstone's own watcher code when the page was built; the browser only plays it back.
+**Try it in the browser:** open the [graveyard page](https://dmitriytopka.github.io/tombstone/), set a cap and press **Release the agent**. A recorded real Kiro CLI session spends request by request, the headstone rises out of the earth as the credits go, and at the cap it cracks and shows the refusal the agent read. The stop point for every cap on the slider was computed by Tombstone's own watcher code when the page was built; the browser only plays it back. Below it, **Bury your own session** plays a real run from the cost experiment, or your own Kiro CLI `messages.jsonl`, on the same stone: your file is read in the browser and never leaves it, and only credit figures are read.
 
 ![The graveyard page: the cap is set, the agent is released, the headstone grinds up out of the earth and splits at the cap while the screen turns red](docs/img/scene.gif)
 
@@ -31,9 +31,9 @@ Three credit totals appear in this repo, and they count different things:
 
 | Total | What it counts |
 |---|---|
-| **282.45**, on the page | 151 stones: the build of this repo (126 stones, 270.08 credits) and the 25 live test runs the breaker stopped (12.37: 12.05 priced, 0.32 estimated for the one turn Tombstone killed, which Kiro never priced) |
-| 270.08 | the build alone, in [tombstones.json](tombstones.json) |
-| 394.37 | Kiro's `/usage` for the whole account, which adds measurements, the cost experiment and the video recording |
+| **294.49**, on the page | 159 stones: the build of this repo (134 stones, 282.12 credits) and the 25 live test runs the breaker stopped (12.37: 12.05 priced, 0.32 estimated for the one turn Tombstone killed, which Kiro never priced) |
+| 282.12 | the build alone, in [tombstones.json](tombstones.json) |
+| 406.43 | Kiro's `/usage` for the whole account, which adds measurements, the cost experiment and the video recording |
 
 - **Prices every spec task** in credits, from the session files Kiro already writes. Nothing leaves your machine.
 - **Stops a runaway turn** past its cap: the `PreToolUse` hook refuses the next tool call, and the agent reads why.
@@ -57,7 +57,7 @@ flowchart LR
 
 ## Try it in 60 seconds
 
-You don't need Kiro or credits for this part. You need Python 3.11 or newer; the `python3` that ships with macOS is often older, so the commands use [uv](https://docs.astral.sh/uv/). The repo carries the 126 real tombstones from its own build, the 25 turns the breaker stopped in our live tests (`live_stops.json`) and a real V3 session.
+You don't need Kiro or credits for this part. You need Python 3.11 or newer; the `python3` that ships with macOS is often older, so the commands use [uv](https://docs.astral.sh/uv/). The repo carries the 134 real tombstones from its own build, the 25 turns the breaker stopped in our live tests (`live_stops.json`) and a real V3 session.
 
 ```bash
 git clone https://github.com/DmitriyTopka/tombstone && cd tombstone
@@ -158,7 +158,7 @@ One line of the spec, followed to the refusal the agent reads:
 3. **Hook** [`.kiro/hooks/tombstone-pre-tool.json`](.kiro/hooks/tombstone-pre-tool.json): trigger `PreToolUse`, a shell command, no agent prompt, so it costs nothing.
 4. **Refusal**: Kiro gets exit code 2, refuses the tool and hands the agent `TOMBSTONE: this turn over budget (est. 0.11 of 0.10). Stop.`
 
-Where each Kiro surface sits: the spec (23 requirements in EARS, 34 tasks), 7 command hooks, a steering file, the MCP tool `get_budget`, and a Power in `power/`.
+Where each Kiro surface sits: the spec (25 requirements in EARS, 36 tasks), 7 command hooks, a steering file, the MCP tool `get_budget`, and a Power in `power/`.
 
 ## What surprised us about Kiro
 
@@ -171,12 +171,12 @@ Where each Kiro surface sits: the spec (23 requirements in EARS, 34 tasks), 7 co
 
 Every line of product code was written by Kiro CLI from the spec in `.kiro/specs/tombstone/`: `requirements.md` in EARS notation, `design.md` and `tasks.md` generated by Kiro from it. A human picked the next task, read the diff and ran the checks. Each task was run with `kiro-cli chat --no-interactive` and priced by Tombstone itself, with its own hooks installed in this repo.
 
-The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 126 tombstones in [tombstones.json](tombstones.json) add up to 270.08 credits of priced turns: 104 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs, the cost experiment and the video recording included, used 394.37 credits by `/usage`. 686 tests run in about seven seconds and need no Kiro install.
+The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 134 tombstones in [tombstones.json](tombstones.json) add up to 282.12 credits of priced turns: 112 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs, the cost experiment and the video recording included, used 406.43 credits by `/usage`. 724 tests run in about seven seconds and need no Kiro install.
 
 ## How we used Kiro
 
 - **CLI.** Kiro CLI 3.0.0, later 3.1.0, V3 engine, model `auto`.
-- **Spec-driven development.** Twenty-three top-level tasks with subtasks, all done. When the CLI moved to 3.0.0 in the middle of the build, we rewrote the requirements for V3 and Kiro regenerated the design and tasks.
+- **Spec-driven development.** Thirty-six top-level tasks with subtasks, all done. When the CLI moved to 3.0.0 in the middle of the build, we rewrote the requirements for V3 and Kiro regenerated the design and tasks.
 - **Hooks.** Shell command hooks only, no agent hooks, so the breaker costs nothing: `PreToolUse`, `PostToolUse`, `Stop`, `UserPromptSubmit`, `SessionStart` and the two task hooks. All seven run in this repo during its own build: see [`.kiro/hooks/`](.kiro/hooks/), with the caps in [`tombstone.toml`](tombstone.toml).
 - **Steering.** `project.md` holds the stack and the dogfood rules. The `tombstone.md` file that `init` writes asks the agent to call `get_budget` before a task and to stop and ask a human when the budget is short.
 - **MCP.** `get_budget`, a stdio server on the standard library. It answers `initialize` in about 45 ms. This repo starts it from [`.kiro/settings/mcp.json`](.kiro/settings/mcp.json).
