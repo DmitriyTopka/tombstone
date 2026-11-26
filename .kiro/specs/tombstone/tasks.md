@@ -420,3 +420,19 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 29.7 A real heap and natural soil cracks
     - Browser check by Claude on 2026-11-26 after 29.6 (frames at 1280 px): the stone now ends at the ground, good. Two things still read as fake: (1) the heap is a thin strip, a few pixels tall, so the stone does not look like it stands in loose earth as Dima asked; (2) the soil cracks are a row of identical small zigzags lined up under the ground line, like stitches. Make the heap a real mound of loose earth in front of the stone's foot: at the final height about 22 to 30 percent of the visible stone height tall and about 1.6 times the stone's width, irregular silhouette with lumps and a few small stones, darker at the bottom, lit from the upper right, growing with each rise step; a few loose clumps scattered further out on the grass. Replace the zigzags with 3 to 5 irregular dark fissures of different length and angle radiating from the stone across the ground, fading at their ends, drawn on the ground behind the heap. Same at 375 px, reduced motion and noscript. Update the tests that check heap size and the cracks.
     - _Requirements: R18.1, R18.3_
+
+- [ ] 30. Photographed earth, a skeletal hand and old bones
+  - Approved by Dima on 2026-11-26 (more frightening, realistic, skeletal hands, no blood or flesh because the rules let the sponsor remove "inappropriate" material). Dima generated the images with Nano Banana Pro; Claude chroma-keyed them into `src/tombstone/data/scene/` (headstone.webp replaced, heap.webp, hand_reach.webp, bones.webp, clods/clod_0..7.webp). Rollback tag `rollback-before-1127` exists.
+  - _Requirements: R19.1, R19.2, R19.3, R19.4, R19.5_
+
+  - [ ] 30.1 Photo heap and clods, single embedding
+    - Replace the SVG heap and clumps with the photographs per R19.1, embed every image once per R19.5 (also fix the headstone being embedded twice for the halves), keep the clip at the ground line and the layering of 29.6.
+    - _Requirements: R19.1, R19.5_
+
+  - [ ] 30.2 The hand and the bones
+    - The rising hand and its sinking at the split (R19.2), the bones appearing with the full heap (R19.3), moonlight toning (R19.4), the carved figure centred in the new headstone's sunken panel, reduced motion and noscript.
+    - _Requirements: R19.2, R19.3, R19.4_
+
+  - [ ] 30.3 Tests
+    - Each image file is embedded exactly once; no SVG heap or clump elements remain; the hand and bones are hidden at rest, the hand appears from the second step and is scheduled to sink at the split, the bones appear with the full heap; the page is under 1.1 MB with no external requests; existing R15 to R18 tests still pass (update only those the change breaks).
+    - _Requirements: R19.1, R19.2, R19.3, R19.4, R19.5_
