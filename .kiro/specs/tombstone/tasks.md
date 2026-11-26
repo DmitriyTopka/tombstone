@@ -388,3 +388,19 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 28.4 Fit, crack and moon
     - Found in a browser check on 2026-11-26 at 800 px: the carved "0.80" and "CREDITS EST." are wider than the headstone's blank face and are cut at both edges; the crack is a thin dark line pinned to the right edge of the stone and reads as a scratch; the dark gradient over the top third dims the moon so the photo loses its brightest point. Make the carved figure and its unit always fit inside the blank face (size from the stone's width, unit on its own smaller line, at most 70 percent of the face width) at 1440, 800 and 375 px; run the crack from the top of the arch down through the middle of the face, wider, with a red glow inside it that pulses once at the stop; shape the top gradient so the moon and its halo keep their brightness (for example a radial clear area around the moon's position in each photo) while the headline area keeps 4.5:1 contrast. Add tests for the size rule of the carved text and for the crack path starting at the top of the stone.
     - _Requirements: R17.1, R17.3_
+
+- [ ] 29. The headstone breaks through the earth
+  - Approved by Dima on 2026-11-26 (his idea: the slab should break the ground, shed earth, stand in a heap of soil, and split in half only at the very end). Rollback tag `rollback-before-1127` exists.
+  - _Requirements: R18.1, R18.2, R18.3, R18.4, R18.5_
+
+  - [ ] 29.1 Ground heave, breaking ground, falling earth and the heap
+    - In the hero of `render_graveyard` and the page script (tombstones.py): the mound and soil cracks before the first request (R18.1); torn ground edge, falling clumps and crumbs per step, soil dust on the stone (R18.2); the heap of earth at the base sized by the final height and loose clumps nearby (R18.3). Keep the rise on the R15/R17 scale.
+    - _Requirements: R18.1, R18.2, R18.3_
+
+  - [ ] 29.2 The split at the end
+    - Move the crack and STOP to after the stone has settled (R18.4): crack from arch to base, two halves part and tilt slightly, red glow in the gap, flash and optional sound at that moment; reduced motion and noscript per R18.5.
+    - _Requirements: R18.4, R18.5_
+
+  - [ ] 29.3 Tests
+    - The mound, soil cracks, falling-earth and heap elements exist in the hero; the split uses two halves of the same headstone image; STOP and the split are scheduled after the last rise step, not during it; reduced-motion and noscript show the split stone in its heap; page under 750 KB with no external requests; existing R15 to R17 tests still pass (update only those the change breaks).
+    - _Requirements: R18.1, R18.2, R18.3, R18.4, R18.5_

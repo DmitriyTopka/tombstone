@@ -246,3 +246,15 @@ Acceptance check: a session with Tombstone installed shows no extra metered requ
 - R17.3 THE credits spent SHALL be carved into the blank face of the headstone (dark letters with a thin light lower edge, centred in the upper half), updated with each request. AT the stop the R15/R16 crack runs down the photographed face with a dim red glow inside it, together with the R16.3 scare.
 - R17.4 THE three images SHALL ship as package data and be embedded in the page as base64 data URIs, so the page stays one file with no external requests; the whole page SHALL stay under 700 KB. A small line at the very bottom of the page SHALL say "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
 - R17.5 AT 375 px the mobile photo and a smaller headstone SHALL keep the controls and the result above the fold as in R16.5; with `prefers-reduced-motion` the headstone appears at its final height without rising or shaking; WITHOUT JavaScript the hero shows the photo and the headstone fully risen to the 0.75 result with the crack. R16.2 to R16.5 and R15.2 to R15.5 still hold.
+
+### Requirement 18: The headstone breaks through the earth
+
+**User Story:** As a Costume Contest judge, I want to see the headstone break up through the ground, shed earth as it climbs and end standing in a heap of soil before it splits, so that the rise reads as a grave opening and the stop as the final blow.
+
+#### Acceptance Criteria
+
+- R18.1 WHEN a run starts THE SYSTEM SHALL first heave the ground where the headstone will come up: the earth swells into a low mound and a few dark cracks open in the soil around it, before the stone's top appears.
+- R18.2 WHILE the headstone rises (one step per request, height still the price per R17.2) THE SYSTEM SHALL break the ground line visibly at the stone (torn edges of soil and grass pushed outward), shed clumps and crumbs of earth from the stone's top and shoulders that fall and roll down to the ground with each step, and leave a dusting of soil on the stone's upper edges.
+- R18.3 WHEN the headstone has reached its final height THE SYSTEM SHALL show it standing in a visible heap of loose earth around its base (bigger the higher it rose), with a few clumps lying on the grass nearby.
+- R18.4 ONLY after the stone has stopped rising and the earth has settled (about 0.4 s) THE SYSTEM SHALL show STOP and, as the last beat, crack the headstone in two: the crack runs from the top of the arch to the base, the two halves part by a few pixels and tilt slightly apart, the red glow shows through the gap, with the R16.3 flash and the optional sound at that moment. The carved figure stays readable on the halves.
+- R18.5 THE effect SHALL be drawn with inline SVG, CSS and the page script only (no new images, no external requests), the page SHALL stay under 750 KB, and with `prefers-reduced-motion` the final state (heap of earth, split stone) is shown at once; without JavaScript the noscript scene shows the split stone in its heap. R15.2 to R15.5, R16 and R17 still hold.
