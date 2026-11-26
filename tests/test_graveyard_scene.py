@@ -193,7 +193,7 @@ def test_at_rest_no_band_heap_or_stone_is_visible_and_the_stone_is_clipped():
     # at rest (no .on) the stone sits fully below the ground line
     assert ".hero .earth:not(.on) .hstone{top:calc(228px * var(--k))" in css
     # the underground part is clipped by the overflow box, not covered by a drawn element
-    assert re.search(r"\.hero \.earth\{[^}]*overflow:hidden", css)
+    assert re.search(r"\.hero \.earth\{[^}]*clip-path:inset\(0 -160px 0 -160px\)", css)
     # mound, heap, cracks, torn edge, tufts and lumps are invisible until the run starts
     base = ".hero .gsvg .mound,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump,.hero .soil .heap{opacity:0}"
     assert base in css
@@ -229,8 +229,8 @@ def test_stone_clip_bottom_is_the_ground_line_and_cracks_sit_behind_the_stone():
 
 def test_heap_is_the_photograph_at_the_right_size():
     css = _css(_page()).replace("\n", "")
-    # 235 of 147 stone units is about 1.6 stone widths; it starts at 20 percent
-    assert "width:calc(var(--k) * 235px)" in css and 1.55 <= 235 / 147 <= 1.65
+    # 240 of 147 stone units is about 1.6 stone widths; it starts at 20 percent
+    assert "width:calc(var(--k) * 240px)" in css and 1.6 <= 240 / 147 <= 1.8
     assert "scale(calc(.2 + .8 * var(--hp,1)))" in css
     assert "--img-heap:url(" in _page() and "<svg" not in _page().split('class="ph heap hf"', 1)[1][:40]
     assert '(hh-70)/150' in _script(_page())
@@ -338,3 +338,61 @@ def test_page_is_one_file_with_no_external_requests_and_under_1_1_mb():
     page = _page()
     assert len(page.encode("utf-8")) < 1100 * 1024
     assert not re.search(r"<(?:link|script)[^>]+(?:src|href)=[\"']https?:", page)
+
+
+# --- Task 30.4: real-world scale and a readable stone (R19.6, R17.3, R19.4) ---
+
+def _units(css: str, selector: str, prop: str) -> float:
+    """The unit count of ``prop:calc(var(--k) * Npx)`` in the rule for ``selector``."""
+    rule = ";".join(re.findall(r"(?<![\w.:-])" + re.escape(selector) + r"\{([^}]*)\}", css))
+    return float(re.search(r"(?:^|;)\s*" + prop + r":calc\(var\(--k\) \* (-?[\d.]+)px\)", rule).group(1))
+
+
+def test_scale_ratios_follow_real_world_proportions_at_both_widths():
+    from tombstone.tombstones import _FALLS, _LUMPS
+    css = _css(_page()).replace("\n", "")
+    stone_w = _units(css, ".hero .hstone", "width")
+    stone_h = _units(css, ".hero .hstone", "height")
+    ground = 22  # the ground line is 22 units above the bottom of the 228 unit earth box
+    # the unit is the stone image box, so the ratio holds at any --k
+    k = {"1280": float(re.search(r"\.hero\{--k:([\d.]+)", css).group(1)),
+         "390": float(re.search(r"max-width:640px\)\{\s*\.hero\{--k:([\d.]+)", _css(_page())).group(1))}
+    assert k["1280"] > k["390"] > 0
+    heap_w = _units(css, ".hero .heap", "width")
+    heap_h = _units(css, ".hero .heap", "height")
+    heap_bottom = _units(css, ".hero .heap", "bottom")
+    above = heap_h - (ground - heap_bottom)
+    hand_w = _units(css, ".hero .hand", "width")
+    hand_h = _units(css, ".hero .hand", "height")
+    hand_left = _units(css, ".hero .hand", "left")
+    bones_w = _units(css, ".hero .bones", "width")
+    bones_h = _units(css, ".hero .bones", "height")
+    bones_left = _units(css, ".hero .bones", "left")
+    earth_w = _units(css, ".hero .earth", "width")
+    stone_left = (earth_w - stone_w) / 2
+    skull = 0.52  # the skull spans the top 52 percent of bones.webp
+    for scale in (k["1280"], k["390"]):
+        W, H = stone_w * scale, stone_h * scale
+        assert 0.20 <= above * scale / H <= 0.25
+        assert 1.6 <= heap_w * scale / W <= 1.8
+        assert 0.25 <= hand_h * scale / H <= 0.30 and hand_w * scale / W <= 0.45
+        assert hand_left + hand_w <= stone_left  # left of the stone, no overlap
+        assert 0.65 <= bones_w * scale / W <= 0.80
+        assert 0.15 <= skull * bones_h * scale / H <= 0.20
+        assert bones_left >= stone_left + stone_w  # right of the stone, no overlap
+        for _, _, s in _LUMPS:
+            assert 0.04 <= s * 2 / stone_w <= 0.14
+        for _, _, s, _, _ in _FALLS:
+            assert 0.04 <= s * 2 / stone_w <= 0.14 and s <= min(s2 for _, _, s2 in _LUMPS) + 2
+
+
+def test_stone_is_mid_grey_with_a_light_edge_and_the_carved_figure_is_readable():
+    css = _css(_page()).replace("\n", "")
+    tone = re.search(r"\.hero \.hstone \.hs\{[^}]*filter:([^;]*);", css).group(1)
+    assert float(re.search(r"brightness\(([\d.]+)\)", tone).group(1)) >= 1.2
+    assert "sepia" not in tone and "hue-rotate" not in tone
+    assert ".hero .hstone .hs::after" in css and "linear-gradient(255deg" in css  # light right edge
+    carve = re.search(r"\.hero \.hstone \.carve\{[^}]*\}", css).group(0)
+    assert "color:#04060a" in carve and "rgba(205,220,245,.6)" in carve
+    # the carve box (left 29 to 71 percent, top 49 percent) is centred on the panel (x 20 to 80, y 32 to 78)
+    assert "left:29%;right:29%;top:49%" in carve

@@ -3210,6 +3210,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/30.4",
+      "task_id": "30.4",
+      "name": "Real-world scale and a readable stone",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 21,
+      "estimate": 8.176,
+      "actual": 4.746,
+      "minutes": 3.8453,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_48c6c27f-3242-43a9-bed5-9044d788af77",
+          "turn_id": "2c5312af-67dd-4c84-98c0-92d67f27a4b4",
+          "requests": 21,
+          "estimate": 8.176,
+          "actual": 4.746,
+          "minutes": 3.8453,
+          "start": "2026-11-26T14:24:15.118000Z",
+          "end": "2026-11-26T14:28:05.837000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

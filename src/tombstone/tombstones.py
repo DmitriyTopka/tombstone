@@ -2618,8 +2618,8 @@ def _split_clips() -> tuple[str, str]:
     return left, right
 
 
-_FALLS = [(-12, 2, 6, -22, 0), (8, 0, 5, 18, .04), (22, 6, 4, 30, .1), (-30, 14, 7, -34, .06),
-          (34, 16, 5, 26, .14), (-52, 40, 8, -40, .02), (52, 40, 6, 36, .08),
+_FALLS = [(-12, 2, 6, -22, 0), (8, 0, 5, 18, .04), (22, 6, 4, 30, .1), (-30, 14, 6, -34, .06),
+          (34, 16, 5, 26, .14), (-52, 40, 6, -40, .02), (52, 40, 6, 36, .08),
           (-60, 48, 5, -26, .18), (58, 50, 4, 22, .12), (0, -2, 3, 6, .2), (-20, 8, 3, -14, .16),
           (44, 28, 3, 20, .22)]
 _LUMPS = [(3, 5, 6), (20, 11, 8), (40, 4, 5), (66, 2, 4), (176, 3, 5), (203, 9, 7),
@@ -2904,19 +2904,19 @@ _HERO_CSS = """
 .hero .runner label{color:#e4e8ef;text-shadow:0 1px 10px #000}
 .hero .runner .scene{display:grid;grid-template-columns:1fr auto 1fr;gap:0 clamp(18px,3vw,48px);
   align-items:end}
-.hero .runner .meter{justify-self:end;text-align:right;min-width:0;text-shadow:0 1px 12px #000}
+.hero .runner .meter{justify-self:end;text-align:right;min-width:0;margin-right:calc(var(--k) * 40px);text-shadow:0 1px 12px #000}
 .hero .runner .meter b{color:var(--bone)}
 .hero .runner .grave{position:relative;display:block;min-height:0;padding:0}
 .hero .runner .grave::before{content:"";position:absolute;left:-40%;right:-40%;bottom:-14px;height:70%;
   pointer-events:none;opacity:0;transition:opacity .9s ease;
   background:radial-gradient(ellipse 50% 50% at 50% 70%,rgba(255,59,59,.3),transparent 70%)}
 .hero.stopped .runner .grave::before{opacity:1}
-.hero .runner .verdict{flex:none;justify-self:start;max-width:34em;text-shadow:0 1px 12px #000}
+.hero .runner .verdict{flex:none;justify-self:start;margin-left:calc(var(--k) * 40px);max-width:34em;text-shadow:0 1px 12px #000}
 .hero .runner .verdict .stop{text-shadow:0 0 28px rgba(255,59,59,.45),0 1px 10px #000}
 .hero .runner .caption{text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#b4bdcc;
   text-shadow:0 1px 8px #000}
 /* the rising headstone: its visible height is --rh on the R15 scale */
-.hero .earth{position:relative;overflow:hidden;width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);
+.hero .earth{position:relative;clip-path:inset(0 -160px 0 -160px);width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);
   margin:0 auto}
 /* the ground line is y=48 of the 70 unit soil box, 22 units above the box bottom; the stone is clipped there */
 .hero .hstone{clip-path:inset(0 -60% calc((242px - var(--rh)) * var(--k)) -60%)}
@@ -2928,16 +2928,19 @@ _HERO_CSS = """
   height:calc(var(--k) * 220px);top:calc((228px - var(--rh)) * var(--k));
   transition:top .5s cubic-bezier(.3,.7,.3,1);cursor:default}
 .hero .hstone .hs{display:block;width:100%;height:100%;user-select:none;background:var(--img-stone) center/100% 100% no-repeat;
-  filter:brightness(.92) contrast(1.08) saturate(.65) sepia(.4) hue-rotate(172deg)
-    drop-shadow(0 0 10px rgba(140,168,222,.16));transition:filter .8s ease}
-.hero.stopped .hstone .hs{filter:brightness(.78) contrast(1.12) saturate(.6) sepia(.4) hue-rotate(172deg)
-    drop-shadow(0 0 12px rgba(255,59,59,.28))}
+  position:relative;filter:brightness(1.45) contrast(1.04) saturate(.75) drop-shadow(0 0 10px rgba(140,168,222,.16));
+  transition:filter .8s ease}
+/* R19.4: mid grey like the moonlit graves of the photo, with a light right edge */
+.hero .hstone .hs::after{content:"";position:absolute;inset:0;pointer-events:none;
+  background:linear-gradient(255deg,rgba(190,210,245,.42),rgba(190,210,245,0) 38%);
+  -webkit-mask:var(--img-stone) center/100% 100% no-repeat;mask:var(--img-stone) center/100% 100% no-repeat}
+.hero.stopped .hstone .hs{filter:brightness(1.3) contrast(1.08) saturate(.7) drop-shadow(0 0 12px rgba(255,59,59,.28))}
 .hero .hstone .carve{position:absolute;left:29%;right:29%;top:49%;text-align:center;container-type:inline-size;
-  font-family:Georgia,"Times New Roman",serif;color:#070a10;pointer-events:none;
-  text-shadow:0 1px 0 rgba(190,205,232,.4),0 -1px 0 rgba(0,0,0,.5)}
+  font-family:Georgia,"Times New Roman",serif;color:#04060a;pointer-events:none;
+  text-shadow:0 1px 0 rgba(205,220,245,.6),0 -1px 0 rgba(0,0,0,.5)}
 /* the carve box is 42% of the stone, centred in the sunken panel (x 20 to 80 percent, y 31 to 78 percent); at most 70% of the panel; type sizes follow its width */
 .hero .hstone .cost{display:block;margin:0;font-size:calc(var(--k) * 22px);font-size:27cqw;line-height:1.05;
-  font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#070a10}
+  font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#04060a}
 .hero .hstone .cunit{display:block;font-size:calc(var(--k) * 8px);font-size:8cqw;letter-spacing:.1em;
   white-space:nowrap;text-transform:uppercase;opacity:.85;margin-top:.3em}
 .hero .hstone{z-index:2}
@@ -2957,12 +2960,14 @@ _HERO_CSS = """
   -webkit-mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%);
   mask-image:radial-gradient(ellipse 54% 150% at 50% 100%,#000 62%,transparent 100%)}
 .hero .gsvg .mound{transform-box:fill-box;transform-origin:50% 100%;transition:transform .5s ease-out,opacity .4s}
-/* R19.1: the photographed heap, about 1.6 stone widths (235 of 147 units) at full size, 20 percent at the first step;
-   the back copy sits behind the stone (its hollow middle), the front copy only covers the stone's foot */
-.hero .heap{--im:var(--img-heap);left:calc(var(--k) * 7.5px);bottom:calc(var(--k) * 14px);width:calc(var(--k) * 235px);
-  aspect-ratio:640/428;transform-origin:50% 100%;transform:scale(calc(.2 + .8 * var(--hp,1)));
+/* R19.1, R19.6: the photographed heap, 240 of 147 units (1.63 stone widths) wide at full size, 20 percent at the first step.
+   Only the lower part of the photo shows: 52 units (0.24 of the stone height) stand above the ground line (y 206), 6 sink below it;
+   the front copy covers only the plinth and the lowest part of the slab */
+.hero .heap{--im:var(--img-heap);left:calc(var(--k) * 5px);bottom:calc(var(--k) * 16px);width:calc(var(--k) * 240px);
+  height:calc(var(--k) * 58px);background-size:100% auto;background-position:50% 100%;
+  -webkit-mask-image:linear-gradient(180deg,transparent 0,#000 45%);mask-image:linear-gradient(180deg,transparent 0,#000 45%);
+  transform-origin:50% 100%;transform:scale(calc(.2 + .8 * var(--hp,1)));
   transition:transform .5s ease-out,opacity .4s}
-.hero .heap.hf{-webkit-mask-image:linear-gradient(180deg,transparent 58%,#000 80%);mask-image:linear-gradient(180deg,transparent 58%,#000 80%)}
 /* at rest (no .on) there is no mound, heap or soil crack; the run adds them */
 .hero .gsvg .mound,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump,.hero .soil .heap{opacity:0}
 .hero .earth.on .soil .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .gsvg .tufts,.hero .earth.on .soil .lump{opacity:1}
@@ -2973,6 +2978,7 @@ _HERO_CSS = """
 .hero .ph::after{content:"";position:absolute;inset:0;pointer-events:none;
   background:linear-gradient(210deg,rgba(175,198,240,.34),rgba(175,198,240,0) 48%);
   -webkit-mask:var(--im) center/100% 100% no-repeat;mask:var(--im) center/100% 100% no-repeat}
+.hero .heap::after{-webkit-mask-size:100% auto;mask-size:100% auto;-webkit-mask-position:50% 100%;mask-position:50% 100%}
 .hero .gsvg .scr path{fill:none;stroke-linejoin:round;stroke-linecap:round;stroke-dasharray:1;
   stroke-dashoffset:0;vector-effect:non-scaling-stroke}
 .hero .clump{width:calc(var(--s) * var(--k) * 2px)}
@@ -2981,17 +2987,17 @@ _HERO_CSS = """
 .hero .c4{--im:var(--clod4);aspect-ratio:90/69}.hero .c5{--im:var(--clod5);aspect-ratio:90/113}
 .hero .c6{--im:var(--clod6);aspect-ratio:90/94}.hero .c7{--im:var(--clod7);aspect-ratio:90/106}
 .hero .lump{left:calc(var(--x) * var(--k) * 1px);bottom:calc(var(--y) * var(--k) * 1px);transform:rotate(var(--r,0deg))}
-/* R19.2: the skeletal hand claws up beside the stone; the wrapper ends at the ground line, so its foot is never seen */
-.hero .hand{position:absolute;left:calc(var(--k) * 2px);bottom:calc(var(--k) * 22px);width:calc(var(--k) * 72px);
-  height:calc(var(--k) * 99px);overflow:hidden;z-index:2;pointer-events:none;opacity:0}
+/* R19.2, R19.6: the skeletal hand (60 units visible, 0.27 of the stone height, 53 wide) claws up to the left of the stone; the wrapper ends at the ground line, so its foot is never seen */
+.hero .hand{position:absolute;left:calc(var(--k) * -46px);bottom:calc(var(--k) * 22px);width:calc(var(--k) * 53px);
+  height:calc(var(--k) * 60px);overflow:hidden;z-index:2;pointer-events:none;opacity:0}
 .hero .earth.hup .hand{opacity:1}
-.hero .hand .hi{--im:var(--img-hand);left:0;bottom:calc(var(--k) * -14px);width:100%;height:calc(var(--k) * 110px);
+.hero .hand .hi{--im:var(--img-hand);left:0;bottom:calc(var(--k) * -12.7px);width:100%;height:calc(var(--k) * 72.7px);
   transform-origin:50% 100%;transform:translateY(calc((1 - var(--hl,0)) * 100%));
   transition:transform .22s cubic-bezier(.4,1.8,.5,1)}
 /* at the split the hand goes limp and sinks back into the earth within 0.8 s */
 .hero.stopped .hand .hi{transform:translateY(105%) rotate(11deg);opacity:0;transition:transform .8s ease-in,opacity .8s ease-in}
-/* R19.3: the bones on the grass to the right of the heap, about 60 percent of the stone width (88 of 147 units) */
-.hero .bones{--im:var(--img-bones);left:calc(var(--k) * 162px);bottom:0;width:calc(var(--k) * 88px);aspect-ratio:360/355;
+/* R19.3, R19.6: the bones on the grass right of the stone: 98 of 147 units wide (0.67), the skull (0.52 of the image height) 0.19 of the stone height */
+.hero .bones{--im:var(--img-bones);left:calc(var(--k) * 204px);bottom:0;width:calc(var(--k) * 98px);height:calc(var(--k) * 82px);
   z-index:4;opacity:0;pointer-events:none;transition:opacity .9s ease-out}
 .hero.stopped .bones,.hero .earth.full .bones{opacity:1}
 .hero .bones::before{content:"";position:absolute;left:5%;right:5%;bottom:-6%;height:55%;border-radius:50%;opacity:0;
@@ -3037,8 +3043,8 @@ _HERO_CSS = """
 }
 @media (max-width:900px){
   .hero .runner .scene{grid-template-columns:1fr;justify-items:center;gap:6px}
-  .hero .runner .meter{justify-self:center;text-align:center}
-  .hero .runner .verdict{justify-self:center;text-align:center;max-width:30em}
+  .hero .runner .meter{justify-self:center;text-align:center;margin-right:0}
+  .hero .runner .verdict{justify-self:center;margin-left:0;text-align:center;max-width:30em}
   .hero .runner .verdict .refusal{text-align:left}
 }
 @media (max-width:767px){
