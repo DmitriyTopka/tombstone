@@ -2630,10 +2630,10 @@ _SOIL_CRACKS = ["M96 49 L88 54 L90 60 L80 66", "M154 49 L163 55 L159 61 L170 68"
 
 
 def _g_soil(hp: float) -> str:
-    """Ground, mound, soil cracks, torn edges, grass tufts, heap, lumps and falling clumps."""
+    """Mound, soil cracks, torn edges, grass tufts, heap, lumps and falling clumps."""
     rnd = random.Random(18)
-    top = " ".join(f"L{x} {46 + rnd.choice((-1.5, -.5, 0, .8, 1.6)):.1f}" for x in range(6, 250, 8))
-    ground = f"M0 47 {top} L250 47 L250 70 L0 70Z"
+    for _ in range(31):  # keep the random stream, so tufts and blades stay as drawn before
+        rnd.choice((-1.5, -.5, 0, .8, 1.6))
     blades = []
     for x in range(4, 248, 6):
         x += rnd.randint(-1, 1)
@@ -2653,8 +2653,6 @@ def _g_soil(hp: float) -> str:
         '<feBlend in="SourceGraphic" in2="lit" mode="multiply"/></filter>'
         '<linearGradient id="blade" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6f8a78"/>'
         '<stop offset=".45" stop-color="#34472a"/><stop offset="1" stop-color="#141c10"/></linearGradient></defs>'
-        f'<path class="ground" d="{ground}" fill="#5b3f2b" filter="url(#soilf)"/>'
-        f'<path d="M0 46.5 {top.replace("L", "L")} L250 46.5" fill="none" stroke="rgba(160,182,230,.3)" stroke-width=".7"/>'
         f'<path class="tufts" d="{tufts}" fill="url(#blade)"/>'
         f'<path class="mound" d="{mound}" fill="#5b3f2b" filter="url(#soilf)"/>'
         '<g class="scr">' + "".join(f'<path pathLength="1" d="{d}"/>' for d in _SOIL_CRACKS) + "</g>"
@@ -2894,6 +2892,8 @@ _HERO_CSS = """
 /* the rising headstone: its visible height is --rh on the R15 scale */
 .hero .earth{position:relative;overflow:hidden;width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);
   margin:0 auto}
+/* at rest the stone is fully below the ground line; the .earth box (overflow:hidden) clips it, no band is drawn */
+.hero .earth:not(.on) .hstone{top:calc(228px * var(--k));transition:none}
 .hero .hstone{position:absolute;left:50%;margin-left:calc(var(--k) * -73px);width:calc(var(--k) * 147px);
   height:calc(var(--k) * 220px);top:calc((228px - var(--rh)) * var(--k));
   transition:top .5s cubic-bezier(.3,.7,.3,1);cursor:default}
@@ -2930,8 +2930,8 @@ _HERO_CSS = """
   transition:transform .5s ease-out,opacity .4s}
 .hero .gsvg .heap{transform:scale(calc(.15 + .85 * var(--hp,1)),calc(.05 + .95 * var(--hp,1)))}
 /* at rest (no .on) there is no mound, heap or soil crack; the run adds them */
-.hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .soil .lump{opacity:0}
-.hero .earth.on .gsvg .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .soil .lump{opacity:1}
+.hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump{opacity:0}
+.hero .earth.on .gsvg .heap,.hero .earth.on .gsvg .scr,.hero .earth.on .gsvg .tear,.hero .earth.on .gsvg .tufts,.hero .earth.on .soil .lump{opacity:1}
 .hero .earth.on .gsvg .mound{opacity:1}
 .hero .gsvg .scr path{fill:none;stroke:#0a0603;stroke-width:1.1;stroke-linejoin:round;stroke-dasharray:1;
   stroke-dashoffset:0;vector-effect:non-scaling-stroke}

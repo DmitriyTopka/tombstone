@@ -3000,6 +3000,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/29.5",
+      "task_id": "29.5",
+      "name": "Nothing on the path at rest",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 3.2879,
+      "actual": 1.0654,
+      "minutes": 0.8593,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_b88f8f7e-34b0-4cdc-9d8a-cdf9b3e82d41",
+          "turn_id": "a16d95dc-77fb-4a05-8a36-907a48774bec",
+          "requests": 8,
+          "estimate": 3.2879,
+          "actual": 1.0654,
+          "minutes": 0.8593,
+          "start": "2026-11-26T13:56:03.524000Z",
+          "end": "2026-11-26T13:56:55.080000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

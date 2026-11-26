@@ -108,7 +108,7 @@ def test_no_line_stroke_or_glow_in_the_gap_after_the_split():
 def test_earth_is_hidden_at_rest_and_builds_with_the_run():
     page = _page()
     css = _css(page).replace("\n", "")
-    assert ".hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .soil .lump{opacity:0}" in css
+    assert ".hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump{opacity:0}" in css
     assert ".hero .earth.on .gsvg .heap" in css and ".hero .earth.on .gsvg .mound{opacity:1}" in css
     assert ".hero .earth.on.heave .gsvg .heap" in css
     js = _script(page).replace("\n", "")
@@ -180,3 +180,24 @@ def test_reduced_motion_and_noscript_show_the_split_stone_in_its_heap():
     assert ".hero .hstone .half" in reduce and ".hero .shed{display:none}" in reduce
     assert "heave" not in reduce
     assert "--hp:" in page.split('id="run-earth"', 1)[1][:60]
+
+
+# --- Task 29.5: nothing on the path at rest (R17.2, R18.1) -------------------
+
+def test_at_rest_no_band_heap_or_stone_is_visible_and_the_stone_is_clipped():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    hero = page.split('<header class="hero', 1)[1].split("</header>", 1)[0]
+    # no drawn soil band across the path
+    assert 'class="ground"' not in hero and 'fill="#5b3f2b" filter="url(#soilf)"/><path d="M0 46.5' not in hero
+    # at rest (no .on) the stone sits fully below the ground line
+    assert ".hero .earth:not(.on) .hstone{top:calc(228px * var(--k))" in css
+    # the underground part is clipped by the overflow box, not covered by a drawn element
+    assert re.search(r"\.hero \.earth\{[^}]*overflow:hidden", css)
+    # mound, heap, cracks, torn edge, tufts and lumps are invisible until the run starts
+    base = ".hero .gsvg .mound,.hero .gsvg .heap,.hero .gsvg .scr,.hero .gsvg .tear,.hero .gsvg .tufts,.hero .soil .lump{opacity:0}"
+    assert base in css
+    assert ".hero .earth.on .gsvg .tufts" in css
+    # reset returns to rest, and the run adds the soil from the heave
+    js = _script(page).replace("\n", "")
+    assert '"heave","dig","on"' in js.split("function reset(){", 1)[1].split("function finish", 1)[0]
