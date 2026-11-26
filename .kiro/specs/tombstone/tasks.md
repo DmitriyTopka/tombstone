@@ -404,3 +404,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 29.3 Tests
     - The mound, soil cracks, falling-earth and heap elements exist in the hero; the split uses two halves of the same headstone image; STOP and the split are scheduled after the last rise step, not during it; reduced-motion and noscript show the split stone in its heap; page under 750 KB with no external requests; existing R15 to R17 tests still pass (update only those the change breaks).
     - _Requirements: R18.1, R18.2, R18.3, R18.4, R18.5_
+
+  - [ ] 29.4 A clean split and no earth before the break
+    - Dima's review of the recorded run on 2026-11-26: (1) after the split a dark line with a red glow stays in the gap between the halves; remove it: when the stone splits there is no line, no stroke and no glow in the gap, the two halves simply part and the scene shows through between them (the R16.3 flash stays); (2) the heap of earth is already visible before the run; at rest the path must show no mound, no heap and no soil cracks: the ground heave starts only when the run starts, and the heap builds up only as the stone breaks through and rises, reaching its full size at the final height. Same in reduced motion (final state) and noscript (split stone in its heap, no line in the gap). Update the R18 tests accordingly: no crack stroke or glow element is visible after the split; at rest the mound, heap and cracks are hidden.
+    - _Requirements: R18.1, R18.3, R18.4_
