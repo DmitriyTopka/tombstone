@@ -2820,6 +2820,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/28.4",
+      "task_id": "28.4",
+      "name": "Fit, crack and moon",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 9,
+      "estimate": 3.1598,
+      "actual": 1.3636,
+      "minutes": 1.0871,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_3007beda-f41f-4887-b564-78f3b85e3f9a",
+          "turn_id": "183ed6d5-b439-4b47-8332-2c0e9f83b956",
+          "requests": 9,
+          "estimate": 3.1598,
+          "actual": 1.3636,
+          "minutes": 1.0871,
+          "start": "2026-11-26T12:43:58.392000Z",
+          "end": "2026-11-26T12:45:03.616000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

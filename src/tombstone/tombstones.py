@@ -2608,6 +2608,8 @@ _RUN_CSS = """
   .runner .meter b{font-size:28px}.runner .verdict .stop{font-size:24px}}
 """
 
+# R17.3: the crack starts at the top of the arch (y=0) and runs down the middle of the face.
+_CRACK_D = "M51 0 L45 13 L56 27 L43 44 L55 61 L46 78 L52 100"
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
 
 _HERO_JS = """
@@ -2742,9 +2744,9 @@ def _g_runner(trace: Optional[dict]) -> str:
         f'<img class="hs" alt="" src="{_scene_uri("headstone.webp")}">'
         f'<span class="carve"><span class="cost" id="run-stone-cost">{shown:.2f}</span>'
         '<span class="cunit">credits est.</span></span>'
-        '<svg class="scrack" viewBox="0 0 100 140" preserveAspectRatio="none" aria-hidden="true">'
-        '<path class="glow" pathLength="1" d="M80 0 L73 26 L84 48 L71 74 L82 100 L75 140"/>'
-        '<path class="cut" pathLength="1" d="M80 0 L73 26 L84 48 L71 74 L82 100 L75 140"/>'
+        '<svg class="scrack" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">'
+        f'<path class="glow" pathLength="1" d="{_CRACK_D}"/>'
+        f'<path class="cut" pathLength="1" d="{_CRACK_D}"/>'
         '</svg></div><div class="dirt" aria-hidden="true"></div></div></div>'
         f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
         f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
@@ -2767,7 +2769,10 @@ _HERO_CSS = """
 .hero .shade{position:absolute;inset:0;z-index:2;pointer-events:none;
   background:linear-gradient(180deg,rgba(3,5,12,.84) 0,rgba(3,5,12,.62) 22%,rgba(3,5,12,.2) 40%,rgba(3,5,12,0) 56%),
     radial-gradient(ellipse 125% 95% at 50% 62%,transparent 52%,rgba(2,3,8,.6) 100%),
-    linear-gradient(0deg,rgba(3,5,10,.5),transparent 28%)}
+    linear-gradient(0deg,rgba(3,5,10,.5),transparent 28%);
+  --mx:72%;--my:21%;--ma:.1;
+  -webkit-mask-image:radial-gradient(ellipse 15% 22% at var(--mx) var(--my),rgba(0,0,0,var(--ma)) 0,rgba(0,0,0,var(--ma)) 45%,#000 100%);
+  mask-image:radial-gradient(ellipse 15% 22% at var(--mx) var(--my),rgba(0,0,0,var(--ma)) 0,rgba(0,0,0,var(--ma)) 45%,#000 100%)}
 .hero .fogl{position:absolute;left:0;width:200%;height:36%;bottom:var(--fb);pointer-events:none;
   opacity:var(--fo);transition:opacity .9s ease}
 .hero .f1{--fb:30%;--fo:.42;z-index:1}
@@ -2819,17 +2824,18 @@ _HERO_CSS = """
     drop-shadow(0 0 10px rgba(140,168,222,.16));transition:filter .8s ease}
 .hero.stopped .hstone .hs{filter:brightness(.78) contrast(1.12) saturate(.6) sepia(.4) hue-rotate(172deg)
     drop-shadow(0 0 12px rgba(255,59,59,.28))}
-.hero .hstone .carve{position:absolute;left:14%;right:14%;top:21%;text-align:center;
+.hero .hstone .carve{position:absolute;left:22%;right:22%;top:24%;text-align:center;container-type:inline-size;
   font-family:Georgia,"Times New Roman",serif;color:#070a10;pointer-events:none;
   text-shadow:0 1px 0 rgba(190,205,232,.4),0 -1px 0 rgba(0,0,0,.5)}
-.hero .hstone .cost{display:block;margin:0;font-size:calc(var(--k) * 26px);line-height:1.05;
-  font-weight:700;letter-spacing:.03em;color:#070a10}
-.hero .hstone .cunit{display:block;font-size:calc(var(--k) * 11px);letter-spacing:.14em;
-  text-transform:uppercase;opacity:.85}
-.hero .hstone .scrack{left:14%;top:5%;width:72%;height:82%;overflow:visible}
+/* the carve box is 56% of the stone, at most 70% of the blank face; type sizes follow its width */
+.hero .hstone .cost{display:block;margin:0;font-size:calc(var(--k) * 22px);font-size:27cqw;line-height:1.05;
+  font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#070a10}
+.hero .hstone .cunit{display:block;font-size:calc(var(--k) * 8px);font-size:8cqw;letter-spacing:.1em;
+  white-space:nowrap;text-transform:uppercase;opacity:.85;margin-top:.3em}
+.hero .hstone .scrack{left:16%;top:0;width:68%;height:86%;overflow:visible}
 .hero .runner.stopped .hstone .scrack{opacity:1}
-.hero .hstone .scrack .glow{stroke:rgba(255,48,48,.55);stroke-width:7;filter:blur(2.5px)}
-.hero .hstone .scrack .cut{stroke:#06080c;stroke-width:2.4;filter:none}
+.hero .hstone .scrack .glow{stroke:rgba(255,48,48,.7);stroke-width:13;filter:blur(3.5px)}
+.hero .hstone .scrack .cut{stroke:#06080c;stroke-width:5;filter:none}
 .hero .earth::after{content:"";position:absolute;left:0;right:0;bottom:0;height:calc(var(--k) * 26px);
   pointer-events:none;
   background:repeating-linear-gradient(97deg,transparent 0 4px,rgba(58,84,48,.95) 4px 5px,transparent 5px 8px,
@@ -2852,6 +2858,8 @@ _HERO_CSS = """
   @keyframes drift{from{transform:translateX(0)}to{transform:translateX(-50%)}}
   .hero.scare::after{animation:flash 1s ease-out both}
   .hero.scare .scrack path{animation:crackrun .5s ease-out both}
+  .hero.scare .scrack .glow{animation:crackrun .5s ease-out both,crackpulse 1.1s ease-in-out .5s 1 both}
+  @keyframes crackpulse{0%{opacity:.5}40%{opacity:1}100%{opacity:.8}}
   .hero.scare .grave{animation:tremor .4s linear .05s both}
   .hero .earth.dig .hstone{animation:hshake .24s linear}
   .hero .earth.dig .dirt{animation:fall .7s ease-in both}
@@ -2876,6 +2884,7 @@ _HERO_CSS = """
 }
 @media (max-width:767px){
   .hero .photo{background-image:var(--scene-m)}
+  .hero .shade{--mx:51%;--my:19%;--ma:.4}
 }
 @media (max-width:640px){
   .hero{--k:.74;min-height:640px}
