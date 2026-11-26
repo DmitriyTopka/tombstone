@@ -2550,6 +2550,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/26.4",
+      "task_id": "26.4",
+      "name": "Layout and starting cap",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 2.2106,
+      "actual": 0.8116,
+      "minutes": 0.787,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_5c6ba791-31a4-4ac5-b3ff-d0ee86814c19",
+          "turn_id": "63da637e-bfa7-4498-9667-80b24a1e7e65",
+          "requests": 8,
+          "estimate": 2.2106,
+          "actual": 0.8116,
+          "minutes": 0.787,
+          "start": "2026-11-26T10:43:24.029000Z",
+          "end": "2026-11-26T10:44:11.248000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

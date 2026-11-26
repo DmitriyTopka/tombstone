@@ -20,6 +20,7 @@ from pathlib import Path
 from typing import Optional
 
 DEMO_TASK_CAP = 0.30
+RUN_DEFAULT_CAP = 0.75  # starting slider cap on the graveyard page (R15.4)
 DATA_DIR = Path(__file__).resolve().parent / "data" / "demo_session"
 SAMPLE_TOOL_CALL = {
     "hook_event_name": "PreToolUse",
@@ -105,7 +106,7 @@ def trace(source: Optional[Path] = None,
     for cap in (cap_grid(total) if caps_list is None else caps_list):
         _, at, figure, refusal = replay(cap)
         rows.append({"cap": cap, "stop_at": at, "figure": figure, "refusal": refusal})
-    return {"credits": full, "total": total, "default_cap": DEMO_TASK_CAP, "caps": rows}
+    return {"credits": full, "total": total, "default_cap": RUN_DEFAULT_CAP, "caps": rows}
 
 
 def prepare_dir(dir_arg: Optional[str]) -> Path:

@@ -32,7 +32,8 @@ def test_trace_is_deterministic_and_fast():
     under = [c for c in caps_seen if c < first["total"]]
     assert len(under) >= 20 and caps_seen[0] == 0.05
     assert caps_seen[-2] < first["total"] < caps_seen[-1]
-    assert 0.30 in caps_seen
+    assert 0.30 in caps_seen and 0.75 in caps_seen
+    assert first["default_cap"] == 0.75
 
 
 def test_default_cap_matches_demo_run(tmp_path, capsys):
@@ -83,7 +84,8 @@ def test_block_caption_labels_and_static_result():
             ">STOP</p>", "hook exit code 2", "crack-1",
             "Without the breaker this session went on to 1.44 credits est."):
         assert needle in page, needle
-    assert 'value="5"' in page
+    default = next(i for i, r in enumerate(_data(page)["caps"]) if r["cap"] == 0.75)
+    assert f'value="{default}"' in page and "0.75 credits</output>" in page
     assert page.index('id="runner"') < page.index('id="ground"')
     assert page.index("</header>") < page.index('id="runner"')
 
@@ -124,3 +126,21 @@ def test_no_external_requests():
 def test_no_dash_characters_in_the_block():
     page = _page()
     assert "\u2014" not in page and "\u2013" not in page
+
+
+def test_result_lines_are_in_the_blocks_flow():
+    page = _page()
+    css = page.split("<style>", 1)[1].split("</style>", 1)[0]
+    rules: dict = {}
+    for sel, body in re.findall(r"(\.runner[^{,]*)\{([^}]*)\}", css):
+        rules.setdefault(sel, body)
+    for sel in (".runner", ".runner .scene", ".runner .verdict"):
+        body = rules[sel]
+        assert "position:absolute" not in body and "position:fixed" not in body
+        assert not re.search(r"(^|;)\s*(max-)?height:", body)
+    assert "flow-root" in rules[".runner"]
+    section = page.split('id="runner"', 1)[1].split("</section>", 1)[0]
+    assert "position:absolute" not in section and "height:" not in section.replace("--rh", "")
+    assert "STOP</p>" in section and "Without the breaker" in section
+    assert section.index('id="run-verdict"') < section.index("Without the breaker")
+    assert "0.75 credits" in section

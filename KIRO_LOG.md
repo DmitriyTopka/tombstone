@@ -259,3 +259,7 @@ Run by Claude with `experiments/run.sh` in scratch projects outside the repo, pr
 ## 2026-11-26 Task 25, a first click that shows a receipt (approved by Dima)
 A cold reader opened the first cracked stone and got a card titled with a cut-off prompt and "No receipt was kept": 14 of 25 live stops are early test stops with no autopsy. Added R2.14 and task 25. Kiro: stopped stones with a receipt first, newest first, the early ones after a label; card title "Live stop N, <reason>", the prompt as a "Prompt:" line inside the card; a line under the headline saying whose credits these are. 608 tests pass.
 Cost: 2.58 credits actual (18 requests), filed under 25, 25.1 and 25.2.
+
+## 2026-11-26 Task 26, Run the agent on the page (approved by Dima)
+The council of 26.11 found the costume on the report, not on the product: the crack only told of a stop made elsewhere. Added Requirement 15 and task 26. Kiro: `demo.trace()` replays the packaged session through `watcher.evaluate` once per slider cap when the page is built, with the refusal from the same `stop.refusal_text` the hook uses; the page block only looks results up and animates them. A browser check by Claude then found the result lines covered by the next section and a start cap that stopped on request 2 of 9; task 26.4 made the block grow with its content and start at 0.75. 621 tests pass. Checked in a browser at 1280 and 375 px.
+Cost: about 5.4 credits for 26 and 26.4 (/usage 326.76 to 332.11).

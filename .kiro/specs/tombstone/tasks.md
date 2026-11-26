@@ -348,3 +348,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 26.3 Tests
     - The trace is deterministic; for every cap the stop request equals what `tombstone demo` logic gives for that cap (check the default 0.30 against `demo.run` output); a cap above the total has no stop; the block, caption, slider labels and noscript text are on the page; the inline JSON cannot close the script tag; the page makes no external requests; R2 tests still pass.
     - _Requirements: R15.1, R15.2, R15.3, R15.4_
+
+  - [x] 26.4 Layout and starting cap
+    - Found in a browser check on 2026-11-26: after a run the refusal text and the "Without the breaker" line sit under the "Stopped by the breaker" section and cannot be seen; at the 0.30 start the run stops on request 2 of 9, so the stone barely grows. Make the block grow with its content per R15.5 (no fixed height, no overlap at 1280 and 375 px) and start the slider at 0.75 per R15.4 (noscript text too). `tombstone demo` keeps its own 0.30 cap. Update the tests that check the start cap and add one that the result lines are inside the block's flow (no absolute positioning or fixed height on the block).
+    - _Requirements: R15.4, R15.5_

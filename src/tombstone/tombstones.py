@@ -2569,7 +2569,8 @@ _RUN_CAPTION = ("A recorded real Kiro CLI session, scrubbed. For every cap on th
                 "page was built.")
 
 _RUN_CSS = """
-.runner{max-width:880px;margin:0 auto;padding:28px 20px 8px}
+.runner{position:relative;z-index:2;display:flow-root;max-width:880px;margin:0 auto;
+  padding:28px 20px 96px}
 .runner h2{font-size:26px;margin:0 0 6px}
 .runner .caption{color:var(--muted);margin:0 0 16px;font-size:15px}
 .runner .controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;margin:0 0 18px}
@@ -2588,13 +2589,13 @@ _RUN_CSS = """
   width:calc(var(--h) * .66);min-width:104px;align-items:center;justify-content:center;display:flex;color:#1d1a1c}
 .runner .stone .cost{margin:0;color:#2a2528}
 .runner.stopped .stone{box-shadow:0 0 34px 6px rgba(255,59,59,.35)}
-.runner .verdict{flex:1 1 260px;min-height:120px}
+.runner .verdict{flex:1 1 260px;min-width:0}
 .runner .verdict .stop{font-size:30px;letter-spacing:.14em;color:var(--ember);font-weight:700;margin:0}
 .runner .verdict p{margin:4px 0;overflow-wrap:anywhere}
 .runner .verdict .refusal{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:14px;
   background:#1a1014;border-left:3px solid var(--ember);padding:8px 10px}
 @media (prefers-reduced-motion:reduce){.runner .stone{transition:none}}
-@media (max-width:640px){.runner{padding:20px 14px 4px}.runner .grave{min-height:200px;padding:0 6px 14px}
+@media (max-width:640px){.runner{padding:20px 14px 96px}.runner .grave{min-height:200px;padding:0 6px 14px}
   .runner .meter b{font-size:28px}.runner .verdict .stop{font-size:24px}}
 """
 
