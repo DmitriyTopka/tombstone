@@ -2656,18 +2656,20 @@ def _g_soil(hp: float) -> str:
         f'<path class="tufts" d="{tufts}" fill="url(#blade)"/>'
         f'<path class="mound" d="{mound}" fill="#5b3f2b" filter="url(#soilf)"/>'
         '<g class="scr">' + "".join(f'<path pathLength="1" d="{d}"/>' for d in _SOIL_CRACKS) + "</g>"
-        f'<path class="heap" d="{heap}" fill="#5b3f2b" filter="url(#soilf)"/>'
         '<g class="tear"><path d="M44 48 L47 37 L53 43 L57 33 L64 47Z" fill="#5b3f2b" filter="url(#soilf)" '
         'transform="rotate(-14 54 48)"/><path d="M186 48 L192 34 L198 42 L203 36 L207 48Z" fill="#5b3f2b" '
         'filter="url(#soilf)" transform="rotate(14 196 48)"/>'
         '<path d="M45 40 L47 33 L50 39 L53 31 L56 40Z M190 38 L193 31 L196 37 L199 32 L202 40Z" '
         'fill="url(#blade)"/></g></svg>')
+    front = ('<svg class="gsvg" viewBox="0 0 250 70" preserveAspectRatio="none" focusable="false">'
+             f'<path class="heap" d="{heap}" fill="#5b3f2b" filter="url(#soilf)"/></svg>')
     lumps = "".join(
         f'<i class="clump lump" style="--x:{x};--y:{y};--s:{s}"></i>' for x, y, s in _LUMPS)
     falls = "".join(
         f'<i class="clump fall" style="--x:{x};--y:{y};--s:{s};--dx:{dx};--t:{t}"></i>'
         for x, y, s, dx, t in _FALLS)
-    return f'<div class="soil" aria-hidden="true">{svg}{lumps}</div><div class="shed" aria-hidden="true">{falls}</div>'
+    return (f'<div class="soil back" aria-hidden="true">{svg}</div>'
+            f'<div class="soil" aria-hidden="true">{front}{lumps}</div><div class="shed" aria-hidden="true">{falls}</div>')
 
 
 _SCENE_CREDIT = "Scene and headstone images generated with Nano Banana Pro (Google Gemini)."
@@ -2892,6 +2894,10 @@ _HERO_CSS = """
 /* the rising headstone: its visible height is --rh on the R15 scale */
 .hero .earth{position:relative;overflow:hidden;width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);
   margin:0 auto}
+/* the ground line is y=48 of the 70 unit soil box, 22 units above the box bottom; the stone is clipped there */
+.hero .hstone{clip-path:inset(0 -60% calc((242px - var(--rh)) * var(--k)) -60%)}
+.hero .earth:not(.on) .hstone,.hero .earth.heave .hstone{clip-path:inset(0 0 100% 0)}
+.hero .soil.back{z-index:1}
 /* at rest the stone is fully below the ground line; the .earth box (overflow:hidden) clips it, no band is drawn */
 .hero .earth:not(.on) .hstone{top:calc(228px * var(--k));transition:none}
 .hero .hstone{position:absolute;left:50%;margin-left:calc(var(--k) * -73px);width:calc(var(--k) * 147px);

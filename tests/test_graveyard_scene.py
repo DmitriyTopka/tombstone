@@ -201,3 +201,26 @@ def test_at_rest_no_band_heap_or_stone_is_visible_and_the_stone_is_clipped():
     # reset returns to rest, and the run adds the soil from the heave
     js = _script(page).replace("\n", "")
     assert '"heave","dig","on"' in js.split("function reset(){", 1)[1].split("function finish", 1)[0]
+
+
+# --- Task 29.6: the stone ends at the ground, the heap covers its foot ------
+
+def test_stone_clip_bottom_is_the_ground_line_and_cracks_sit_behind_the_stone():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    # ground line: y=48 in the 70 unit soil box; the earth box is 228 units tall
+    ground = 228 - (70 - 48)
+    bottom = re.search(r"\.hero \.hstone\{clip-path:inset\(0 -60% calc\(\((\d+)px - var\(--rh\)\) \* var\(--k\)\) -60%\)\}", css)
+    assert bottom
+    # stone top is (228 - rh), its height 220, so its visible bottom is 448 - rh - inset
+    assert 228 + 220 - int(bottom.group(1)) == ground
+    assert ".hero .earth:not(.on) .hstone,.hero .earth.heave .hstone{clip-path:inset(0 0 100% 0)}" in css
+    # heap path base sits on the ground line
+    assert re.search(r'M14 48 C.*236 48Z', page)
+    hero = page.split('<header class="hero', 1)[1].split("</header>", 1)[0]
+    back, front = hero.split('<div class="soil back"', 1)[1].split('<div class="soil" ', 1)
+    for cls in ('class="scr"', 'class="tear"', 'class="mound"', 'class="tufts"'):
+        assert cls in back and cls not in front, cls
+    assert 'class="heap"' in front and 'class="heap"' not in back
+    z = {m.group(1): int(m.group(2)) for m in re.finditer(r"\.hero (\.soil\.back|\.hstone|\.soil)\{[^}]*?z-index:(\d+)", css)}
+    assert z[".soil.back"] < z[".hstone"] < z[".soil"]

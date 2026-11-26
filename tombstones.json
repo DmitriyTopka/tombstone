@@ -3030,6 +3030,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/29.6",
+      "task_id": "29.6",
+      "name": "The stone ends at the ground, the heap covers its foot",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 8,
+      "estimate": 2.62,
+      "actual": 1.1319,
+      "minutes": 0.9052,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_339e9c8a-7882-461f-af22-b4a4b4efff93",
+          "turn_id": "b8d8ce5e-e135-4b34-bac7-cab6acdba361",
+          "requests": 8,
+          "estimate": 2.62,
+          "actual": 1.1319,
+          "minutes": 0.9052,
+          "start": "2026-11-26T13:58:19.454000Z",
+          "end": "2026-11-26T13:59:13.764000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
