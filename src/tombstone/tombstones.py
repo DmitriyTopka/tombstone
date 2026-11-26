@@ -1939,6 +1939,7 @@ h1{font-weight:400;font-size:clamp(40px,5.6vw,96px);line-height:.98;letter-spaci
 .section-note{margin:40px 0 0;color:var(--muted);font-size:16px;max-width:46em}
 .section-note h2{font-weight:400;font-size:clamp(24px,2.2vw,32px);color:var(--bone);margin:0 0 6px}
 .wide{flex-basis:100%}
+.row-label{flex:0 0 100%;margin:0;font-size:15px;color:var(--muted)}
 .section-note.wide{max-width:none;padding-right:max(0px,calc(100% - 46em))}
 
 /* stones: lit by the moon from the upper right */
@@ -2005,6 +2006,7 @@ dialog .meta{color:#5b574d;margin:0 0 16px;font-size:15px}
 dialog dl{display:grid;grid-template-columns:auto 1fr;gap:6px 18px;margin:0 0 18px}
 dialog dt{color:#5b574d}
 dialog dd{margin:0;text-align:right}
+dialog .prompt{font-size:15px;color:#3d392f;margin:0 0 12px;font-style:italic;overflow-wrap:anywhere}
 dialog .gap{font-size:15px;color:#3d392f;margin:0 0 18px;border-left:2px solid #b49a6a;padding-left:10px}
 dialog{max-height:calc(100vh - 32px);overflow-y:auto}
 dialog .receipt{border-top:1px solid #b49a6a;margin:0 0 18px;padding-top:12px}
@@ -2128,6 +2130,8 @@ if(card&&ground&&typeof card.showModal==="function"){
     document.getElementById("ct").textContent=b.getAttribute("data-title")||"";
     document.getElementById("cm").textContent=b.getAttribute("data-meta")||"";
     document.getElementById("cg").textContent=b.getAttribute("data-gap")||"";
+    var cp=document.getElementById("cp");
+    if(cp){cp.textContent=b.getAttribute("data-prompt")||"";cp.hidden=cp.textContent==="";}
     var dl=document.getElementById("cd");
     while(dl.firstChild){dl.removeChild(dl.firstChild);}
     fields.forEach(function(f){
@@ -2318,6 +2322,21 @@ def _g_stop_reason(receipt: Optional[dict]) -> str:
     return "stopped"
 
 
+def _g_stop_time(record: dict) -> str:
+    """Stop time of a record: its first turn stamp, else its date (sortable text)."""
+    stamps = [e.get("start") or e.get("end") or ""
+              for e in (record.get("turns") or []) if isinstance(e, dict)]
+    stamps = [s for s in stamps if isinstance(s, str) and s]
+    return min(stamps) if stamps else _g_str(record, "date")
+
+
+def _g_stop_order(stopped: list, receipts: dict) -> tuple:
+    """Stopped records as (with a receipt, newest first; without a receipt) (R2.14)."""
+    has = [r for r in stopped if isinstance(receipts.get(r.get("id")), dict)]
+    none = [r for r in stopped if not isinstance(receipts.get(r.get("id")), dict)]
+    return sorted(has, key=_g_stop_time, reverse=True), none
+
+
 def _g_stop_numbers(stopped: list) -> dict:
     """Map ``id(record)`` of each stopped record with an unknown task id to N.
 
@@ -2326,10 +2345,7 @@ def _g_stop_numbers(stopped: list) -> dict:
     """
     def key(item: tuple) -> tuple:
         pos, record = item
-        stamps = [e.get("start") or e.get("end") or ""
-                  for e in (record.get("turns") or []) if isinstance(e, dict)]
-        stamps = [s for s in stamps if isinstance(s, str) and s]
-        return (min(stamps) if stamps else _g_str(record, "date"), pos)
+        return (_g_stop_time(record), pos)
 
     unknown = [(i, r) for i, r in enumerate(stopped) if _g_task_id(r) == "unknown"]
     return {id(r): n for n, (_, r) in enumerate(sorted(unknown, key=key), 1)}
@@ -2355,6 +2371,11 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
     else:
         tid = "no task" if task_id == "unknown" else f"task {task_id}"
     epi = _g_stop_reason(receipt) if live_stop else name
+    card_title = f"{tid}, {epi}" if live_stop else name
+    prompt_attr = ""
+    if live_stop:
+        cut = len(name.split()) >= PROMPT_NAME_WORDS
+        prompt_attr = f'data-prompt="{esc("Prompt: " + name + (chr(8230) if cut else ""))}" '
     estimate = _g_num(record.get("estimate"))
     actual = _g_num(record.get("actual"))
     requests = record.get("requests")
@@ -2390,7 +2411,7 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
         cls += f" crack-{(index * 3 + 1) % 4}"
     return (
         f'<button type="button" class="{cls}" style="--hh:{height}px;--h:{height}px" '
-        f'aria-label="{esc(aria)}" data-title="{esc(name)}" data-meta="{esc(meta)}" '
+        f'aria-label="{esc(aria)}" data-title="{esc(card_title)}" data-meta="{esc(meta)}" '
         f'data-actual="{esc(_g_credits(actual) + " credits actual" if actual is not None else "n/a, actual pending")}" '
         f'data-estimate="{esc(_g_credits(estimate) + " credits est." if estimate is not None else "n/a")}" '
         f'data-requests="{esc(str(requests) + " " + basis if requests is not None else "n/a")}" '
@@ -2398,6 +2419,7 @@ def _g_stone(record: dict, peak: float, index: int = 0, row_key: str = "",
         f'data-model="{esc(_g_str(record, "model", "n/a"))}" '
         f'data-engine="{esc(_g_str(record, "engine", "n/a"))}" '
         f'{_g_receipt_attrs(record, receipt)}'
+        f'{prompt_attr}'
         f'data-gap="{esc(gap)}">'
         f'<span class="tid">{esc(tid)}</span>'
         f'<span class="cost">{esc(_g_credits(cost))}</span>'
@@ -2449,6 +2471,10 @@ def _g_register_row(record: dict) -> str:
 _GRAVEYARD_LEDE = ("Each stone is a task: a spec task Kiro finished, work that ticked no checkbox "
                    "(filed as unknown), or a task the breaker stopped. It is as tall as its price. "
                    "Open a stone for the estimate, the requests and the time.")
+
+_GRAVEYARD_NO_RECEIPT_LABEL = "Early test stops, no receipt was kept"
+_GRAVEYARD_TOTAL_NOTE = ("What Kiro charged to build this tool, and the live test runs "
+                         "the breaker stopped.")
 
 _GRAVEYARD_HILLS = (
     '<svg class="hills" viewBox="0 0 1600 220" preserveAspectRatio="none" aria-hidden="true">\n'
@@ -2521,12 +2547,15 @@ def _g_header(rows: list, kicker: str = _GRAVEYARD_KICKER,
         link_html = '<p class="kicker links">' + " ".join(
             f'<a href="{esc(url)}">{label}</a>' for label, url in links) + "</p>\n"
 
+    total_note = (f'<p class="lede total-note">{esc(_GRAVEYARD_TOTAL_NOTE)}</p>\n'
+                  if rows else "")
     markup = (
         '<header class="sky">\n<div class="stars" aria-hidden="true"></div>\n'
         '<div class="moon" aria-hidden="true"></div>\n<div class="intro">\n'
         f'<p class="kicker">{esc(kicker)}</p>\n'
         f'<p class="lede tagline">{esc(_GRAVEYARD_TAGLINE)}</p>\n'
         f"<h1>{esc(headline)}</h1>\n"
+        f'{total_note}'
         f'<p class="lede" id="lede">{esc(_GRAVEYARD_LEDE)}</p>\n'
         f"{strip}{legend}{link_html}</div>\n{_GRAVEYARD_HILLS}</header>\n"
     )
@@ -2586,6 +2615,14 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
     on_page = any(r.get("id") in included for r in rows)
 
     stop_nos = _g_stop_numbers(stopped)
+    with_receipt, without_receipt = _g_stop_order(stopped, receipts)
+    ordered = with_receipt + without_receipt
+    shapes = _g_row_shapes(ordered, peak, "stopped")
+    stones = [_g_stone(r, peak, i, "stopped", sh, receipts.get(r.get("id")), stop_nos.get(id(r)))
+              for i, (r, sh) in enumerate(zip(ordered, shapes))]
+    if without_receipt:
+        stones.insert(len(with_receipt),
+                      f'<p class="row-label">{esc(_GRAVEYARD_NO_RECEIPT_LABEL)}</p>')
     parts: list[str] = []
     if stopped:
         parts.append(
@@ -2594,9 +2631,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
             "The next tool call was refused and the agent stopped. "
             f"The cost is what Kiro charged before it did.{live_note}</div>"
             '<div class="plot stopped wide"><div class="row" style="justify-content:flex-start">'
-            + "".join(_g_stone(r, peak, i, "stopped", sh, receipts.get(r.get("id")),
-                                            stop_nos.get(id(r))) for i, (r, sh)
-                      in enumerate(zip(stopped, _g_row_shapes(stopped, peak, "stopped"))))
+            + "".join(stones)
             + "</div></div>"
             '<div class="section-note wide"><h2>Finished tasks</h2>'
             "Grouped by the top-level task in tasks.md.</div>"
@@ -2670,7 +2705,7 @@ def render_graveyard(records: list, plots: Optional[dict] = None,
         "Tombstone's hooks while Kiro worked. Credits are Kiro credits as the session "
         "files report them.</footer>\n"
         '<dialog id="card" aria-labelledby="ct"><h3 id="ct"></h3><p class="meta" id="cm"></p>'
-        '<dl id="cd"></dl><p class="gap" id="cg"></p>'
+        '<dl id="cd"></dl><p class="prompt" id="cp" hidden></p><p class="gap" id="cg"></p>'
         '<section id="cr" class="receipt" aria-labelledby="crh" hidden><h4 id="crh">Receipt</h4>'
         '<p id="crn">No receipt was kept for this stop.</p>'
         '<div id="crb" hidden><dl id="crd"></dl><pre id="crt" tabindex="0"></pre>'

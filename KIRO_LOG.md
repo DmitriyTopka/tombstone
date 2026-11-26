@@ -255,3 +255,7 @@ Cost: 4.17 credits actual (18 requests), filled by the watcher after the turn; t
 
 ## 2026-11-24 and 25 The cost experiment (approved by Dima)
 Run by Claude with `experiments/run.sh` in scratch projects outside the repo, protocol committed before each round. Round 1 (before task 24): 0 of 3 stops. Round 2: 3 of 3 stops, no saving on a short task. Round 3 (Kiro CLI 3.6.0, long task, cap 1.00): 3 of 3 stops, 1.27 credits on average against 5.16 without Tombstone. Details and every run in [experiments/RESULTS.md](experiments/RESULTS.md). `/usage` after: 324.17/4000.
+
+## 2026-11-26 Task 25, a first click that shows a receipt (approved by Dima)
+A cold reader opened the first cracked stone and got a card titled with a cut-off prompt and "No receipt was kept": 14 of 25 live stops are early test stops with no autopsy. Added R2.14 and task 25. Kiro: stopped stones with a receipt first, newest first, the early ones after a label; card title "Live stop N, <reason>", the prompt as a "Prompt:" line inside the card; a line under the headline saying whose credits these are. 608 tests pass.
+Cost: 2.58 credits actual (18 requests), filed under 25, 25.1 and 25.2.

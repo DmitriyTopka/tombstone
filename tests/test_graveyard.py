@@ -319,3 +319,74 @@ def test_v3_mobile_block_has_no_small_px_font():
     mobile = page[page.index("@media (max-width:640px)"):page.index("</style>")]
     sizes = [int(n) for n in re.findall(r"font-size:(\d+)px", mobile)]
     assert sizes and min(sizes) >= 14
+
+
+# Task 25.2: a first click that shows a receipt (R2.14)
+
+def _live(rid: str, name: str, date: str, **over) -> dict:
+    return _record(id=rid, task_id="unknown", name=name, outcome="killed", date=date, **over)
+
+
+def _rc(reason: str = "over_cap") -> dict:
+    return {"reason": reason, "refusal": "TOMBSTONE: over budget", "estimate": "",
+            "kill_ran": False, "calls": []}
+
+
+def _stopped_row(page: str) -> str:
+    row = page.split('<div class="plot stopped wide">')[1]
+    return row.split('<div class="section-note wide"><h2>Finished tasks')[0]
+
+
+def _live_page():
+    recs = [
+        _live("s/a", "no receipt early", "2026-11-06"),
+        _live("s/b", "one two three four five six seven eight", "2026-11-08"),
+        _live("s/c", "short prompt", "2026-11-10"),
+        _live("s/d", "no receipt late", "2026-11-12"),
+    ]
+    receipts = {"s/b": _rc("stall"), "s/c": _rc("over_cap")}
+    return render_graveyard(recs, None, None, receipts)
+
+
+def test_receipts_first_newest_first_then_label_then_rest():
+    row = _stopped_row(_live_page())
+    marks = re.findall(r'data-receipt="(yes|no)"|(Early test stops, no receipt was kept)', row)
+    assert [a or b for a, b in marks] == [
+        "yes", "yes", "Early test stops, no receipt was kept", "no", "no"]
+    titles = re.findall(r'data-title="([^"]*)"', row)
+    assert titles == ["Live stop 3, over its cap", "Live stop 2, stalled",
+                      "Live stop 1, stopped", "Live stop 4, stopped"]
+
+
+def test_label_absent_when_every_stop_has_a_receipt():
+    page = render_graveyard([_live("s/a", "x", "2026-11-06")], None, None, {"s/a": _rc()})
+    assert "Early test stops" not in page
+
+
+def test_live_card_title_has_no_prompt_and_prompt_line_marks_cut():
+    page = _live_page()
+    for title in re.findall(r'data-title="([^"]*)"', _stopped_row(page)):
+        assert title.startswith("Live stop ") and "prompt" not in title and "eight" not in title
+    prompts = re.findall(r'data-prompt="([^"]*)"', page)
+    assert "Prompt: short prompt" in prompts
+    assert "Prompt: one two three four five six seven eight\u2026" in prompts
+    assert 'id="cp"' in page and 'getAttribute("data-prompt")' in page
+
+
+def test_known_task_stop_keeps_name_title_and_no_prompt_line():
+    page = render_graveyard([_record(id="s/1", task_id="2.1", name="Parse sessions",
+                                     outcome="killed")])
+    assert 'data-title="Parse sessions"' in page and " data-prompt=" not in page
+
+
+def test_headline_line_under_total():
+    page = render_graveyard([_record()])
+    line = "What Kiro charged to build this tool, and the live test runs the breaker stopped."
+    assert line in page and page.index("<h1>") < page.index(line)
+    assert line not in render_graveyard([])
+
+
+def test_new_markup_has_no_external_request_or_dash():
+    page = _live_page()
+    assert not re.search(r'(?:src|href)="https?://', page)
+    assert "\u2014" not in page and "\u2013" not in page

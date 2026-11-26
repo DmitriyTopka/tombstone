@@ -114,7 +114,7 @@ def test_lede_and_note_copy_in_page():
     page = render_graveyard([_record(outcome="killed")], None, {"spec/1": "live_stops.json"})
     assert "It is a live test run on a scratch project, kept in live_stops.json." in page
     assert "live_stops.json" in page
-    assert "live test runs" not in render_graveyard([_record(outcome="killed")])
+    assert "a live test run on a scratch project" not in render_graveyard([_record(outcome="killed")])
 
 
 def test_stopped_row_caps_eight_and_keeps_gap():

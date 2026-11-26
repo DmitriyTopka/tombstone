@@ -320,3 +320,31 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 24.2 Fixture and tests
     - Teach `tests/fixtures/scrub_session.py` to keep the numeric `value` of `session_metadata` events whose key is `creditSplit` or `contextUsage` (still blank every other text). Scrub the raw session in `~/tombstone-demo/exp_2411/fixture_src/` into `tests/fixtures/v3_live_credits/` and check it holds no `/Users/` or `/home/` path. Tests: the live credits of the fixture's open-turn prefix (cut the file before `usage_summary`) match the last `creditSplit` main; a session without `creditSplit` gives None and the old estimate path is unchanged; with a 0.33 cap the watcher raises over_cap on the prefix that reaches main 0.598 although the calibrated estimate is lower; the hook refuses with the live figure in the message.
     - _Requirements: R4.5_
+
+- [x] 25. A first click that shows a receipt
+  - Approved by Dima on 2026-11-26 (council of 26.11, item 0). A cold reader opened the first cracked stone and got a card titled with a cut-off prompt ("You are auditing this project for consistency. Do") and "No receipt was kept for this stop": 14 of the 25 live stops are early test stops from 6 Nov with no autopsy.
+  - _Requirements: R2.14_
+
+  - [x] 25.1 Order, card title, headline line
+    - In `render_graveyard` and `_g_stone` (tombstones.py): order the stopped row per R2.14 (with receipt first, newest first; without receipt after the label), keep the "Live stop N" numbers by stop time; for a live stop set the card title to "Live stop N, <reason>" and move the prompt into a "Prompt: ..." line inside the card (ellipsis when cut); add the line under the headline. Keep the page one file, everything escaped.
+    - _Requirements: R2.14_
+
+  - [x] 25.2 Tests
+    - In `tests/test_graveyard.py`: the first stopped stone on the page has `data-receipt="yes"` and is the newest such stop; stones without a receipt come after the label and only then; numbering by time is unchanged; the card title of a live stop never contains the prompt and the prompt line ends with an ellipsis when cut; the headline line is present; no external requests. Update any existing expectation that these changes break, nothing else.
+    - _Requirements: R2.14_
+
+- [ ] 26. Run the agent on the page
+  - Approved by Dima on 2026-11-26 (council of 26.11, item 1). The Costume rubric asks for spooky design that enhances the app's function; today the crack only reports a stop that happened elsewhere. Gate: if the suite is not green or the block breaks the page on a phone by 2026-11-29 evening, the block is not published.
+  - _Requirements: R15.1, R15.2, R15.3, R15.4_
+
+  - [ ] 26.1 Trace at build time
+    - New function in `src/tombstone/demo.py` (reuse `packaged_session`, the replay loop of `run` and `watcher.evaluate`; no STOP file, no autopsy, no hook process, nothing written to disk) that returns the per-request credits and, for each cap of the slider, the stop request, the figure and the refusal text from the hook's own refusal builder. Deterministic, under 2 seconds.
+    - _Requirements: R15.2_
+
+  - [ ] 26.2 The block on the page
+    - In `render_graveyard` (tombstones.py) draw the "Run the agent" block per R15.1, R15.3 and R15.4 from the trace of 26.1, in the page's existing style (stone shapes, crack, red glow), inline JSON escaped for a script tag, no external requests.
+    - _Requirements: R15.1, R15.3, R15.4_
+
+  - [ ] 26.3 Tests
+    - The trace is deterministic; for every cap the stop request equals what `tombstone demo` logic gives for that cap (check the default 0.30 against `demo.run` output); a cap above the total has no stop; the block, caption, slider labels and noscript text are on the page; the inline JSON cannot close the script tag; the page makes no external requests; R2 tests still pass.
+    - _Requirements: R15.1, R15.2, R15.3, R15.4_

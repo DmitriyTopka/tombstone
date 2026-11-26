@@ -2340,6 +2340,96 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/25",
+      "task_id": "25",
+      "name": "A first click that shows a receipt",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.7851,
+      "actual": 0.8607,
+      "minutes": 0.7323,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_620bc0e0-5cf4-47ec-8769-b9773969c481",
+          "turn_id": "6103cbce-4403-471a-ac4f-ae0aaaddb25e",
+          "requests": 18,
+          "estimate": 5.3558,
+          "actual": 2.5825,
+          "minutes": 2.197,
+          "start": "2026-11-26T10:34:20.468000Z",
+          "end": "2026-11-26T10:36:32.287000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/25.1",
+      "task_id": "25.1",
+      "name": "Order, card title, headline line",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.7851,
+      "actual": 0.8607,
+      "minutes": 0.7323,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_620bc0e0-5cf4-47ec-8769-b9773969c481",
+          "turn_id": "6103cbce-4403-471a-ac4f-ae0aaaddb25e",
+          "requests": 18,
+          "estimate": 5.3558,
+          "actual": 2.5825,
+          "minutes": 2.197,
+          "start": "2026-11-26T10:34:20.468000Z",
+          "end": "2026-11-26T10:36:32.287000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/25.2",
+      "task_id": "25.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 18,
+      "estimate": 1.7851,
+      "actual": 0.8607,
+      "minutes": 0.7323,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_620bc0e0-5cf4-47ec-8769-b9773969c481",
+          "turn_id": "6103cbce-4403-471a-ac4f-ae0aaaddb25e",
+          "requests": 18,
+          "estimate": 5.3558,
+          "actual": 2.5825,
+          "minutes": 2.197,
+          "start": "2026-11-26T10:34:20.468000Z",
+          "end": "2026-11-26T10:36:32.287000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

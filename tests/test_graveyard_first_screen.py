@@ -84,9 +84,9 @@ def test_unknown_task_stop_reads_live_stop_with_reason():
     stones = re.findall(
         r'data-title="([^"]*)".*?<span class="tid">(.*?)</span>.*?<span class="epi">(.*?)</span>', page)
     assert stones == [
-        ("late prompt", "Live stop 3", "stopped"),
-        ("early prompt", "Live stop 1", "over its cap"),
-        ("middle prompt", "Live stop 2", "stalled"),
+        ("Live stop 2, stalled", "Live stop 2", "stalled"),
+        ("Live stop 1, over its cap", "Live stop 1", "over its cap"),
+        ("Live stop 3, stopped", "Live stop 3", "stopped"),
     ]
     assert page == render_graveyard(recs, None, None, receipts)
     text = _visible(page.split('<section class="register"')[0])

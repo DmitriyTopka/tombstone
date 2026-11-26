@@ -74,7 +74,7 @@ def test_missing_and_bad_include_exit_1_without_page(tmp_path, monkeypatch, caps
 
 def test_note_and_kicker_only_with_included_stopped():
     plain = render_graveyard([_killed()])
-    assert KICKER not in plain and "live test runs" not in plain
+    assert KICKER not in plain and "are live test runs" not in plain
 
     live = render_graveyard([_record(), _killed()], None, {"unknown/k1": "live_stops.json"})
     assert KICKER in live
@@ -82,7 +82,7 @@ def test_note_and_kicker_only_with_included_stopped():
 
     # An included finished record changes the kicker but adds no stopped sentence.
     done = render_graveyard([_record()], None, {"spec/1": "x.json"})
-    assert KICKER in done and "live test runs" not in done
+    assert KICKER in done and "are live test runs" not in done
 
 
 def test_killed_reads_stopped_in_card_meta_and_register():
