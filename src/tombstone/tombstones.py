@@ -2788,9 +2788,12 @@ def _run_json(trace: dict) -> str:
 
 
 def _g_hand_bones() -> str:
-    """The photographed hand (R19.2) and bones (R19.3); both hidden until the run."""
-    return ('<div class="hand" aria-hidden="true"><i class="ph hi"></i></div>'
-            '<i class="ph bones" aria-hidden="true"></i>')
+    """The photographed hand (R19.2), hidden until the run.
+
+    The bones (R19.7) are not here: they lie in the hero's lower left corner,
+    outside the earth box whose clip would cut them off.
+    """
+    return '<div class="hand" aria-hidden="true"><i class="ph hi"></i></div>'
 
 
 def _g_runner(trace: Optional[dict]) -> str:
@@ -2824,11 +2827,10 @@ def _g_runner(trace: Optional[dict]) -> str:
             '<path class="d1" d="M17 18 C18 4 36 1 50 1 C64 1 82 4 83 18 M6 20 L16 18 M84 18 L94 20"/>'
             '<path class="d2" d="M17 20 C18 7 36 3 50 3 C64 3 82 7 83 20 M10 24 L16 21 M84 21 L90 24"/></svg>')
 
-    def half(first: bool) -> str:
-        cost_attr = 'class="cost" id="run-stone-cost"' if first else 'class="cost cr"'
-        return ('<span class="hs"></span>'
-                f'<span class="carve"><span {cost_attr}>{shown:.2f}</span>'
-                f'<span class="cunit">credits est.</span></span>{dust}')
+    half = f'<span class="hs"></span>{dust}'
+    # R19.8: one glowing figure above both halves, so the split clips never cut it
+    carve = (f'<span class="carve"><span class="cost" id="run-stone-cost">{shown:.2f}</span>'
+             '<span class="cunit">credits est.</span></span>')
 
     return (
         f'<section class="runner{state}" id="runner" aria-labelledby="runh">\n'
@@ -2847,8 +2849,8 @@ def _g_runner(trace: Optional[dict]) -> str:
         f'{_g_hand_bones()}<div id="run-stone" class="{cls}" '
         f'style="--rh:{height}px;--cl:{clip_l};--cr:{clip_r}" role="img" '
         'aria-label="Headstone that rises with the spend">'
-        f'<div class="half hl">{half(True)}</div>'
-        f'<div class="half hr" aria-hidden="true">{half(False)}</div>'
+        f'<div class="half hl">{half}</div>'
+        f'<div class="half hr" aria-hidden="true">{half}</div>{carve}'
         f'</div>{_g_soil(hp)}</div></div>'
         f'<div class="verdict" id="run-verdict" role="status">{result}</div></div>\n'
         f'<p class="caption">{esc(_RUN_CAPTION)}</p>\n'
@@ -2935,16 +2937,22 @@ _HERO_CSS = """
   background:linear-gradient(255deg,rgba(190,210,245,.42),rgba(190,210,245,0) 38%);
   -webkit-mask:var(--img-stone) center/100% 100% no-repeat;mask:var(--img-stone) center/100% 100% no-repeat}
 .hero.stopped .hstone .hs{filter:brightness(1.3) contrast(1.08) saturate(.7) drop-shadow(0 0 12px rgba(255,59,59,.28))}
-.hero .hstone .carve{position:absolute;left:29%;right:29%;top:49%;text-align:center;container-type:inline-size;
-  font-family:Georgia,"Times New Roman",serif;color:#04060a;pointer-events:none;
-  text-shadow:0 1px 0 rgba(205,220,245,.6),0 -1px 0 rgba(0,0,0,.5)}
+/* R19.8: the figure sits at the top of the sunken panel (y 34 percent), so it clears the heap as soon as the panel does.
+   It was dark carved type at y 49 percent: under the heap (z 3) from the first step to the stop, and dark on dark stone.
+   It also sat inside each clipped half, so the split gap cut through it.
+   Now it is one light, glowing figure after both halves and above them (z 3 inside the stone); only the ground clip of the stone applies */
+.hero .hstone .carve{position:absolute;left:29%;right:29%;top:34%;z-index:3;opacity:1;text-align:center;container-type:inline-size;
+  font-family:Georgia,"Times New Roman",serif;color:#f4f9ff;pointer-events:none;
+  text-shadow:0 0 2px #fff,0 0 5px rgba(190,220,255,.95),0 0 12px rgba(130,185,255,.75),0 0 24px rgba(100,160,255,.45)}
+.hero .hstone .carve::before{content:"";position:absolute;left:-18%;right:-18%;top:-14%;bottom:-14%;z-index:-1;pointer-events:none;
+  background:radial-gradient(ellipse closest-side,rgba(150,195,255,.34),rgba(150,195,255,0))}
 /* the carve box is 42% of the stone, centred in the sunken panel (x 20 to 80 percent, y 31 to 78 percent); at most 70% of the panel; type sizes follow its width */
 .hero .hstone .cost{display:block;margin:0;font-size:calc(var(--k) * 22px);font-size:27cqw;line-height:1.05;
-  font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#04060a}
+  font-weight:700;letter-spacing:.02em;white-space:nowrap;color:#f4f9ff}
 .hero .hstone .cunit{display:block;font-size:calc(var(--k) * 8px);font-size:8cqw;letter-spacing:.1em;
   white-space:nowrap;text-transform:uppercase;opacity:.85;margin-top:.3em}
 .hero .hstone{z-index:2}
-.hero .hstone .half{position:absolute;inset:0;transition:transform .45s cubic-bezier(.2,1.5,.4,1)}
+.hero .hstone .half{position:absolute;inset:0;z-index:1;transition:transform .45s cubic-bezier(.2,1.5,.4,1)}
 .hero .hstone .hl{transform-origin:30% 100%}.hero .hstone .hr{transform-origin:70% 100%;opacity:0}
 .hero.stopped .hstone .hr{opacity:1}
 .hero.stopped .hstone .hl{clip-path:polygon(var(--cl));transform:translateX(calc(var(--k) * -3.5px)) rotate(-1.8deg)}
@@ -2996,10 +3004,10 @@ _HERO_CSS = """
   transition:transform .22s cubic-bezier(.4,1.8,.5,1)}
 /* at the split the hand goes limp and sinks back into the earth within 0.8 s */
 .hero.stopped .hand .hi{transform:translateY(105%) rotate(11deg);opacity:0;transition:transform .8s ease-in,opacity .8s ease-in}
-/* R19.3, R19.6: the bones on the grass right of the stone: 98 of 147 units wide (0.67), the skull (0.52 of the image height) 0.19 of the stone height */
-.hero .bones{--im:var(--img-bones);left:calc(var(--k) * 204px);bottom:0;width:calc(var(--k) * 98px);height:calc(var(--k) * 82px);
-  z-index:4;opacity:0;pointer-events:none;transition:opacity .9s ease-out}
-.hero.stopped .bones,.hero .earth.full .bones{opacity:1}
+/* R19.7: the bones lie in the lower left foreground among the old graves, away from the stone, heap, hand, counter and caption;
+   1.1 times the R19.6 size (98 x 82 units) because they are closer to the camera; visible at rest */
+.hero .bones{--im:var(--img-bones);left:1.5%;bottom:4px;width:calc(var(--k) * 108px);height:calc(var(--k) * 90px);
+  z-index:4;pointer-events:none}
 .hero .bones::before{content:"";position:absolute;left:5%;right:5%;bottom:-6%;height:55%;border-radius:50%;opacity:0;
   background:radial-gradient(closest-side,rgba(118,122,138,.6),rgba(118,122,138,0))}
 .hero .shed{position:absolute;left:50%;top:calc((228px - var(--rh)) * var(--k));width:0;height:0;z-index:4;
@@ -3007,6 +3015,7 @@ _HERO_CSS = """
 .hero .fall{left:calc(var(--x) * var(--k) * 1px);top:calc(var(--y) * var(--k) * 1px);opacity:0;
   --fd:calc((var(--rh) - 26px - var(--y) * 1px) * var(--k))}
 @media (prefers-reduced-motion:no-preference){
+  .hero .runner:not(.stopped) .hstone .carve{animation:glowflick 1.6s steps(1,end) infinite}
   .hero .fogl svg{animation:drift 90s linear infinite}
   .hero .f2 svg{animation-duration:62s;animation-direction:reverse}
   .hero .f3 svg{animation-duration:46s}
@@ -3028,6 +3037,7 @@ _HERO_CSS = """
     60%{opacity:1;transform:translate(calc(var(--dx) * .45 * var(--k) * 1px),var(--fd)) rotate(calc(var(--dx) * 4deg))}
     80%{opacity:1;transform:translate(calc(var(--dx) * .8 * var(--k) * 1px),calc(var(--fd) - 3px)) rotate(calc(var(--dx) * 8deg))}
     100%{opacity:0;transform:translate(calc(var(--dx) * 1.1 * var(--k) * 1px),var(--fd)) rotate(calc(var(--dx) * 11deg))}}
+  @keyframes glowflick{0%,100%{opacity:1}22%{opacity:.82}41%{opacity:.96}63%{opacity:.88}81%{opacity:1}}
   @keyframes flash{0%{opacity:0}18%{opacity:.3}100%{opacity:0}}
   @keyframes tremor{0%,100%{transform:none}20%{transform:translate(-3px,1px)}
     40%{transform:translate(3px,-1px)}60%{transform:translate(-2px,0)}80%{transform:translate(2px,1px)}}
@@ -3053,6 +3063,7 @@ _HERO_CSS = """
 }
 @media (max-width:640px){
   .hero{--k:.74;min-height:640px}
+  .hero .bones{display:none}
   .hero .shade{background:linear-gradient(180deg,rgba(3,5,12,.86) 0,rgba(3,5,12,.66) 30%,rgba(3,5,12,.3) 58%,rgba(3,5,12,0) 78%),
     linear-gradient(0deg,rgba(3,5,10,.5),transparent 24%)}
   .hero-inner{padding:48px 16px 56px}
@@ -3138,13 +3149,14 @@ def _g_hero(trace: Optional[dict], video: Optional[str] = None,
     if links:
         nav = '<p class="toplinks">' + " ".join(
             f'<a href="{esc(url)}">{label}</a>' for label, url in links) + "</p>\n"
+    bones = '<i class="ph bones" aria-hidden="true"></i>\n' if runner else ""
     noscript = ""
     if runner:
         noscript = ("<noscript><style>.hero .runner .controls{display:none}</style>"
                     '<p class="caption">JavaScript is off. The scene shows the recorded result '
                     "for a cap of 0.75 credits.</p></noscript>\n")
     return (
-        f'<header class="hero{state}" id="hero">\n{_g_scene()}\n{nav}'
+        f'<header class="hero{state}" id="hero">\n{_g_scene()}\n{bones}{nav}'
         '<div class="hero-inner">\n'
         f'<p class="tagline">{esc(_GRAVEYARD_TAGLINE)}</p>\n'
         '<h1>Set a cap. <em>Release the agent.</em></h1>\n'

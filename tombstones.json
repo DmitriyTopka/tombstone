@@ -3240,6 +3240,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/30.5",
+      "task_id": "30.5",
+      "name": "Bones to the side, a glowing figure",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 49,
+      "estimate": 21.8187,
+      "actual": 8.3657,
+      "minutes": 9.953,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-26",
+      "turns": [
+        {
+          "session_id": "sess_c0392776-d4d3-4bb2-94fd-0a4a57b7a66c",
+          "turn_id": "52eab481-df83-4cb7-be06-a084c5f2b309",
+          "requests": 49,
+          "estimate": 21.8187,
+          "actual": 8.3657,
+          "minutes": 9.953,
+          "start": "2026-11-26T14:29:13.183000Z",
+          "end": "2026-11-26T14:39:10.361000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }

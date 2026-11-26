@@ -295,13 +295,14 @@ def test_no_svg_heap_or_clump_elements_remain():
     assert len(set(re.findall(r"--s:(\d+)", hero))) >= 4
 
 
-def test_hand_and_bones_are_hidden_at_rest_and_toned_to_the_moon():
+def test_hand_is_hidden_at_rest_bones_are_shown_and_both_toned_to_the_moon():
     page = _page()
     css = _css(page).replace("\n", "")
     assert re.search(r"\.hero \.hand\{[^}]*overflow:hidden[^}]*opacity:0\}", css)
-    assert re.search(r"\.hero \.bones\{[^}]*opacity:0", css)
+    # R19.7 replaces the R19.3 fade-in: the bones are part of the cemetery at rest
+    bones = re.search(r"\.hero \.bones\{[^}]*\}", css).group(0)
+    assert "opacity:0" not in bones
     assert ".hero .earth.hup .hand{opacity:1}" in css
-    assert ".hero.stopped .bones,.hero .earth.full .bones{opacity:1}" in css
     tone = re.search(r"\.hero \.ph\{[^}]*filter:([^;]*);", css).group(1)
     assert "brightness(.8)" in tone and "saturate(.55)" in tone and "hue-rotate(172deg)" in tone
     assert "linear-gradient(210deg" in css  # highlight from the upper right
@@ -367,7 +368,6 @@ def test_scale_ratios_follow_real_world_proportions_at_both_widths():
     hand_left = _units(css, ".hero .hand", "left")
     bones_w = _units(css, ".hero .bones", "width")
     bones_h = _units(css, ".hero .bones", "height")
-    bones_left = _units(css, ".hero .bones", "left")
     earth_w = _units(css, ".hero .earth", "width")
     stone_left = (earth_w - stone_w) / 2
     skull = 0.52  # the skull spans the top 52 percent of bones.webp
@@ -377,9 +377,9 @@ def test_scale_ratios_follow_real_world_proportions_at_both_widths():
         assert 1.6 <= heap_w * scale / W <= 1.8
         assert 0.25 <= hand_h * scale / H <= 0.30 and hand_w * scale / W <= 0.45
         assert hand_left + hand_w <= stone_left  # left of the stone, no overlap
-        assert 0.65 <= bones_w * scale / W <= 0.80
-        assert 0.15 <= skull * bones_h * scale / H <= 0.20
-        assert bones_left >= stone_left + stone_w  # right of the stone, no overlap
+        # R19.7: about 1.1 times the R19.6 size, they lie closer to the camera
+        assert 0.65 * 1.05 <= bones_w * scale / W <= 0.80 * 1.15
+        assert 0.15 * 1.05 <= skull * bones_h * scale / H <= 0.20 * 1.15
         for _, _, s in _LUMPS:
             assert 0.04 <= s * 2 / stone_w <= 0.14
         for _, _, s, _, _ in _FALLS:
@@ -393,6 +393,119 @@ def test_stone_is_mid_grey_with_a_light_edge_and_the_carved_figure_is_readable()
     assert "sepia" not in tone and "hue-rotate" not in tone
     assert ".hero .hstone .hs::after" in css and "linear-gradient(255deg" in css  # light right edge
     carve = re.search(r"\.hero \.hstone \.carve\{[^}]*\}", css).group(0)
-    assert "color:#04060a" in carve and "rgba(205,220,245,.6)" in carve
-    # the carve box (left 29 to 71 percent, top 49 percent) is centred on the panel (x 20 to 80, y 32 to 78)
-    assert "left:29%;right:29%;top:49%" in carve
+    # the carve box (left 29 to 71 percent) is centred on the panel (x 20 to 80) and sits at its top (y 31 to 78)
+    assert "left:29%;right:29%;top:34%" in carve
+
+
+# --- Task 30.5: bones to the side, a glowing figure (R19.7, R19.8) ----------
+
+def _stone_html(page: str) -> str:
+    return page.split('<div id="run-stone"', 1)[1].split('<div class="soil', 1)[0]
+
+
+def _rule(css: str, selector: str) -> str:
+    return ";".join(re.findall(r"(?<![\w.:-])" + re.escape(selector) + r"\{([^}]*)\}", css))
+
+
+def test_figure_is_one_element_above_both_stone_halves():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    stone = _stone_html(page)
+    # one figure, after both halves and outside them, so the split clips never cut it
+    assert stone.count('class="carve"') == 1 and stone.count('class="cost"') == 1
+    assert stone.index('class="half hl"') < stone.index('class="half hr"') < stone.index('class="carve"')
+    for half in re.findall(r'<div class="half h[lr]"[^>]*>(.*?)</div>', stone):
+        assert "carve" not in half and "cost" not in half
+    assert 'id="run-stone-cost"' in stone
+    half_z = int(re.search(r"z-index:(\d+)", _rule(css, ".hero .hstone .half")).group(1))
+    carve_z = int(re.search(r"z-index:(\d+)", _rule(css, ".hero .hstone .carve")).group(1))
+    assert carve_z > half_z
+    # the split rules clip and move only the halves
+    for rule in re.findall(r"\.hero\.stopped \.hstone \.h[lr]\{[^}]*\}", css):
+        assert "carve" not in rule
+    assert not re.search(r"\.carve[^{]*\{[^}]*clip-path", css)
+
+
+def test_figure_is_visible_after_the_first_step_and_after_the_split():
+    page = _page()
+    css = _css(page).replace("\n", "")
+    carve = _rule(css, ".hero .hstone .carve")
+    assert "opacity:1" in carve and "left:29%;right:29%" in carve  # 42 percent of the stone wide
+    cost = _rule(css, ".hero .hstone .cost")
+    assert re.search(r"font-size:([\d.]+)cqw", cost) and "display:block" in cost
+    # no rule hides the figure or gives it zero size, in any state
+    for sel, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        if ".hero" in sel and any(n in sel for n in ("carve", ".cost", "cunit")):
+            assert not re.search(r"opacity:0(?![.\d])|display:none|visibility:hidden|font-size:0(?![.\d])", body), sel
+    # it sits at the top of the panel (y 34 percent), above the heap front copy from the first step it clears it
+    top = float(re.search(r"top:([\d.]+)%", carve).group(1))
+    assert 31 <= top <= 40
+    # the script writes every step to the figure, and the server renders the stop figure for no-JS
+    assert 'id="run-stone-cost">0.80<' in page or re.search(r'id="run-stone-cost">\d+\.\d\d<', page)
+    assert 'stone.querySelectorAll(".cost")' in _script(page)
+
+
+def test_figure_glows_blue_white_flickers_while_rising_and_holds_after_the_split():
+    css = _css(_page()).replace("\n", "")
+    carve = _rule(css, ".hero .hstone .carve")
+    assert "color:#f4f9ff" in carve and "color:#f4f9ff" in _rule(css, ".hero .hstone .cost")
+    shadow = re.search(r"text-shadow:([^;}]*)", carve).group(1)
+    assert "#fff" in shadow and shadow.count("rgba(") >= 3  # near-white core and a pale blue halo
+    assert all(int(b) > int(r) for r, _, b in re.findall(r"rgba\((\d+),(\d+),(\d+)", shadow))
+    spill = _rule(css, ".hero .hstone .carve::before")
+    assert "radial-gradient" in spill and "rgba(150,195,255" in spill  # faint light on the stone around it
+    motion = css.split("@media (prefers-reduced-motion:no-preference){  .hero .runner", 1)[1].split("@media (prefers-reduced-motion:reduce)", 1)[0]
+    motion = ".hero .runner" + motion
+    assert ".hero .runner:not(.stopped) .hstone .carve{animation:glowflick" in motion
+    assert "@keyframes glowflick" in motion
+    assert "glowflick" not in css.split("@media (prefers-reduced-motion:no-preference){  .hero .runner", 1)[0]
+    assert "glowflick" not in css.split("@keyframes glowflick", 1)[1]  # only while rising, never in the stopped state
+
+
+def _hero_boxes(width: float) -> dict:
+    """Boxes (left, top, right, bottom) in px from the hero's bottom left corner, y up, for the 1280 px layout.
+
+    The earth box is centred in the hero (the central grid column), so its left edge is (width - earth) / 2.
+    """
+    css = _css(_page()).replace("\n", "")
+    k = float(re.search(r"\.hero\{--k:([\d.]+)", css).group(1))
+    u = lambda sel, prop: _units(css, sel, prop) * k  # noqa: E731
+    earth_w = u(".hero .earth", "width")
+    ex = (width - earth_w) / 2
+    # the earth box bottom sits at least on the caption line above the hero bottom
+    caption = 60.0
+    stone_w, stone_h = u(".hero .hstone", "width"), u(".hero .hstone", "height")
+    sx = ex + earth_w / 2 + u(".hero .hstone", "margin-left")
+    boxes = {
+        "stone": (sx, caption, sx + stone_w, caption + stone_h),
+        "heap": (ex + u(".hero .heap", "left"), caption + u(".hero .heap", "bottom"),
+                 ex + u(".hero .heap", "left") + u(".hero .heap", "width"),
+                 caption + u(".hero .heap", "bottom") + u(".hero .heap", "height")),
+        "hand": (ex + u(".hero .hand", "left"), caption + u(".hero .hand", "bottom"),
+                 ex + u(".hero .hand", "left") + u(".hero .hand", "width"),
+                 caption + u(".hero .hand", "bottom") + u(".hero .hand", "height")),
+    }
+    bones = _rule(css, ".hero .bones")
+    bl = float(re.search(r"left:([\d.]+)%", bones).group(1)) / 100 * width
+    bb = float(re.search(r"bottom:([\d.]+)px", bones).group(1))
+    boxes["bones"] = (bl, bb, bl + u(".hero .bones", "width"), bb + u(".hero .bones", "height"))
+    return boxes
+
+
+def test_bones_lie_in_the_left_foreground_away_from_stone_heap_and_hand():
+    page = _page()
+    width = 1280.0
+    boxes = _hero_boxes(width)
+    bl, bb, br, bt = boxes["bones"]
+    assert br <= 0.30 * width and bl >= 0  # the left 30 percent of the hero
+    for name in ("stone", "heap", "hand"):
+        l, b, r, t = boxes[name]
+        assert br <= l or bl >= r or bt <= b or bb >= t, name
+    # outside the earth box (its clip would cut them) and directly in the hero, visible at rest
+    hero = page.split('<header class="hero', 1)[1].split('<div class="hero-inner">', 1)[0]
+    assert '<i class="ph bones" aria-hidden="true"></i>' in hero
+    assert "bones" not in page.split('id="run-earth"', 1)[1].split('<div class="verdict"', 1)[0]
+    assert page.count('class="ph bones"') == 1
+    # at 390 px they would overlap the caption, so they are hidden there (R19.7 allows it)
+    phone = _css(page).split("@media (max-width:640px){\n  .hero{--k:", 1)[1].split("\n}", 1)[0]
+    assert ".hero .bones{display:none}" in phone
