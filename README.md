@@ -173,6 +173,10 @@ Every line of product code was written by Kiro CLI from the spec in `.kiro/specs
 
 The build log with the credits per task is in [KIRO_LOG.md](KIRO_LOG.md). The 134 tombstones in [tombstones.json](tombstones.json) add up to 282.12 credits of priced turns: 112 spec tasks and 22 turns that ticked no checkbox, filed as unknown. The whole build, measurements, test runs, the cost experiment and the video recording included, used 406.43 credits by `/usage`. 724 tests run in about seven seconds and need no Kiro install.
 
+### Who did what
+
+Kiro CLI wrote every line of product code and every test in `src/` and `tests/`, one spec task at a time; each task's prompt, result and price is in [KIRO_LOG.md](KIRO_LOG.md). I used Claude Code (Anthropic) as my assistant around Kiro: it drafted requirement text that I approved, ran `kiro-cli chat --no-interactive` for each task, checked the page in a browser, made the commits, and helped with the README, the blog and the video edit. That is why most commits carry a `Co-Authored-By: Claude` line: it marks who made the commit, not who wrote the code. No product code was written by hand or by Claude Code.
+
 ## How we used Kiro
 
 - **CLI.** Kiro CLI 3.0.0, later 3.1.0, V3 engine, model `auto`.
