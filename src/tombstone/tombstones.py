@@ -2581,11 +2581,19 @@ _RUN_CAPTION = ("A recorded real Kiro CLI session, scrubbed. For every cap on th
                 "the stop point was computed by Tombstone's own watcher code when this "
                 "page was built.")
 
+_STOP_LINE = ("Tombstone stops at the first step that goes over the cap, "
+              "so STOP reads a little above it.")
+_LIVE_LEGEND = ("est. is Tombstone's own running estimate of the turn; live is the credit "
+                "counter Kiro CLI writes while the turn runs. The watcher stops on whichever "
+                "is higher.")
+
 _RUN_CSS = """
 .runner{position:relative;z-index:2;display:flow-root;max-width:880px;margin:0 auto;
   padding:28px 20px 96px}
 .runner h2{font-size:26px;margin:0 0 6px}
 .runner .caption{color:var(--muted);margin:14px 0 0;font-size:14px;max-width:60em}
+.runner .capnote{margin:-6px 0 14px;font-size:16px;max-width:60em}
+.runner .legend{display:block;margin:6px 0 0;font-size:14px;font-weight:400;color:var(--muted);max-width:30em}
 .runner .controls{display:flex;flex-wrap:wrap;gap:14px 20px;align-items:center;margin:0 0 18px}
 .runner label{display:flex;flex-wrap:wrap;align-items:center;gap:8px 12px;font-size:16px}
 .runner input[type=range]{width:min(320px,70vw);min-height:32px;accent-color:var(--ember)}
@@ -2821,7 +2829,7 @@ function finish(r){var steps=r.stop_at;if(earth){earth.classList.add("full");}
   if(steps){root.classList.add("stopped");hero.classList.add("stopped");
     if(!reduce){hero.classList.add("scare");}boom();vigHit();stone.className="hstone crack-1";
     count.classList.add("hot");draw(r.figure);clear();line("stop","STOP");
-    line("","hook exit code 2");line("refusal",r.refusal);
+    line("","hook exit code 2");line("refusal",r.refusal);line("","First step over the "+f(r.cap)+" cap.");
     if(ovr){line("","Tombstone would have written STOP at "+f(r.figure)+" credits, step "+r.stop_at+" of "+T.credits.length+".");
       line("","This turn went on to "+f(r.went)+" credits.");}
     else{line("","Without the breaker this session went on to "+f(T.total)+" credits est.");}}
@@ -2925,6 +2933,7 @@ def _g_runner(trace: Optional[dict]) -> str:
     if chosen["stop_at"]:
         result = (
             '<p class="stop">STOP</p><p>hook exit code 2</p>'
+            f'<p>First step over the {chosen["cap"]:.2f} cap.</p>'
             f'<p class="refusal">{esc(chosen["refusal"])}</p>'
             f"<p>Without the breaker this session went on to {total:.2f} credits est.</p>")
         shown, state, cls = chosen["figure"], " stopped", "hstone crack-1"
@@ -2943,7 +2952,8 @@ def _g_runner(trace: Optional[dict]) -> str:
     half = f'<span class="hs"></span>{dust}'
     # R19.8: one glowing figure above both halves, so the split clips never cut it
     carve = (f'<span class="carve"><span class="cost" id="run-stone-cost">{shown:.2f}</span>'
-             '<span class="cunit">credits est.</span></span>')
+             f'<span class="cunit" title="{esc(_LIVE_LEGEND)}" '
+             'aria-describedby="run-legend">credits est.</span></span>')
 
     return (
         f'<section class="runner{state}" id="runner" aria-labelledby="runh">\n'
@@ -2955,9 +2965,13 @@ def _g_runner(trace: Optional[dict]) -> str:
         '<button id="run-go" type="button" class="run">Release the agent</button>'
         '<button id="run-sound" type="button" class="snd" aria-pressed="true">Sound on</button>'
         '</div>\n'
+        f'<p class="capnote">{esc(_STOP_LINE)}</p>\n'
         '<div class="scene"><div class="meter">Spent so far'
-        f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}">'
-        f"{shown:.2f} credits est.</b></div>"
+        f'<b id="run-count" class="{"hot" if chosen["stop_at"] else ""}" '
+        f'title="{esc(_LIVE_LEGEND)}" aria-describedby="run-legend">'
+        f"{shown:.2f} credits est.</b>"
+        f'<span class="legend" id="run-legend">{esc(_LIVE_LEGEND)}</span></div>'
+        
         f'<div class="grave"><div class="earth on" id="run-earth" style="--rh:{height}px;--hp:{hp:.3f}">'
         f'<div id="run-stone" class="{cls}" '
         f'style="--rh:{height}px;--cl:{clip_l};--cr:{clip_r}" role="img" '
@@ -2992,6 +3006,8 @@ _BURY_CSS = """
 .bury h2{font-size:26px;margin:0 0 8px}
 .bury p{margin:8px 0;max-width:60em}
 .bury .where,.bury .note,.bury .caption{color:var(--muted);font-size:14px}
+.bury .caption{background:#080b14;padding:8px 12px;border-radius:4px}
+.bury .capnote{font-size:16px;color:var(--bone)}
 .bury .where code{overflow-wrap:anywhere}
 .bury .row{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin:14px 0}
 .bury button,.bury select{font:inherit;font-size:16px;min-height:44px;padding:6px 16px;color:var(--bone);
@@ -3165,7 +3181,8 @@ def _g_bury(samples: list) -> str:
         '<h2 id="buryh">Bury your own session</h2>\n'
         '<p>Pick a sample or give it a Kiro CLI session, choose a turn and a cap, and watch '
         'Tombstone stop it on the stone above.</p>\n'
-        f'<noscript><p class="note">{esc(_BURY_NOJS)}</p></noscript>\n'
+        f'<noscript><p class="note">{esc(_BURY_NOJS)}</p>'
+        f'<p class="capnote">{esc(_STOP_LINE)}</p></noscript>\n'
         '<div id="bury-ui" hidden>\n'
         f"{samples_row}"
         '<div class="drop" id="bury-drop"><label for="bury-file">Your messages.jsonl</label>'
@@ -3177,6 +3194,7 @@ def _g_bury(samples: list) -> str:
         'step="0.05" value="0.75" aria-label="Cap in credits"> '
         '<output id="bury-cap-out" for="bury-cap">0.75 credits</output></label>'
         '<button id="bury-play" type="button" disabled>Play it on the stone</button></div>\n'
+        f'<p class="capnote">{esc(_STOP_LINE)}</p>\n'
         '<p class="status" id="bury-status" role="status"></p>\n'
         '</div>\n'
         f'<p class="privacy">{esc(_BURY_PRIVACY)}</p>\n'
@@ -3247,8 +3265,12 @@ _HERO_CSS = """
 .hero.stopped .runner .grave::before{opacity:1}
 .hero .runner .verdict{position:relative;z-index:7;flex:none;justify-self:start;margin-left:calc(var(--k) * 40px);max-width:34em;text-shadow:0 1px 12px #000}
 .hero .runner .verdict .stop{text-shadow:0 0 28px rgba(255,59,59,.45),0 1px 10px #000}
-.hero .runner .caption{position:relative;z-index:7;text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#b4bdcc;
+.hero .runner .caption{position:relative;z-index:8;text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#d4dbe6;
+  background:rgba(4,6,14,.94);padding:8px 14px;border-radius:4px;width:fit-content;max-width:min(60em,100%)}
+.hero .runner .capnote{position:relative;z-index:8;text-align:center;margin:0 auto 14px;color:var(--bone);
   text-shadow:0 1px 8px #000}
+.hero .runner .legend{position:relative;z-index:8;left:0;box-sizing:border-box;width:fit-content;max-width:min(30em,100%);margin:6px 0 0 auto;text-align:left;overflow-wrap:anywhere;color:#d4dbe6;background:rgba(4,6,14,.94);padding:8px 12px;border-radius:4px}
+.hero .runner .meter{max-width:100%;box-sizing:border-box;min-width:0}
 /* the rising headstone: its visible height is --rh on the R15 scale */
 .hero .earth{position:relative;clip-path:inset(0 -160px 0 -160px);width:calc(var(--k) * 250px);height:calc(var(--k) * 228px);
   margin:0 auto}

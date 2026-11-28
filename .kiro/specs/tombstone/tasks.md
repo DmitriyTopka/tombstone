@@ -543,3 +543,19 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 36.4 Browser check fixes
     - Browser check by Claude on 2026-11-26 after task 36. (1) While a Bury series plays, the hero caption still says "A recorded real Kiro CLI session, scrubbed. For every cap on the slider, the stop point was computed by Tombstone's own watcher code when this page was built.", which is wrong for that run: during and after a Bury playback the caption SHALL name the source ("Sample: <label>" or "Your file") and say the stop was computed in this browser with the watcher's live-figure rule; pressing "Release the agent" or moving the hero slider brings the original caption back. (2) The 43-step sample took about 22 s to reach the stop; a Bury playback SHALL last 4 to 12 s in total whatever the number of steps (shorter rise per step, same eased motion and sound binding as R23.2 and R23.3). (3) At 375 px the curved bottom edge of the hero overlaps the second sample button in the Bury block; nothing SHALL overlap the block's controls at 375 px or 1440 px.
     - _Requirements: R25.1, R25.3, R25.5_
+
+- [x] 37. The first screen explains its own numbers
+  - Outside tester rose050505, 2026-11-27, three points on the first screen; approved by Dima on 2026-11-28 ("Да, все три"). Text only and styling: no change to stop logic, recorded data, or the Bury reader.
+  - _Requirements: R26.1, R26.2, R26.3, R26.4_
+
+  - [x] 37.1 Lines, legend and caption backing in `render_graveyard`
+    - R26.1 line under both cap controls and "First step over the X cap." in the STOP panel; R26.2 legend and accessible descriptions; R26.3 caption backing with 4.5:1 contrast.
+    - _Requirements: R26.1, R26.2, R26.3_
+
+  - [x] 37.2 Tests
+    - The R26.1 line appears twice and in noscript; the STOP panel template carries the cap; the R26.2 legend text and accessible descriptions exist; the caption has a backing rule; size under 1.5 MB, no network APIs; all existing tests pass.
+    - _Requirements: R26.1, R26.2, R26.3, R26.4_
+
+  - [x] 37.3 Browser check fix
+    - Browser check by Claude on 2026-11-28 after task 37. At a 1440x900 viewport the R26.2 legend `#run-legend` starts at x = -27 px, so its first words ("est. is") are cut off at the left edge, and it sits on the stones art without a backing. The legend SHALL lie fully inside the viewport (left edge at 0 px or more, right edge at the viewport width or less) at 375, 768, 1024, 1440 and 1920 px wide, and SHALL use the same kind of backing as the R26.3 caption. The 375 px layout, which is correct now, SHALL not change.
+    - _Requirements: R26.2, R26.3_

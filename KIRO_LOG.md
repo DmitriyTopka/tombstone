@@ -283,4 +283,6 @@ Cost: about 39 credits for tasks 29 to 34.6 (/usage 355.67 to 394.37).
 ## Tasks 35 to 36.4, 26 November (council of the evening)
 
 35: a `--devpost` link on the page and the 25 live stop rows inside a closed `<details>`. 36: "Bury your own session", a block that plays a real session on the headstone; the samples are two runs from the cost experiment (numbers only), and a visitor's own `messages.jsonl` is read in the browser with the watcher's live-figure rule. 36.4: fixes from a browser check by Claude (the caption names the source, playback 4 to 8 s, nothing overlaps the block at 375 px). 724 tests.
+
+37: the first screen explains its own numbers, after an outside tester (rose050505, a Kiroween entrant, in a test swap) read the 0.80 stop at a 0.75 cap as a failed cap. A line under both cap controls says the stop lands on the first step over the cap, the STOP panel names the cap, a legend says what est. and live mean, and the captions sit on a dark backing. 37.3: a browser check by Claude found the legend cut off at the left edge at 1440 px; Kiro capped its width. 730 tests.
 Cost: about 12.06 credits for 35 to 36.4 (/usage 394.37 to 406.43).

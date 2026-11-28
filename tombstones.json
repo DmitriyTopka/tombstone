@@ -4020,6 +4020,126 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/37",
+      "task_id": "37",
+      "name": "The first screen explains its own numbers",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 1.7089,
+      "actual": 0.7513,
+      "minutes": 0.6771,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-28",
+      "turns": [
+        {
+          "session_id": "sess_9f2ea3da-488b-4889-8f96-596dbfb8f4cf",
+          "turn_id": "09b7c9d4-767d-4d48-a58f-0ca70720e754",
+          "requests": 15,
+          "estimate": 5.1271,
+          "actual": 2.254,
+          "minutes": 2.0315,
+          "start": "2026-11-28T08:16:09.660000Z",
+          "end": "2026-11-28T08:18:11.549000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/37.1",
+      "task_id": "37.1",
+      "name": "Lines, legend and caption backing in `render_graveyard`",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 1.7089,
+      "actual": 0.7513,
+      "minutes": 0.6771,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-28",
+      "turns": [
+        {
+          "session_id": "sess_9f2ea3da-488b-4889-8f96-596dbfb8f4cf",
+          "turn_id": "09b7c9d4-767d-4d48-a58f-0ca70720e754",
+          "requests": 15,
+          "estimate": 5.1271,
+          "actual": 2.254,
+          "minutes": 2.0315,
+          "start": "2026-11-28T08:16:09.660000Z",
+          "end": "2026-11-28T08:18:11.549000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/37.2",
+      "task_id": "37.2",
+      "name": "Tests",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 15,
+      "estimate": 1.7089,
+      "actual": 0.7513,
+      "minutes": 0.6771,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-28",
+      "turns": [
+        {
+          "session_id": "sess_9f2ea3da-488b-4889-8f96-596dbfb8f4cf",
+          "turn_id": "09b7c9d4-767d-4d48-a58f-0ca70720e754",
+          "requests": 15,
+          "estimate": 5.1271,
+          "actual": 2.254,
+          "minutes": 2.0315,
+          "start": "2026-11-28T08:16:09.660000Z",
+          "end": "2026-11-28T08:18:11.549000Z",
+          "share": 0.3333,
+          "unpriced_reason": null
+        }
+      ]
+    },
+    {
+      "id": "tombstone/37.3",
+      "task_id": "37.3",
+      "name": "Browser check fix",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 6,
+      "estimate": 1.8742,
+      "actual": 0.5376,
+      "minutes": 0.5629,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-28",
+      "turns": [
+        {
+          "session_id": "sess_302e0964-4a08-4844-b618-883d2e809246",
+          "turn_id": "67325252-1d9d-4c56-8c45-ce1a2c8deab3",
+          "requests": 6,
+          "estimate": 1.8742,
+          "actual": 0.5376,
+          "minutes": 0.5629,
+          "start": "2026-11-28T08:19:26.677000Z",
+          "end": "2026-11-28T08:20:00.453000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
