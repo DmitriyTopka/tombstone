@@ -81,3 +81,29 @@ def test_no_dash_characters_and_deterministic():
     page = _page()
     assert "\u2014" not in page and "\u2013" not in page
     assert page == _page()
+
+
+def _css_rule(page: str, selector: str) -> str:
+    found = re.findall(r"(?m)^" + re.escape(selector) + r"\{([^}]*)\}", page)
+    assert found, selector
+    return ";".join(found)
+
+
+def test_page_clips_sideways_overflow():
+    # R26.4: fog (200 percent wide) and the stones row must not widen the page.
+    page = render_graveyard([])
+    assert "overflow:hidden" in _css_rule(page, ".hero").replace(" ", "")
+    assert "overflow-x:clip" in _css_rule(page, "html")
+    assert "overflow-x:clip" in _css_rule(page, ".ground")
+
+
+def test_hero_caption_stacks_above_art():
+    # R26.3: .runner must not form a stacking context at z 2 under the fog (z 3),
+    # and the caption must sit above the art layers (z 5 grave, z 4 fx).
+    page = render_graveyard([])
+    assert "z-index:auto" in _css_rule(page, ".hero section.runner")
+    cap = _css_rule(page, ".hero .runner .caption")
+    assert "position:relative" in cap
+    z = int(re.search(r"z-index:(\d+)", cap).group(1))
+    assert z > int(re.search(r"z-index:(\d+)", _css_rule(page, ".hero .runner .grave")).group(1))
+    assert z > int(re.search(r"z-index:(\d+)", _css_rule(page, ".hero .f2")).group(1))

@@ -559,3 +559,7 @@ The package skeleton (pyproject.toml, empty modules, tests/ and tests/fixtures/)
   - [x] 37.3 Browser check fix
     - Browser check by Claude on 2026-11-28 after task 37. At a 1440x900 viewport the R26.2 legend `#run-legend` starts at x = -27 px, so its first words ("est. is") are cut off at the left edge, and it sits on the stones art without a backing. The legend SHALL lie fully inside the viewport (left edge at 0 px or more, right edge at the viewport width or less) at 375, 768, 1024, 1440 and 1920 px wide, and SHALL use the same kind of backing as the R26.3 caption. The 375 px layout, which is correct now, SHALL not change.
     - _Requirements: R26.2, R26.3_
+
+  - [x] 37.4 Caption at 1024 px and no sideways scroll
+    - Outside tester rose050505 on 2026-11-28, confirmed by a browser check by Claude: in a 1024 px wide window the skull art still covers the first word or two of the hero caption ("A recorded..."). Separately, at 1024 px the page is 1219 px wide (`document.documentElement.scrollWidth`), because the fog layer `.fogl` and its SVG run to about 2048 px; this was there before task 37. The hero caption SHALL not be covered by the skull, headstone or stones art at any width from 375 to 1920 px (check 375, 768, 1024, 1280, 1440, 1920), and the page SHALL not be wider than the viewport at those widths (fog clipped by its container, for example `overflow:hidden` on the hero or `overflow-x:clip` on the page). The look of the fog and the 375 px layout SHALL stay the same.
+    - _Requirements: R26.3, R26.4_

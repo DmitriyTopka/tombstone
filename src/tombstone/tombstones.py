@@ -3267,6 +3267,12 @@ _HERO_CSS = """
 .hero .runner .verdict .stop{text-shadow:0 0 28px rgba(255,59,59,.45),0 1px 10px #000}
 .hero .runner .caption{position:relative;z-index:8;text-align:center;margin:clamp(10px,2vh,22px) auto 0;color:#d4dbe6;
   background:rgba(4,6,14,.94);padding:8px 14px;border-radius:4px;width:fit-content;max-width:min(60em,100%)}
+/* R26.3: the caption joins the hero stacking context (z 8), above the fog, skull, headstone and stones art */
+.hero section.runner{z-index:auto}
+.hero .runner .scene{position:relative;z-index:2}
+/* R26.4: art and stones that run past the viewport are clipped, so the page is never wider than the window */
+html{overflow-x:clip}
+.ground{overflow-x:clip}
 .hero .runner .capnote{position:relative;z-index:8;text-align:center;margin:0 auto 14px;color:var(--bone);
   text-shadow:0 1px 8px #000}
 .hero .runner .legend{position:relative;z-index:8;left:0;box-sizing:border-box;width:fit-content;max-width:min(30em,100%);margin:6px 0 0 auto;text-align:left;overflow-wrap:anywhere;color:#d4dbe6;background:rgba(4,6,14,.94);padding:8px 12px;border-radius:4px}

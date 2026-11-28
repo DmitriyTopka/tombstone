@@ -4140,6 +4140,36 @@
           "unpriced_reason": null
         }
       ]
+    },
+    {
+      "id": "tombstone/37.4",
+      "task_id": "37.4",
+      "name": "Caption at 1024 px and no sideways scroll",
+      "spec": "tombstone",
+      "task_type": "other",
+      "engine": "v3",
+      "model": "auto",
+      "requests": 26,
+      "estimate": 10.3309,
+      "actual": 3.4979,
+      "minutes": 3.0568,
+      "outcome": "finished",
+      "false_positive": null,
+      "date": "2026-11-28",
+      "turns": [
+        {
+          "session_id": "sess_d6c2bbf0-078d-482d-a571-3cc81f4d2b0c",
+          "turn_id": "fe428959-c590-4c31-ba45-b1fde3d2f2c6",
+          "requests": 26,
+          "estimate": 10.3309,
+          "actual": 3.4979,
+          "minutes": 3.0568,
+          "start": "2026-11-28T12:11:12.442000Z",
+          "end": "2026-11-28T12:14:15.852000Z",
+          "share": 1.0,
+          "unpriced_reason": null
+        }
+      ]
     }
   ]
 }
